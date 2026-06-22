@@ -1,1 +1,4385 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>はしれ！ごうぴい＆じゅうぴい</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sky-top: #ffb6d9;
+    --sky-mid: #d8b4ff;
+    --sky-bottom: #fff3a8;
+    --ground-color: #6fe0c0;
+    --ground-dark: #46c19f;
+    --missing-color: #2e3a4a;
+    --missing-edge: #1c2530;
+    --bot-body: #fdfaf4;
+    --bot-edge: #c9bdf0;
+    --bot-accent: #ff8fab;
+    --bot-accent-dark: #e06f8e;
+    --bot-eye: #3c3a36;
+    --sun-yellow: #ffe27a;
+    --ui-cream: #fff8ed;
+    --ui-text: #3c3a36;
+    --correct-green: #4caf50;
+    --wrong-red: #ef5350;
+
+    /* colourful block palette, cycled per column */
+    --block-1: #ff8fab;
+    --block-1-edge: #e26a8a;
+    --block-2: #7ecbff;
+    --block-2-edge: #56a8e0;
+    --block-3: #ffd966;
+    --block-3-edge: #e0b743;
+    --block-4: #b9f29a;
+    --block-4-edge: #8fd470;
+    --block-5: #c9a9f5;
+    --block-5-edge: #a584dd;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  body {
+    background: linear-gradient(to bottom, var(--sky-top) 0%, var(--sky-mid) 50%, var(--sky-bottom) 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;       /* フォールバック（古いブラウザ用） */
+    height: 100dvh;      /* iOS Safari等の動的ビューポート高さ対応 */
+    width: 100vw;
+  }
+
+  #game-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 900px;
+    height: 100vh;      /* フォールバック */
+    height: 100dvh;     /* 動的ビューポート高さ */
+    max-height: 900px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ---------- HUD ---------- */
+  #hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    z-index: 20;
+    pointer-events: none;
+  }
+
+  /* 停止ボタン: プレイ中にスタート画面へ戻る */
+  .hud-stop-btn {
+    pointer-events: auto;
+    background: var(--ui-cream);
+    border: none;
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: clamp(13px, 3vw, 18px);
+    font-weight: 900;
+    color: #c03060;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.12);
+    cursor: pointer;
+    font-family: inherit;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .hud-stop-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.12); }
+
+  .hud-pill {
+    background: var(--ui-cream);
+    border-radius: 999px;
+    padding: 8px 18px;
+    font-weight: 700;
+    font-size: clamp(14px, 3vw, 20px);
+    color: var(--ui-text);
+    box-shadow: 0 3px 0 rgba(0,0,0,0.12);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .hud-header {
+    font-size: clamp(12px, 3vw, 18px);
+    font-weight: 800;
+    color: var(--bot-accent-dark);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  /* speed-pill is wider than other pills (6 dots + emoji), so reduce padding */
+  #speed-pill {
+    padding: 6px 10px;
+    gap: 4px;
+    pointer-events: none;
+  }
+  #speed-pill #speed-meter {
+    gap: 2px;
+  }
+  #speed-pill #speed-meter .dot {
+    width: 9px;
+    height: 9px;
+  }
+  #meter-turtle, #meter-rabbit {
+    font-size: 1em;
+    line-height: 1;
+  }
+  #speed-meter {
+    display: inline-flex;
+    gap: 3px;
+    align-items: center;
+  }
+  #speed-meter .dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: #d8d8d8;
+    box-shadow: inset 0 1px 1px rgba(0,0,0,0.12);
+  }
+  #speed-meter .dot.on {
+    background: #36c46b;
+  }
+  /* near the top speed, the lit dots turn warm to signal "very fast!" */
+  #speed-meter.hot .dot.on { background: #ff8c2b; }
+  #speed-meter.max .dot.on { background: #ff4d4d; }
+  .hud-header:empty {
+    display: none;
+  }
+
+  /* ---------- Scene ---------- */
+  #scene {
+    position: relative;
+    flex: 1;
+    overflow-x: hidden;
+    overflow-y: visible;
+  }
+
+  .cloud {
+    position: absolute;
+    background: rgba(255,255,255,0.85);
+    border-radius: 50px;
+    opacity: 0.95;
+  }
+  .cloud::before, .cloud::after {
+    content: "";
+    position: absolute;
+    background: rgba(255,255,255,0.85);
+    border-radius: 50%;
+  }
+  .cloud1 { width: 90px; height: 32px; top: 8%; left: 10%; }
+  .cloud1::before { width: 50px; height: 50px; top: -22px; left: 10px; }
+  .cloud1::after { width: 40px; height: 40px; top: -16px; left: 45px; }
+  .cloud2 { width: 70px; height: 26px; top: 18%; left: 65%; }
+  .cloud2::before { width: 40px; height: 40px; top: -18px; left: 8px; }
+  .cloud2::after { width: 32px; height: 32px; top: -12px; left: 36px; }
+
+  .sun {
+    position: absolute;
+    top: 6%;
+    right: 8%;
+    width: 70px;
+    height: 70px;
+    background: radial-gradient(circle at 35% 35%, #fff7d6, var(--sun-yellow) 70%);
+    border-radius: 50%;
+    box-shadow: 0 0 0 14px rgba(255, 226, 122, 0.3), 0 0 40px rgba(255, 226, 122, 0.5);
+  }
+
+  .star {
+    position: absolute;
+    color: #ffffff;
+    opacity: 0.85;
+    animation: twinkle 2.4s ease-in-out infinite;
+    font-size: 1em;
+    filter: drop-shadow(0 0 4px rgba(255,255,255,0.7));
+  }
+  .star::before { content: "✦"; }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.15); }
+  }
+  .star1 { top: 14%; left: 30%; font-size: 18px; animation-delay: 0s; }
+  .star2 { top: 28%; left: 50%; font-size: 12px; animation-delay: 0.8s; }
+  .star3 { top: 10%; left: 78%; font-size: 14px; animation-delay: 1.4s; }
+  .star4 { top: 34%; left: 14%; font-size: 10px; animation-delay: 0.4s; }
+
+  /* ---------- Ground / road ---------- */
+  #ground {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 41%;
+    background: var(--ground-color);
+    border-top: 8px solid var(--ground-dark);
+  }
+
+  #track {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: visible;
+  }
+
+  #road-strip {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    will-change: transform;
+  }
+
+  /* ---------- Goal gate — placed in #scene (not the scrolling road-strip)
+     so gate-scene can overflow upward into the sky without clipping  ---------- */
+  #goal-gate {
+    position: absolute;
+    bottom: 0;
+    height: 100%;
+    display: block;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 8;
+  }
+  /* only reveal once .show is added (position has been set in renderAll),
+     so it never flashes at the screen's left edge before its left/width
+     have been computed */
+  #goal-gate.show {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* gate-scene: fixed at the very top of #scene so clouds always float
+     well above the road, even for level 2 where the sky is only ~132px */
+  .gate-scene {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 260px;
+    height: 160px;
+    pointer-events: none;
+  }
+
+  /* rainbow: starts at the top of gate-scene, 120px tall */
+  .gate-rainbow {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 100%;
+    height: 120px;
+    transform: translateX(-50%);
+    overflow: hidden;
+  }
+  .rainbow-band {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 50% 50% 0 0;
+  }
+  .rainbow-band:nth-child(1) { width: 100%; height: 100%; background: #ff8a80; }
+  .rainbow-band:nth-child(2) { width: 87%;  height: 87%;  background: #ffcc80; }
+  .rainbow-band:nth-child(3) { width: 74%;  height: 74%;  background: #fff59d; }
+  .rainbow-band:nth-child(4) { width: 61%;  height: 61%;  background: #a5e8b0; }
+  .rainbow-band:nth-child(5) { width: 48%;  height: 48%;  background: #90caf9; }
+  .rainbow-band:nth-child(6) { width: 35%;  height: 35%;  background: #ce93f8; }
+
+  /* clouds sit at the feet of the arch */
+  .gate-cloud {
+    position: absolute;
+    top: 102px;   /* rainbow height 120 − half cloud visual height ~18px */
+    width: 76px;
+    height: 24px;
+    background: #ffffff;
+    border-radius: 50px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.13);
+  }
+  .gate-cloud::before, .gate-cloud::after {
+    content: "";
+    position: absolute;
+    background: #ffffff;
+    border-radius: 50%;
+  }
+  .gate-cloud::before { width: 38px; height: 38px; top: -19px; left: 8px; }
+  .gate-cloud::after  { width: 26px; height: 26px; top: -13px; left: 44px; }
+  .gate-cloud-left  { left:  -8px; }
+  .gate-cloud-right { right: -8px; }
+
+  /* "ゴール" near the top of the arch */
+  .gate-label {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    font-weight: 800;
+    font-size: 16px;
+    color: #fff;
+    text-shadow:
+      0 0 4px rgba(140, 80, 30, 0.7),
+      1px  1px 0 rgba(140, 80, 30, 0.7),
+      -1px  1px 0 rgba(140, 80, 30, 0.7),
+      1px -1px 0 rgba(140, 80, 30, 0.7),
+      -1px -1px 0 rgba(140, 80, 30, 0.7);
+  }
+
+  /* stars that fall from the clouds the instant Cubie reaches the goal */
+  .goal-star {
+    position: absolute;
+    color: #ffe27a;
+    font-size: 18px;
+    filter: drop-shadow(0 0 3px rgba(255,255,255,0.9));
+    animation: goal-star-fall 1.3s ease-in forwards;
+    pointer-events: none;
+  }
+  .goal-star::before { content: "★"; }
+  @keyframes goal-star-fall {
+    0%   { transform: translateY(0) rotate(0deg) scale(0.6); opacity: 0; }
+    15%  { opacity: 1; }
+    100% { transform: translateY(var(--star-fall-dist, 220px)) rotate(var(--star-spin, 220deg)) scale(1); opacity: 0; }
+  }
+
+  .col {
+    position: relative;
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    height: 100%;
+    justify-content: flex-start;
+  }
+
+  .block {
+    width: var(--block-size);
+    height: var(--block-size);
+    background: var(--block-1);
+    border: 2px solid var(--block-1-edge);
+    border-radius: 3px;
+    box-sizing: border-box;
+    position: relative;
+    flex-shrink: 0;
+    box-shadow: inset 0 -4px 0 rgba(0,0,0,0.08);
+  }
+  .block::after {
+    content: "";
+    position: absolute;
+    top: 3px; left: 3px; right: 3px;
+    height: 35%;
+    background: rgba(255,255,255,0.4);
+    border-radius: 2px;
+  }
+
+  /* cycle through the colourful palette, 5 colours per repeating group of columns */
+  .col:nth-child(5n+1) .block { background: var(--block-1); border-color: var(--block-1-edge); }
+  .col:nth-child(5n+2) .block { background: var(--block-2); border-color: var(--block-2-edge); }
+  .col:nth-child(5n+3) .block { background: var(--block-3); border-color: var(--block-3-edge); }
+  .col:nth-child(5n+4) .block { background: var(--block-4); border-color: var(--block-4-edge); }
+  .col:nth-child(5n+5) .block { background: var(--block-5); border-color: var(--block-5-edge); }
+
+  .col .block.missing {
+    background: var(--missing-color);
+    border: none;
+    border-radius: 0;
+    opacity: 1;
+    box-shadow: none;
+  }
+  .block.missing::after,
+  .block.missing::before {
+    display: none;
+  }
+  /* 穴は完全にフラット・境目なし・影なし */
+  .col .block.missing.missing-top,
+  .col .block.missing.missing-bottom,
+  .col .block.missing.missing-top.missing-bottom {
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  /* visual halfway guide-line, drawn along the top edge of the marked block */
+  .block.half-mark {
+    position: relative;
+    z-index: 1;
+  }
+  .block.half-mark::before {
+    content: "";
+    position: absolute;
+    top: -3px;
+    left: -2px;
+    right: -2px;
+    height: 4px;
+    background: repeating-linear-gradient(
+      90deg,
+      #ffffff 0, #ffffff 6px,
+      transparent 6px, transparent 12px
+    );
+    border-radius: 2px;
+    box-shadow: 0 0 3px rgba(0,0,0,0.25);
+    pointer-events: none;
+  }
+  .block.half-mark.missing::before {
+    display: none;
+  }
+
+  /* レベル2: 穴のない列のフラットな棒。ブロックの境目なし。 */
+  .flat-rod {
+    width: var(--block-size);
+    flex-shrink: 0;
+    border-radius: 6px;
+    box-sizing: border-box;
+    /* ブロックと同じ5色サイクルをcolのnth-childで適用 */
+    background: var(--block-1);
+    box-shadow: inset -3px 0 0 rgba(0,0,0,0.07), inset 0 -4px 0 rgba(0,0,0,0.08);
+  }
+  .col:nth-child(5n+1) .flat-rod { background: var(--block-1); }
+  .col:nth-child(5n+2) .flat-rod { background: var(--block-2); }
+  .col:nth-child(5n+3) .flat-rod { background: var(--block-3); }
+  .col:nth-child(5n+4) .flat-rod { background: var(--block-4); }
+  .col:nth-child(5n+5) .flat-rod { background: var(--block-5); }
+
+  .block.filled-in {
+    animation: pop-in 0.4s cubic-bezier(.34,1.56,.64,1) both;
+    transform-origin: bottom center;
+  }
+
+  @keyframes pop-in {
+    /* grows upward from the bottom — transform-origin: bottom center means
+       scale never pushes the top of the block above its resting position,
+       so the road surface stays flat during the fill-in animation */
+    0%   { transform: scaleY(0.05) scaleX(0.5); opacity: 0; }
+    60%  { transform: scaleY(1.06) scaleX(1.02); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* ---------- Cubie (the cube-robot character) ---------- */
+  #car {
+    position: absolute;
+    bottom: calc(42% - 4px);
+    left: 35%;
+    width: var(--car-w);
+    height: var(--car-h);
+    transition: transform 0.3s ease;
+    z-index: 10;
+  }
+
+  .jpbot .legs {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 24%;
+  }
+  .jpbot .leg {
+    position: absolute;
+    bottom: 0;
+    width: 22%;
+    height: 100%;
+    background: var(--bot-accent);
+    border: 3px solid var(--bot-edge);
+    border-radius: 6px;
+    transform-origin: top center;
+  }
+  .jpbot .leg.left { left: 14%; }
+  .jpbot .leg.right { right: 14%; }
+
+  .jpbot .body {
+    position: absolute;
+    bottom: 18%;
+    left: 0;
+    width: 100%;
+    height: 78%;
+    background: var(--bot-body);
+    border-radius: 22% / 26%;
+    border: 4px solid var(--bot-edge);
+    box-shadow: inset 0 -10px 0 rgba(0,0,0,0.05);
+  }
+
+  .jpbot .face-band {
+    position: absolute;
+    top: 14%;
+    left: 6%;
+    width: 88%;
+    height: 50%;
+    background: var(--bot-accent);
+    border-radius: 40% / 55%;
+    opacity: 0.9;
+  }
+
+  .jpbot .eye {
+    position: absolute;
+    top: 12%;
+    width: 34%;
+    aspect-ratio: 1;
+    background: #ffffff;
+    border-radius: 50%;
+    border: 2.5px solid var(--bot-edge);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+  }
+  /* pupil */
+  .jpbot .eye::after {
+    content: "";
+    width: 52%;
+    height: 52%;
+    background: var(--bot-eye);
+    border-radius: 50%;
+  }
+  /* sparkle highlight — small white dot in upper-right of each eye */
+  .jpbot .eye::before {
+    content: "";
+    position: absolute;
+    width: 26%;
+    height: 26%;
+    background: rgba(255,255,255,0.92);
+    border-radius: 50%;
+    top: 10%;
+    right: 10%;
+    z-index: 3;
+    pointer-events: none;
+  }
+  .jpbot .eye.left { left: 10%; }
+  .jpbot .eye.right { right: 10%; }
+
+  /* small curved smile below the eyes */
+  .jpbot .mouth {
+    position: absolute;
+    bottom: 9%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40%;
+    height: 10px;
+    border-bottom: 2.5px solid rgba(255,255,255,0.7);
+    border-radius: 0 0 50% 50%;
+    pointer-events: none;
+  }
+
+  /* friend-eye: same as Juppy but pupil is ★ — no gender, just a different sparkle */
+  .jpbot .eye.friend-eye::after {
+    content: "★";
+    width: auto;
+    height: auto;
+    background: none;
+    border-radius: 0;
+    font-size: 0.46em;
+    color: var(--bot-eye);
+    line-height: 1;
+  }
+
+  /* =========================================================
+     キャラクター識別: .gopy（ごうぴい・あわせて5）/ .jupy（じゅうぴい・あわせて10）
+     ========================================================= */
+
+  /* ---- ごうぴい: 目が★、耳に「5」 ---- */
+  .jpbot.gopy .eye::after {
+    content: "★";
+    width: auto;
+    height: auto;
+    background: none;
+    border-radius: 0;
+    font-size: 0.46em;
+    color: var(--bot-eye);
+    line-height: 1;
+  }
+  /* 耳（頭の左右）の数字。ごうぴい=「5」/ じゅうぴい=「10」 */
+  .jpbot .ear {
+    position: absolute;
+    top: 18%;
+    width: 22%;
+    height: 26%;
+    background: var(--bot-body);
+    border: 3px solid var(--bot-edge);
+    border-radius: 40%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    line-height: 1;
+    z-index: 1;
+  }
+  .jpbot .ear.left  { left: -14%; }
+  .jpbot .ear.right { right: -14%; }
+  /* ごうぴい: 耳に「5」（オレンジ） */
+  .jpbot.gopy .ear { display: flex; font-size: 0.42em; color: #e06f00; }
+  .jpbot.gopy .ear::after { content: "5"; }
+  /* じゅうぴい: 耳に「10」（青）。2文字なので少し小さめ。
+     左耳=10 / 右耳=01 で、左右とも外側が0になり耳っぽく見える。 */
+  .jpbot.jupy .ear { display: flex; font-size: 0.3em; color: #2a7de0; letter-spacing: -0.04em; }
+  .jpbot.jupy .ear.left::after  { content: "01"; }
+  .jpbot.jupy .ear.right::after { content: "10"; }
+
+  /* ---- じゅうぴい: 目は◯+高い位置のまっすぐな眉、胸に「10」 ---- */
+  /* 眉: 目の上、やや高めにまっすぐ伸びる横棒（左右一対） */
+  .jpbot .brow {
+    position: absolute;
+    top: -10%;
+    width: 26%;
+    height: 0;
+    border-top: 3.5px solid var(--bot-eye);
+    border-radius: 3px;
+    display: none;
+    pointer-events: none;
+  }
+  .jpbot .brow.left  { left: 13%; }
+  .jpbot .brow.right { right: 13%; }
+  .jpbot.jupy .brow { display: block; }
+  /* 胸の「10」バッジ（🔟のイメージ：丸囲みの10）。
+     走者は小さく表示されるため、薄く小さくして体の最下部に収める */
+  .jpbot .chest-num {
+    position: absolute;
+    bottom: 1%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fff;
+    border: 1.5px solid #2a7de0;
+    border-radius: 999px;
+    padding: 0 3px;
+    font-size: 0.22em;
+    font-weight: 900;
+    color: #2a7de0;
+    line-height: 1.0;
+    letter-spacing: -0.04em;
+    display: none;
+    z-index: 4;
+    pointer-events: none;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.12);
+  }
+  .jpbot.jupy .chest-num { display: none; }
+
+  .jpbot .cheek {
+    position: absolute;
+    bottom: 14%;
+    width: 18%;
+    height: 14%;
+    background: #ff9eb5;
+    border-radius: 50%;
+    opacity: 0.6;
+  }
+  .jpbot .cheek.left { left: 8%; }
+  .jpbot .cheek.right { right: 8%; }
+
+  /* band-aids: hidden by default, revealed one-by-one each time Cubie
+     recovers from a real fall on a problem (added in onCorrect/addBandaid) */
+  .jpbot .bandaid {
+    position: absolute;
+    width: 28%;
+    height: 13%;
+    background: #fdf6ec;
+    border: 2px solid #d8cdb8;
+    border-radius: 4px;
+    opacity: 0;
+    transform: scale(0.3) rotate(var(--bandaid-rot, 0deg));
+    z-index: 6;
+    pointer-events: none;
+  }
+  .jpbot .bandaid::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 15%;
+    right: 15%;
+    height: 2px;
+    background: #cbbfa5;
+    transform: translateY(-50%);
+  }
+  .jpbot .bandaid.show {
+    animation: bandaid-pop 0.45s cubic-bezier(.34,1.56,.64,1) forwards;
+  }
+  @keyframes bandaid-pop {
+    0%   { opacity: 0; transform: scale(0.2) rotate(var(--bandaid-rot, 0deg)); }
+    60%  { opacity: 1; transform: scale(1.25) rotate(var(--bandaid-rot, 0deg)); }
+    100% { opacity: 1; transform: scale(1) rotate(var(--bandaid-rot, 0deg)); }
+  }
+  .jpbot .bandaid-1 { top: 4%; left: 8%; --bandaid-rot: -22deg; }
+  .jpbot .bandaid-2 { top: 6%; right: 9%; --bandaid-rot: 18deg; }
+  .jpbot .bandaid-3 { bottom: 16%; left: 50%; margin-left: -14%; --bandaid-rot: -10deg; }
+
+  /* ---- アンテナ → さくらんぼ ---- */
+  .jpbot .antenna {
+    position: absolute;
+    top: -38%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 28%;
+    height: 28%;
+    pointer-events: none;
+  }
+  /* さくらんぼの茎：Y字型を2本の疑似要素で */
+  .jpbot .antenna::before {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 55%;
+    background: #5a8a2a;
+    border-radius: 1px;
+  }
+  /* 右のさくらんぼ */
+  .jpbot .antenna::after {
+    content: "";
+    position: absolute;
+    right: 2%;
+    top: 0;
+    width: 44%;
+    aspect-ratio: 1;
+    background: radial-gradient(circle at 35% 30%, #ff6060, #cc1020);
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  /* 左のさくらんぼ（.cherry-left span で表現) */
+  .jpbot .cherry-left {
+    position: absolute;
+    top: -38%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 28%;
+    height: 28%;
+    pointer-events: none;
+  }
+  .jpbot .cherry-left::before {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 36%;
+    width: 2px;
+    height: 70%;
+    background: #5a8a2a;
+    border-radius: 1px;
+    transform: rotate(-18deg);
+    transform-origin: bottom center;
+  }
+  .jpbot .cherry-left::after {
+    content: "";
+    position: absolute;
+    left: 2%;
+    top: 0;
+    width: 44%;
+    aspect-ratio: 1;
+    background: radial-gradient(circle at 35% 30%, #ff6060, #cc1020);
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+
+  /* ---- 腕とさくらんぼ手 ---- */
+  /* 左腕: 体の左から右上方向（ / ）に伸びる */
+  .jpbot .arm-wrap {
+    position: absolute;
+    top: 22%;
+    left: 0;
+    width: 100%;
+    height: 50%;
+    pointer-events: none;
+  }
+  .jpbot .arm {
+    position: absolute;
+    width: 2px;
+    height: 38%;
+    background: var(--bot-edge);
+    border-radius: 2px;
+    top: 0;
+  }
+  .jpbot .arm.left {
+    left: -10%;
+    transform-origin: bottom center;
+    transform: rotate(35deg);
+  }
+  .jpbot .arm.right {
+    right: -10%;
+    transform-origin: bottom center;
+    transform: rotate(-35deg);
+  }
+  /* さくらんぼ（手の先） */
+  .jpbot .arm::after {
+    content: "";
+    position: absolute;
+    top: -7px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 10px;
+    height: 10px;
+    background: radial-gradient(circle at 35% 30%, #ff6060, #cc1020);
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  /* 腕の下の数字 「5」 */
+  .jpbot .arm-num {
+    position: absolute;
+    font-size: 55%;
+    font-weight: 900;
+    color: #c03060;
+    line-height: 1;
+    pointer-events: none;
+  }
+  .jpbot .arm-num.left  { left: -20%; top: 44%; }
+  .jpbot .arm-num.right { right: -20%; top: 44%; }
+  /* じゅうぴいは腕の先の「5」を持たない（5はごうぴい＝あわせて5の記号）。
+     じゅうぴいの「10」は耳に表示する（胸ではなく耳。目に重ならない）。 */
+  .jpbot.jupy .arm-num { display: none; }
+
+  /* walking animation: legs march, body squashes & stretches */
+  #car.driving .leg.left {
+    animation: leg-step 0.5s ease-in-out infinite;
+  }
+  #car.driving .leg.right {
+    animation: leg-step 0.5s ease-in-out infinite;
+    animation-delay: 0.25s;
+  }
+  @keyframes leg-step {
+    0%, 100% { transform: scaleY(1) translateY(0); }
+    50% { transform: scaleY(0.55) translateY(2px); }
+  }
+  #car.driving .body {
+    animation: body-bob 0.5s ease-in-out infinite;
+  }
+  @keyframes body-bob {
+    0%, 50%, 100% { transform: translateY(0) scale(1, 1); }
+    25% { transform: translateY(-8%) scale(1.04, 0.94); }
+    75% { transform: translateY(-2%) scale(0.98, 1.02); }
+  }
+  #car.driving .antenna::after {
+    /* さくらんぼなのでglow不要 */
+  }
+
+  #car.bounce { animation: car-bounce 0.5s ease; }
+  @keyframes car-bounce {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-14px) rotate(-3deg); }
+    50% { transform: translateY(0) rotate(2deg); }
+    75% { transform: translateY(-5px) rotate(-1deg); }
+  }
+
+  /* ---- 仲間キャラ (#car-friend) ---- */
+  #car-friend {
+    position: absolute;
+    display: none;
+    z-index: 9;
+    /* size is set via JS same as #car */
+    transform-origin: bottom center;
+  }
+
+  /* お祝いジャンプ */
+  @keyframes celebrate-bounce {
+    0%   { transform: translateY(0) scaleY(1); }
+    20%  { transform: translateY(-22px) scaleY(0.9); }
+    40%  { transform: translateY(0) scaleY(1.08); }
+    60%  { transform: translateY(-12px) scaleY(0.95); }
+    80%  { transform: translateY(0) scaleY(1); }
+    100% { transform: translateY(0) scaleY(1); }
+  }
+  .celebrating {
+    animation: celebrate-bounce 0.7s ease-in-out 2 forwards;
+  }
+
+  /* friend slides in smoothly from off-screen right */
+  @keyframes friend-slide-in {
+    0%   { transform: translateX(80px); opacity: 0; }
+    100% { transform: translateX(0);    opacity: 1; }
+  }
+  #car-friend.pop-in {
+    animation: friend-slide-in 0.6s ease-out forwards;
+  }
+
+  /* ハートが浮かぶ */
+  .cel-heart {
+    position: absolute;
+    font-size: 20px;
+    pointer-events: none;
+    animation: heart-float 1.4s ease-out forwards;
+  }
+  @keyframes heart-float {
+    0%   { transform: translateY(0) scale(0.5); opacity: 1; }
+    100% { transform: translateY(-80px) scale(1.1); opacity: 0; }
+  }
+
+  #car.fall {
+    animation: car-fall 0.45s cubic-bezier(.4,0,.6,1) forwards;
+    /* pivot at the leading-foot's inner edge (64% from left) = the hole's
+       left-edge position. Rotating clockwise around this point makes the
+       front dip INTO the hole and the rear LIFT UP, so the back of the car
+       rises above the solid block next to the hole — no overlap. */
+    transform-origin: 64% 100%;
+  }
+  @keyframes car-fall {
+    0%   { transform: translateX(0)   rotate(0deg); }
+    100% { transform: translateX(6px) rotate(42deg); }
+  }
+
+  /* --- crying face: applied the instant #car gets the .fall class --- */
+
+  /* droopy eyelid: cover the top half of each eye with a matching
+     skin-coloured overlay so the eye looks half-shut and sad */
+  #car.fall .eye::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 55%;
+    background: var(--bot-accent);
+    border-radius: 0 0 60% 60%;
+    z-index: 2;
+  }
+  /* pupil slides down toward the bottom of the eye */
+  #car.fall .eye::after {
+    transform: translateY(28%);
+  }
+  /* cheeks go slightly more flushed */
+  #car.fall .cheek {
+    opacity: 0.75;
+    background: #f08090;
+  }
+  /* teardrop below each cheek */
+  #car.fall .cheek::before {
+    content: "";
+    position: absolute;
+    top: 70%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 5px;
+    height: 11px;
+    background: #7ec8e3;
+    border-radius: 50% 50% 70% 70%;
+    opacity: 0.9;
+  }
+
+
+
+  /* ---------- Question panel ---------- */
+  #panel-row {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
+    box-sizing: border-box;
+    z-index: 30;
+    background: var(--ground-color);
+  }
+
+  #panel {
+    width: min(94%, 480px);
+    background: rgba(255, 248, 237, 0.97);
+    border-radius: 16px;
+    padding: 6px 16px;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.12);
+    text-align: center;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+  /* panel fades in when the question is active; the buttons themselves
+     dim (not hide) when inactive so they are always visible */
+  #panel .question-text {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: none;
+  }
+  #panel.show .question-text {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+  /* buttons are always fully visible — opacity and pointer-events are
+     controlled only by the disabled attribute set in JS, not by CSS */
+  .ans-btn {
+    opacity: 1;
+    pointer-events: auto;
+    transition: transform 0.08s ease, background 0.15s ease, opacity 0.2s ease;
+  }
+  #panel.show .ans-btn {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* ---- Level 3 "まとめ" mode: filled area = one rectangle with a number ---- */
+  .num-rect {
+    width: var(--block-size);
+    /* same base color as block-1; overridden by column nth-child rules below */
+    background: var(--block-1);
+    border: 2px solid var(--block-1-edge);
+    border-radius: 3px;
+    box-sizing: border-box;
+    box-shadow: inset 0 -4px 0 rgba(0,0,0,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(14px, 4vw, 22px);
+    font-weight: 900;
+    color: rgba(0,0,0,0.45);
+    flex-shrink: 0;
+  }
+  /* match the same 5-colour cycling as regular blocks */
+  .col:nth-child(5n+1) .num-rect { background: var(--block-1); border-color: var(--block-1-edge); }
+  .col:nth-child(5n+2) .num-rect { background: var(--block-2); border-color: var(--block-2-edge); }
+  .col:nth-child(5n+3) .num-rect { background: var(--block-3); border-color: var(--block-3-edge); }
+  .col:nth-child(5n+4) .num-rect { background: var(--block-4); border-color: var(--block-4-edge); }
+  .col:nth-child(5n+5) .num-rect { background: var(--block-5); border-color: var(--block-5-edge); }
+
+
+  #split-diagram {
+    position: absolute;
+    top: 6%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+    align-items: center;
+    z-index: 15;
+    background: var(--ui-cream);
+    border-radius: 24px;
+    padding: 14px 24px;
+    box-shadow: 0 5px 0 rgba(0,0,0,0.12);
+    gap: 4px;
+  }
+  #split-diagram.show { display: flex; }
+
+  #split-diagram .split-target {
+    font-size: clamp(40px, 13vw, 90px);
+    font-weight: 800;
+    color: var(--ui-text);
+    margin-right: 6px;
+  }
+
+  #split-diagram svg {
+    width: clamp(40px, 10vw, 64px);
+    height: clamp(120px, 28vw, 200px);
+    display: block;
+  }
+
+  #split-diagram .split-values {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: clamp(120px, 28vw, 200px);
+  }
+  #split-diagram .split-known,
+  #split-diagram .split-unknown {
+    font-size: clamp(28px, 9vw, 60px);
+    font-weight: 800;
+    color: var(--ui-text);
+    line-height: 1;
+  }
+  #split-diagram .split-unknown {
+    color: var(--bot-accent-dark);
+  }
+
+  /* ===== Level 5: さくらんぼいろいろ diagrams ===== */
+  /* shared container */
+  .l5-diagram {
+    position: absolute;
+    top: 5%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+    z-index: 15;
+    background: var(--ui-cream);
+    border-radius: 24px;
+    padding: 12px 20px;
+    box-shadow: 0 5px 0 rgba(0,0,0,0.12);
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .l5-diagram.show { display: flex; }
+
+  /* ---- 1. さくらんぼ（上が合計、下が既知+□） ---- */
+  #l5-cherry-up, #l5-cherry-down {
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+  .cherry-top, .cherry-bot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .cherry-num {
+    font-size: clamp(30px, 9vw, 52px);
+    font-weight: 900;
+    color: var(--ui-text);
+    line-height: 1.1;
+  }
+  .cherry-num.unknown { color: var(--bot-accent-dark); }
+  /* V字 / 逆V字 の枝 */
+  .cherry-branches {
+    position: relative;
+    width: clamp(80px, 22vw, 130px);
+    height: clamp(36px, 10vw, 55px);
+    flex-shrink: 0;
+  }
+  .cherry-branches svg {
+    width: 100%; height: 100%;
+    overflow: visible;
+  }
+  /* 下段の2数字を横並び */
+  .cherry-pair {
+    display: flex;
+    gap: clamp(16px, 5vw, 36px);
+    align-items: center;
+    justify-content: center;
+  }
+  .cherry-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: clamp(44px, 12vw, 70px);
+    height: clamp(44px, 12vw, 70px);
+    border-radius: 50%;
+    border: 2.5px solid #7090c0;
+    font-size: clamp(24px, 7vw, 44px);
+    font-weight: 900;
+    color: var(--ui-text);
+  }
+  .cherry-circle.unknown {
+    border-style: dashed;
+    color: var(--bot-accent-dark);
+  }
+
+  /* ---- 3. 2重テープ図 ---- */
+  #l5-tape2 {
+    flex-direction: column;
+    gap: 4px;
+    min-width: clamp(200px, 60vw, 320px);
+  }
+  .tape-label-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+  }
+  .tape-num-above {
+    font-size: clamp(22px, 7vw, 40px);
+    font-weight: 900;
+    color: var(--ui-text);
+    line-height: 1;
+    text-align: center;
+  }
+  .tape-num-above.unknown { color: var(--bot-accent-dark); }
+  .tape-bar {
+    height: clamp(28px, 8vw, 44px);
+    border-radius: 8px;
+    border: 2.5px solid #7090c0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+  .tape-bar.full  { background: rgba(112,144,192,0.15); }
+  .tape-bar.known { background: rgba(112,144,192,0.25); }
+  .tape-inner-num {
+    font-size: clamp(18px, 5.5vw, 32px);
+    font-weight: 900;
+    color: var(--ui-text);
+  }
+  .tape-bar.unknown-box {
+    background: rgba(232,77,122,0.08);
+    border-style: dashed;
+    border-color: var(--bot-accent-dark);
+  }
+  .tape-bar.unknown-box .tape-inner-num { color: var(--bot-accent-dark); }
+  /* 2重テープ: 全体バーの下に内訳バーを置く */
+  .tape2-total-row { width: 100%; }
+  .tape2-parts-row {
+    display: flex;
+    width: 100%;
+    gap: 2px;
+  }
+  .tape2-parts-row .tape-bar {
+    min-width: 20px;  /* even very small values stay visible */
+  }
+
+  /* ---- 4. テープ図（上:既知+□バー、下:合計バー） ---- */
+  #l5-tape1 {
+    flex-direction: column;
+    gap: 3px;
+    min-width: clamp(180px, 52vw, 280px);
+  }
+  /* 上段の数字（既知と□） */
+  .t1-num-row {
+    display: flex;
+    width: 100%;
+    gap: 3px;
+  }
+  .t1-num-known, .t1-num-unknown {
+    font-size: clamp(20px, 6vw, 36px);
+    font-weight: 900;
+    text-align: center;
+    line-height: 1.1;
+  }
+  .t1-num-known  { flex: 3; color: var(--ui-text); }
+  .t1-num-unknown{ flex: 1; color: var(--bot-accent-dark); }
+  /* 上段バー（既知 + □） */
+  .t1-bar-row {
+    display: flex;
+    width: 100%;
+    gap: 3px;
+  }
+  .t1-known-seg  { flex: 3; }
+  .t1-unknown-seg{ flex: 1; }
+  /* 下段：合計バー */
+  .t1-total-bar {
+    width: 100%;
+  }
+
+  #timer-bar-track {
+    width: 100%;
+    height: 8px;
+    background: #e6dfd2;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 8px;
+    display: none;
+  }
+  #timer-bar-track.show { display: block; }
+  #timer-bar-fill {
+    height: 100%;
+    width: 100%;
+    background: var(--correct-green);
+    border-radius: 999px;
+    transform-origin: left;
+    transition: width 0.1s linear, background-color 0.2s ease;
+  }
+  #timer-bar-fill.urgent {
+    background: var(--wrong-red);
+  }
+
+  #answers {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ans-row {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .ans-btn {
+    width: clamp(44px, 11vw, 64px);
+    height: clamp(44px, 11vw, 64px);
+    border-radius: 14px;
+    background: #ffffff;
+    color: var(--ui-text);
+    font-size: clamp(18px, 5vw, 28px);
+    font-weight: 800;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.12);
+    cursor: pointer;
+    border: 3px solid #e6dfd2;
+  }
+  .ans-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.12); }
+  .ans-btn:disabled { opacity: 0.45; cursor: default; pointer-events: none; }
+  .ans-btn.correct { background: var(--correct-green); color: #fff; border-color: var(--correct-green); }
+  .ans-btn.wrong { background: var(--wrong-red); color: #fff; border-color: var(--wrong-red); animation: shake 0.4s; }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+  }
+
+  /* ---------- Feedback banner ---------- */
+  #feedback {
+    position: absolute;
+    top: auto;
+    bottom: 42%;
+    left: 62%;
+    transform: translate(-50%, 20px) scale(0.8);
+    background: var(--correct-green);
+    color: #fff;
+    font-weight: 800;
+    font-size: clamp(16px, 4vw, 26px);
+    padding: 8px 22px;
+    border-radius: 18px;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.15);
+    opacity: 0;
+    z-index: 40;
+    pointer-events: none;
+    transition: all 0.3s ease;
+  }
+  #feedback.show {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+  #feedback.wrong-bg { background: var(--wrong-red); }
+
+  /* Level 5: big ◯ correct flash that covers the diagram briefly */
+  #l5-correct-flash {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    width: clamp(100px, 28vw, 160px);
+    height: clamp(100px, 28vw, 160px);
+    border-radius: 50%;
+    border: clamp(8px, 2vw, 14px) solid #e84d7a;
+    color: #e84d7a;
+    font-size: clamp(40px, 12vw, 72px);
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    pointer-events: none;
+    opacity: 0;
+    background: rgba(255,255,255,0.92);
+    box-shadow: 0 0 0 0 rgba(232,77,122,0.4);
+    transition: none;
+  }
+  #l5-correct-flash.pop {
+    animation: l5-correct-pop 0.55s cubic-bezier(.34,1.56,.64,1) forwards;
+  }
+  @keyframes l5-correct-pop {
+    0%   { transform: translate(-50%,-50%) scale(0);   opacity: 0; box-shadow: 0 0 0 0 rgba(232,77,122,0.4); }
+    40%  { transform: translate(-50%,-50%) scale(1.1); opacity: 1; box-shadow: 0 0 0 16px rgba(232,77,122,0.15); }
+    70%  { transform: translate(-50%,-50%) scale(0.95); opacity: 1; }
+    100% { transform: translate(-50%,-50%) scale(0);   opacity: 0; }
+  }
+
+  /* ---------- Start / clear overlay ---------- */
+  #overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(60, 80, 110, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    backdrop-filter: blur(2px);
+  }
+  #overlay.hidden { display: none; }
+
+  .card {
+    background: var(--ui-cream);
+    border-radius: 24px;
+    padding: 22px 16px;
+    text-align: center;
+    max-width: 96%;
+    box-shadow: 0 8px 0 rgba(0,0,0,0.15);
+  }
+  /* title: colored per-character spans, guaranteed 1 line */
+  .card-title {
+    margin: 0 0 4px;
+    font-size: clamp(17px, 4.6vw, 26px);
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    line-height: 1.2;
+    flex-shrink: 1;
+  }
+  .card-title .amp { color: #ff7e2e; margin: 0 1px; }
+  .card-title .c0 { color: #ff6b9d; }
+  .card-title .c1 { color: #ff7e2e; }
+  .card-title .c2 { color: #f5c000; }
+  .card-title .c3 { color: #ff9f40; }
+  .card-title .c4 { color: #48d890; }
+  .card-title .c5 { color: #4fbfea; }
+  .card-title .c6 { color: #a07aea; }
+  .card-title .c7 { color: #ff6b9d; }
+  .card-title .c8 { color: #ff9f40; }
+  .card p {
+    margin: 0 0 14px;
+    color: #8a8580;
+    font-size: clamp(12px, 3vw, 15px);
+  }
+  /* Juppy mini-character: same row as title, right side */
+  .title-juppy-wrap {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .title-juppy-wrap h1 {
+    margin: 0;
+    white-space: nowrap;
+  }
+  /* mini Juppy for the start card */
+  .jpbot-mini {
+    position: relative;
+    width: 36px;
+    height: 42px;
+    flex-shrink: 0;
+  }
+  .jpbot-mini .legs {
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 100%; height: 24%;
+  }
+  .jpbot-mini .leg {
+    position: absolute;
+    bottom: 0; width: 22%; height: 100%;
+    background: var(--bot-accent);
+    border: 2px solid var(--bot-edge);
+    border-radius: 5px;
+  }
+  .jpbot-mini .leg.left  { left: 14%; }
+  .jpbot-mini .leg.right { right: 14%; }
+  .jpbot-mini .body {
+    position: absolute;
+    bottom: 18%; left: 0;
+    width: 100%; height: 78%;
+    background: var(--bot-body);
+    border-radius: 22% / 26%;
+    border: 3px solid var(--bot-edge);
+    box-shadow: inset 0 -6px 0 rgba(0,0,0,0.05);
+  }
+  .jpbot-mini .face-band {
+    position: absolute;
+    top: 14%; left: 6%;
+    width: 88%; height: 50%;
+    background: var(--bot-accent);
+    border-radius: 40% / 55%;
+    opacity: 0.9;
+  }
+  .jpbot-mini .eye {
+    position: absolute;
+    top: 12%; width: 34%;
+    aspect-ratio: 1;
+    background: #fff;
+    border-radius: 50%;
+    border: 2px solid var(--bot-edge);
+    overflow: visible;
+  }
+  .jpbot-mini .eye::after {
+    content: "";
+    position: absolute;
+    width: 52%; height: 52%;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    background: var(--bot-eye);
+    border-radius: 50%;
+  }
+  .jpbot-mini .eye::before {
+    content: "";
+    position: absolute;
+    width: 26%; height: 26%;
+    background: rgba(255,255,255,0.92);
+    border-radius: 50%;
+    top: 10%; right: 10%;
+    z-index: 3;
+  }
+  .jpbot-mini .eye.left  { left: 10%; }
+  .jpbot-mini .eye.right { right: 10%; }
+  .jpbot-mini .mouth {
+    position: absolute;
+    bottom: 9%; left: 50%;
+    transform: translateX(-50%);
+    width: 36%; height: 14%;
+    border: 2.5px solid var(--bot-edge);
+    border-top: none;
+    border-radius: 0 0 50% 50%;
+  }
+  .jpbot-mini .cheek {
+    position: absolute;
+    bottom: 10%;
+    width: 16%; aspect-ratio: 1;
+    background: #ffb3c6;
+    border-radius: 50%;
+    opacity: 0.7;
+  }
+  .jpbot-mini .cheek.left  { left: 4%; }
+  .jpbot-mini .cheek.right { right: 4%; }
+  .jpbot-mini .antenna {
+    position: absolute;
+    top: -38%; left: 50%;
+    transform: translateX(-50%);
+    width: 28%; height: 28%;
+    pointer-events: none;
+  }
+  .jpbot-mini .antenna::before {
+    content: "";
+    position: absolute;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 2px; height: 55%;
+    background: #5a8a2a;
+    border-radius: 1px;
+  }
+  .jpbot-mini .antenna::after {
+    content: "";
+    position: absolute;
+    right: 2%; top: 0;
+    width: 44%; aspect-ratio: 1;
+    background: radial-gradient(circle at 35% 30%, #ff6060, #cc1020);
+    border-radius: 50%;
+  }
+  .jpbot-mini .cherry-left {
+    position: absolute;
+    top: -38%; left: 50%;
+    transform: translateX(-50%);
+    width: 28%; height: 28%;
+    pointer-events: none;
+  }
+  .jpbot-mini .cherry-left::before {
+    content: "";
+    position: absolute;
+    bottom: 0; left: 36%;
+    width: 2px; height: 70%;
+    background: #5a8a2a;
+    border-radius: 1px;
+    transform: rotate(-18deg);
+    transform-origin: bottom center;
+  }
+  .jpbot-mini .cherry-left::after {
+    content: "";
+    position: absolute;
+    left: 2%; top: 0;
+    width: 44%; aspect-ratio: 1;
+    background: radial-gradient(circle at 35% 30%, #ff6060, #cc1020);
+    border-radius: 50%;
+  }
+
+
+  /* ⭐ cleared mark on speed buttons */
+  .speed-btn[data-cleared="true"]::after {
+    content: '⭐';
+    position: absolute;
+    top: 1px;
+    right: 2px;
+    font-size: clamp(7px, 1.8vw, 10px);
+    line-height: 1;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .speed-btn { position: relative; }
+    font-size: clamp(13px, 3.2vw, 16px);
+    font-weight: 900;
+    color: #3a3530;
+    text-align: left;
+    line-height: 1.35;
+    white-space: nowrap;
+  }
+  .level-group-label span {
+    display: block;
+    font-size: clamp(13px, 3.4vw, 17px);
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  /* レベルごとにカラフルな色 — nth-child ではなくクラスで指定 */
+  .lv1-label { display: block; color: #e05090; }   /* L1 ピンク */
+  .lv2-label { display: block; color: #e08020; }   /* L2 オレンジ */
+  /* L3: 緑 */
+  .lv3-label { display: block; color: #30a050; }
+  /* L4: 青 */
+  .lv4-label { display: block; color: #3080d0; }
+  /* L5: 紫 */
+  .lv5-label { display: block; color: #9060d0; }
+  .card p.score-label {
+    margin: 0 0 2px;
+  }
+  .card p.score-result {
+    margin: 0 0 22px;
+    color: var(--ui-text);
+    font-weight: 800;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .card .score-num {
+    font-size: clamp(64px, 22vw, 120px);
+  }
+  /* ---- speech bubble for Cubie ---- */
+  .speech-bubble {
+    position: absolute;
+    background: #fff;
+    border: 2.5px solid var(--bot-edge);
+    border-radius: 16px;
+    padding: 5px 10px;
+    font-size: clamp(11px, 3vw, 15px);
+    font-weight: 800;
+    color: var(--bot-accent-dark);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 30;
+    transform: translateX(-50%);
+    opacity: 0;
+    animation: bubble-pop 2.6s ease forwards;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));
+  }
+  /* 吹き出しの三角（下向き） */
+  .speech-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -9px;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 8px solid transparent;
+    border-top-color: var(--bot-edge);
+  }
+  .speech-bubble::before {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 7px solid transparent;
+    border-top-color: #fff;
+    z-index: 1;
+  }
+  @keyframes bubble-pop {
+    0%   { opacity: 0; transform: translateX(-50%) scale(0.7); }
+    12%  { opacity: 1; transform: translateX(-50%) scale(1.05); }
+    20%  { transform: translateX(-50%) scale(1); }
+    75%  { opacity: 1; transform: translateX(-50%) scale(1); }
+    100% { opacity: 0; transform: translateX(-50%) scale(0.9); }
+  }
+  /* ゴール用: 右向き吹き出し（scene内absolute・左側固定） */
+  .speech-bubble.goal-bubble {
+    position: absolute;
+    left: 16px;
+    top: 30%;
+    transform: translateY(-50%);
+    animation: goal-bubble-pop 2.0s ease forwards;
+  }
+  /* 右向き三角（しっぽが右を向く） */
+  .speech-bubble.goal-bubble::after {
+    bottom: auto;
+    left: auto;
+    right: -15px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 8px solid transparent;
+    border-top-color: transparent;
+    border-left-color: var(--bot-edge);
+  }
+  .speech-bubble.goal-bubble::before {
+    bottom: auto;
+    left: auto;
+    right: -11px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 7px solid transparent;
+    border-top-color: transparent;
+    border-left-color: #fff;
+    z-index: 1;
+  }
+  @keyframes goal-bubble-pop {
+    0%   { opacity: 0; transform: translateY(-50%) scale(0.7); }
+    12%  { opacity: 1; transform: translateY(-50%) scale(1.05); }
+    20%  { transform: translateY(-50%) scale(1); }
+    75%  { opacity: 1; transform: translateY(-50%) scale(1); }
+    100% { opacity: 0; transform: translateY(-50%) scale(0.9); }
+  }
+  @keyframes record-shine {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  @keyframes record-pop {
+    0%   { transform: scale(0.5) rotate(-8deg); opacity: 0; }
+    60%  { transform: scale(1.15) rotate(3deg); opacity: 1; }
+    80%  { transform: scale(0.95) rotate(-1deg); }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+  @keyframes score-pop {
+    0%   { transform: scale(0.3); opacity: 0; }
+    70%  { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); }
+  }
+  @keyframes confetti-fall {
+    0%   { transform: translateY(-20px) rotate(0deg);   opacity: 1; }
+    100% { transform: translateY(200px) rotate(720deg); opacity: 0; }
+  }
+  .record-badge {
+    display: inline-block;
+    margin: 4px auto 10px;
+    padding: 8px 22px;
+    border-radius: 50px;
+    font-size: clamp(16px, 4.5vw, 22px);
+    font-weight: 900;
+    animation: record-pop 0.6s cubic-bezier(.34,1.56,.64,1) forwards,
+               record-shine 2s ease infinite 0.6s;
+    background: linear-gradient(270deg, #ff6b9d, #ff9f40, #ffdd57, #48d890, #4fb8ff, #c879ff);
+    background-size: 400% 400%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 2px 6px rgba(255,100,150,0.4));
+  }
+  .first-badge {
+    display: block;
+    margin: 4px auto 6px;
+    padding: 10px 20px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #fff9c4, #ffe082);
+    border: 2px solid #f5c842;
+    font-size: clamp(15px, 4vw, 20px);
+    font-weight: 900;
+    color: #7a5c00;
+    text-align: center;
+    line-height: 1.5;
+    animation: record-pop 0.6s cubic-bezier(.34,1.56,.64,1) forwards;
+    box-shadow: 0 4px 0 #e0b030;
+  }
+  .score-num.new-record-score {
+    animation: score-pop 0.5s cubic-bezier(.34,1.56,.64,1) 0.4s both;
+    color: #e84d7a;
+    text-shadow: 0 0 20px rgba(232,77,122,0.4);
+  }
+  .confetti-piece {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 9999;
+    animation: confetti-fall linear forwards;
+  }
+
+
+    font-size: clamp(26px, 8vw, 40px);
+    margin-left: 6px;
+  }
+  .result-history {
+    margin: 0 0 18px;
+    text-align: left;
+    background: rgba(0,0,0,0.04);
+    border-radius: 12px;
+    padding: 10px 14px;
+    max-height: 160px;
+    overflow-y: auto;
+  }
+  .result-history-title {
+    font-size: clamp(11px, 3vw, 13px);
+    font-weight: 700;
+    color: #9a9490;
+    margin: 0 0 6px;
+  }
+  .result-history ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .result-history li {
+    display: flex;
+    justify-content: space-between;
+    font-size: clamp(12px, 3.2vw, 14px);
+    color: var(--ui-text);
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+  }
+  .result-history li:last-child { border-bottom: none; }
+  .result-history li .hist-score { font-weight: 800; }
+  .result-history li.this-run { color: var(--bot-accent); }
+  .big-btn {
+    background: #e84d7a;
+    color: #fff;
+    border: none;
+    border-radius: 16px;
+    padding: 14px 36px;
+    font-size: clamp(16px, 4vw, 22px);
+    font-weight: 800;
+    box-shadow: 0 4px 0 #b53360;
+    cursor: pointer;
+    margin: 6px;
+    font-family: inherit;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+  .big-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #b53360; }
+
+  /* 結果画面の3ボタン横並び（もういちど・つぎへ・トップページへ） */
+  .result-btn-row {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    flex-wrap: nowrap;
+    margin: 4px 0;
+    width: 100%;
+  }
+  .result-btn-row .big-btn {
+    margin: 0;
+    flex: 1;
+    min-width: 0;
+    padding: 10px 6px;
+    font-size: clamp(11px, 2.8vw, 15px);
+    border-radius: 12px;
+    box-shadow: 0 3px 0 #b53360;
+    white-space: nowrap;
+  }
+  /* もういちどボタン: ピンク系そのまま */
+  .retry-again-btn { /* big-btn defaults */ }
+  /* トップページへボタン: 落ち着いたグレー系・文字小さめ */
+  .retry-home-btn {
+    background: #f0ece6 !important;
+    color: #6a6055 !important;
+    box-shadow: 0 3px 0 #c9bdb0 !important;
+    text-shadow: none !important;
+    font-size: clamp(9px, 2.2vw, 12px) !important;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+  }
+  .retry-home-btn:active { box-shadow: 0 1px 0 #c9bdb0 !important; }
+  /* スタート行: 左=バグ報告 / 中央=スタート / 右=音 を横並び */
+  .start-row {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 4px;
+  }
+  .start-row .big-btn { margin: 0; flex: 0 0 auto; }
+  .sound-toggle,
+  .bug-report-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+    padding: 8px 10px;
+    font-size: clamp(11px, 2.6vw, 13px);
+    font-weight: 800;
+    cursor: pointer;
+    font-family: inherit;
+    line-height: 1.3;
+    flex: 0 0 auto;
+    min-width: 62px;
+    text-align: center;
+    white-space: nowrap;   /* 各行は1文字ごとに折り返さない */
+    text-decoration: none;
+  }
+  .sound-toggle {
+    background: #f5f0ea;
+    color: #6a6055;
+    border: 2.5px solid #e0d8cc;
+  }
+  .sound-toggle:active { transform: translateY(1px); }
+  .sound-toggle.off { background: #ece8e2; color: #aaa39a; }
+  .bug-report-btn {
+    background: transparent;
+    color: #9a8a72;
+    border: 2px solid #ddd2c2;
+    font-weight: 700;
+  }
+  .bug-report-btn:hover { background: #f5f0ea; border-color: #c9bdb0; }
+  .bug-report-btn:active { transform: translateY(1px); }
+  .chl-btn {
+    flex: 1; padding: 8px 4px; border-radius: 12px; border: 3px solid #e0d8cc;
+    font-size: clamp(10px,2.6vw,13px); font-weight: 800; background: #f5f0ea;
+    color: #5a5550; cursor: pointer; font-family: inherit; text-align: center;
+  }
+  .chl-btn small { display:block; font-size:0.8em; font-weight:600; opacity:0.75; }
+  .chl-btn.sel { border-color: #e84d7a; background: #ffe0ea; color: #c03060; }
+
+
+
+
+
+  .level-group {
+    margin-top: 8px;
+    display: grid;
+    grid-template-columns: auto repeat(4, minmax(0,1fr)) 2px minmax(0,1.1fr);
+    gap: 6px 4px;
+    align-items: center;
+    width: 100%;
+  }
+  .speed-btn-row { display: contents; }  /* flatten into grid */
+  /* vertical dashed divider between ばくそく and チャレンジモード */
+  .chl-divider {
+    width: 1px;
+    align-self: stretch;
+    background: repeating-linear-gradient(
+      to bottom,
+      #c8bfb0 0px, #c8bfb0 4px,
+      transparent 4px, transparent 8px
+    );
+    margin: 0 2px;
+  }
+  /* チャレンジモード button inside the grid */
+  .chl-mode-btn {
+    padding: 7px 2px;
+    border-radius: 12px;
+    border: 2px solid #e84d7a;
+    font-size: clamp(9px, 2.3vw, 12px);
+    font-weight: 800;
+    background: #fff0f5;
+    color: #c03060;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: center;
+    white-space: nowrap;
+    width: 100%;
+    line-height: 1.25;
+  }
+  .chl-mode-btn:hover { background: #ffe0ea; }
+  .chl-mode-btn.sel {
+    background: #ffe0ea;
+    border-color: #e84d7a;
+    color: #c03060;
+    box-shadow: 0 0 0 2px rgba(232,77,122,0.25);
+  }
+  .speed-btn {
+    border: 2px solid transparent;
+    border-radius: 12px;
+    padding: 7px 2px;
+    font-size: clamp(10px, 2.5vw, 13px);
+    font-weight: 700;
+    color: #3a3530;
+    cursor: pointer;
+    white-space: nowrap;
+    text-align: center;
+    width: 100%;
+    font-family: inherit;
+  }
+  /* スピード別カラー */
+  .speed-btn[data-speed="A"] { background: #ffd6e0; border-color: #f5a0b8; }  /* ゆっくり: 薄いピンク */
+  .speed-btn[data-speed="B"] { background: #ffe4c4; border-color: #f5c080; }  /* ふつう:   薄いオレンジ */
+  .speed-btn[data-speed="C"] { background: #d6f5d0; border-color: #90d888; }  /* はやい:   薄い黄緑 */
+  .speed-btn[data-speed="D"] { background: #c8eeff; border-color: #80ccf0; }  /* ばくそく: 薄い水色 */
+  .speed-btn.selected {
+    filter: brightness(0.88) saturate(1.3);
+    border-width: 3px;
+    font-weight: 900;
+  }
+
+  #history-box {
+    margin-top: 10px;
+    text-align: left;
+    max-height: 92px;
+    overflow-y: auto;
+    background: #faf5ea;
+    border: 2px solid #e6dfd2;
+    border-radius: 12px;
+    padding: 7px 14px;
+  }
+  #history-box .history-title {
+    font-size: clamp(12px, 3vw, 14px);
+    font-weight: 800;
+    color: var(--ui-text);
+    margin: 0 0 4px;
+  }
+  #history-box .history-empty {
+    font-size: clamp(11px, 2.8vw, 13px);
+    color: #b0a89a;
+    margin: 0;
+  }
+  #history-box ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: clamp(11px, 2.8vw, 13px);
+    color: #8a8580;
+  }
+  #history-box li {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 0;
+    border-bottom: 1px dashed #e6dfd2;
+  }
+  #history-box li:last-child { border-bottom: none; }
+  #history-box .hist-score {
+    font-weight: 800;
+    color: var(--bot-accent-dark);
+  }
+</style>
+</head>
+<body>
+<div id="game-wrap">
+
+  <div id="hud">
+    <div class="hud-pill">🏁 <span id="progress-label">0 / 10</span></div>
+    <div id="level-header" class="hud-pill hud-header"></div>
+    <div id="challenge-speed-label" class="hud-pill" style="display:none;color:#e84d7a;font-weight:900;"></div>
+    <div class="hud-pill" id="score-pill">⭐ <span id="score-label">0</span></div>
+    <div class="hud-pill" id="speed-pill" style="display:none;">
+      <span id="meter-turtle" style="font-size:1.1em;line-height:1;">🐢</span>
+      <span id="speed-meter"></span>
+      <span id="meter-rabbit" style="font-size:1.1em;line-height:1;">🐇</span>
+    </div>
+    <button id="stop-btn" class="hud-stop-btn" aria-label="スタートにもどる">■</button>
+  </div>
+
+  <div id="scene">
+    <div class="sun"></div>
+    <div class="cloud cloud1"></div>
+    <div class="cloud cloud2"></div>
+    <div class="star star1"></div>
+    <div class="star star2"></div>
+    <div class="star star3"></div>
+    <div class="star star4"></div>
+
+    <div id="ground">
+      <div id="track">
+        <div id="road-strip"></div>
+      </div>
+      <div id="car" class="jpbot">
+        <div class="legs">
+          <div class="leg left"></div>
+          <div class="leg right"></div>
+        </div>
+        <div class="body">
+          <div class="antenna"></div>
+          <div class="cherry-left"></div>
+          <div class="ear left"></div>
+          <div class="ear right"></div>
+          <div class="face-band">
+            <div class="brow left"></div>
+            <div class="brow right"></div>
+            <div class="eye left"></div>
+            <div class="eye right"></div>
+            <div class="mouth"></div>
+          </div>
+          <div class="chest-num">10</div>
+          <div class="cheek left"></div>
+          <div class="cheek right"></div>
+          <div class="bandaid bandaid-1"></div>
+          <div class="bandaid bandaid-2"></div>
+          <div class="bandaid bandaid-3"></div>
+          <div class="arm-wrap">
+            <div class="arm left"></div>
+            <div class="arm right"></div>
+            <div class="arm-num left">5</div>
+            <div class="arm-num right">5</div>
+          </div>
+        </div>
+      </div>
+      <!-- 仲間キャラ: ゴール時に登場。クラス(.gopy/.jupy)で見た目を切替 -->
+      <div id="car-friend" class="jpbot">
+        <div class="legs">
+          <div class="leg left"></div>
+          <div class="leg right"></div>
+        </div>
+        <div class="body">
+          <div class="antenna"></div>
+          <div class="cherry-left"></div>
+          <div class="ear left"></div>
+          <div class="ear right"></div>
+          <div class="face-band">
+            <div class="brow left"></div>
+            <div class="brow right"></div>
+            <div class="eye left"></div>
+            <div class="eye right"></div>
+            <div class="mouth"></div>
+          </div>
+          <div class="chest-num">10</div>
+          <div class="cheek left"></div>
+          <div class="cheek right"></div>
+          <div class="arm-wrap">
+            <div class="arm left"></div>
+            <div class="arm right"></div>
+            <div class="arm-num left">5</div>
+            <div class="arm-num right">5</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="split-diagram">
+      <div class="split-target"></div>
+      <svg viewBox="0 0 60 130" preserveAspectRatio="none">
+        <line x1="2" y1="65" x2="58" y2="10" stroke="#c9bdf0" stroke-width="4" stroke-linecap="round" />
+        <line x1="2" y1="65" x2="58" y2="120" stroke="#c9bdf0" stroke-width="4" stroke-linecap="round" />
+      </svg>
+      <div class="split-values">
+        <div class="split-unknown">□</div>
+        <div class="split-known"></div>
+      </div>
+    </div>
+
+    <!-- Level 5 diagrams -->
+    <!-- 1: さくらんぼ（上が合計） -->
+    <div id="l5-cherry-up" class="l5-diagram">
+      <div class="cherry-top">
+        <div class="cherry-num" id="l5cu-total"></div>
+        <div class="cherry-branches">
+          <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+            <line x1="50" y1="2" x2="18" y2="38" stroke="#7090c0" stroke-width="3" stroke-linecap="round"/>
+            <line x1="50" y1="2" x2="82" y2="38" stroke="#7090c0" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="cherry-pair">
+        <div class="cherry-circle unknown" id="l5cu-unknown"></div>
+        <div class="cherry-circle" id="l5cu-known"></div>
+      </div>
+    </div>
+
+    <!-- 2: 逆さくらんぼ（下が合計） -->
+    <div id="l5-cherry-down" class="l5-diagram">
+      <div class="cherry-pair">
+        <div class="cherry-circle unknown" id="l5cd-unknown"></div>
+        <div class="cherry-circle" id="l5cd-known"></div>
+      </div>
+      <div class="cherry-top">
+        <div class="cherry-branches">
+          <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+            <line x1="18" y1="2" x2="50" y2="38" stroke="#7090c0" stroke-width="3" stroke-linecap="round"/>
+            <line x1="82" y1="2" x2="50" y2="38" stroke="#7090c0" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="cherry-num" id="l5cd-total"></div>
+      </div>
+    </div>
+
+    <!-- 3: 2重テープ図 -->
+    <div id="l5-tape2" class="l5-diagram">
+      <div class="tape2-total-row">
+        <div class="tape-bar full" id="l5t2-total-bar"><span class="tape-inner-num" id="l5t2-total-num"></span></div>
+      </div>
+      <div class="tape2-parts-row">
+        <div class="tape-bar known" id="l5t2-known-bar"><span class="tape-inner-num" id="l5t2-known-num"></span></div>
+        <div class="tape-bar unknown-box"><span class="tape-inner-num">□</span></div>
+      </div>
+    </div>
+
+    <!-- 4: テープ図（上段:既知+□、下段:合計） -->
+    <div id="l5-tape1" class="l5-diagram">
+      <!-- 上段バー（左:既知、右:□） — 数字はバー内中央 -->
+      <div class="t1-bar-row">
+        <div class="tape-bar known t1-known-seg" id="l5t1-known-seg">
+          <span class="tape-inner-num" id="l5t1-known"></span>
+        </div>
+        <div class="tape-bar unknown-box t1-unknown-seg">
+          <span class="tape-inner-num" style="color:var(--bot-accent-dark);">□</span>
+        </div>
+      </div>
+      <!-- 下段バー（合計） -->
+      <div class="tape-bar full t1-total-bar">
+        <span class="tape-inner-num" id="l5t1-total-num"></span>
+      </div>
+    </div>
+
+    <div id="feedback"></div>
+    <div id="l5-correct-flash">◯</div>
+  </div>
+
+  <div id="panel-row">
+    <div id="panel">
+      <div class="question-text">
+        <div id="timer-bar-track"><div id="timer-bar-fill"></div></div>
+      </div>
+      <div id="answers"></div>
+    </div>
+  </div>
+
+  <div id="overlay">
+    <div class="card" id="start-card">
+      <div class="title-juppy-wrap">
+        <h1 class="card-title"><span class="c0">は</span><span class="c1">し</span><span class="c2">れ</span><span class="c3">！</span><span class="c4">ご</span><span class="c5">う</span><span class="c6">ぴ</span><span class="c7">い</span><span class="amp">＆</span><span class="c4">じ</span><span class="c5">ゅ</span><span class="c6">う</span><span class="c7">ぴ</span><span class="c8">い</span></h1>
+        <div class="jpbot-mini">
+          <div class="legs">
+            <div class="leg left"></div>
+            <div class="leg right"></div>
+          </div>
+          <div class="body">
+            <div class="antenna"></div>
+            <div class="cherry-left"></div>
+            <div class="face-band">
+              <div class="eye left"></div>
+              <div class="eye right"></div>
+              <div class="mouth"></div>
+            </div>
+            <div class="cheek left"></div>
+            <div class="cheek right"></div>
+          </div>
+        </div>
+      </div>
+      <div class="level-group" id="level-select" data-selected-level="1" data-selected-speed="A">
+        <div class="level-group-label">レベル1<br><span class="lv1-label">あわせて5</span></div>
+        <div class="speed-btn-row">
+          <button class="speed-btn selected" data-level="1" data-speed="A">ゆっくり</button>
+          <button class="speed-btn" data-level="1" data-speed="B">ふつう</button>
+          <button class="speed-btn" data-level="1" data-speed="C">はやい</button>
+          <button class="speed-btn" data-level="1" data-speed="D">ばくそく</button>
+        </div>
+        <div class="chl-divider"></div>
+        <button class="chl-mode-btn" data-clevel="1">はやく<br>なる！</button>
+
+        <div class="level-group-label">レベル2<br><span class="lv2-label">あわせて10</span><span class="lv2-label">（ブロック）</span></div>
+        <div class="speed-btn-row">
+          <button class="speed-btn" data-level="2" data-speed="A">ゆっくり</button>
+          <button class="speed-btn" data-level="2" data-speed="B">ふつう</button>
+          <button class="speed-btn" data-level="2" data-speed="C">はやい</button>
+          <button class="speed-btn" data-level="2" data-speed="D">ばくそく</button>
+        </div>
+        <div class="chl-divider"></div>
+        <button class="chl-mode-btn" data-clevel="2">はやく<br>なる！</button>
+
+        <div class="level-group-label">レベル3<br><span class="lv3-label">あわせて10</span><span class="lv3-label">（ぼう）</span></div>
+        <div class="speed-btn-row">
+          <button class="speed-btn" data-level="3" data-speed="A">ゆっくり</button>
+          <button class="speed-btn" data-level="3" data-speed="B">ふつう</button>
+          <button class="speed-btn" data-level="3" data-speed="C">はやい</button>
+          <button class="speed-btn" data-level="3" data-speed="D">ばくそく</button>
+        </div>
+        <div class="chl-divider"></div>
+        <button class="chl-mode-btn" data-clevel="3">はやく<br>なる！</button>
+
+        <div class="level-group-label">レベル4<br><span class="lv4-label">あわせて10</span><span class="lv4-label">（すうじ）</span></div>
+        <div class="speed-btn-row">
+          <button class="speed-btn" data-level="4" data-speed="A">ゆっくり</button>
+          <button class="speed-btn" data-level="4" data-speed="B">ふつう</button>
+          <button class="speed-btn" data-level="4" data-speed="C">はやい</button>
+          <button class="speed-btn" data-level="4" data-speed="D">ばくそく</button>
+        </div>
+        <div class="chl-divider"></div>
+        <button class="chl-mode-btn" data-clevel="4">はやく<br>なる！</button>
+
+        <div class="level-group-label">レベル5<br><span class="lv5-label">いろいろ</span></div>
+        <div class="speed-btn-row">
+          <button class="speed-btn" data-level="5" data-speed="A">ゆっくり</button>
+          <button class="speed-btn" data-level="5" data-speed="B">ふつう</button>
+          <button class="speed-btn" data-level="5" data-speed="C">はやい</button>
+          <button class="speed-btn" data-level="5" data-speed="D">ばくそく</button>
+        </div>
+        <div class="chl-divider"></div>
+        <button class="chl-mode-btn" data-clevel="5">はやく<br>なる！</button>
+      </div>
+      <div id="history-box"></div>
+
+      <br>
+      <div class="start-row">
+        <a class="bug-report-btn" href="https://docs.google.com/forms/d/e/1FAIpQLScSwmhe8vEVi7vz7wkyhzJLf49x_AR0qlH1hu09KB7kVxyuJQ/viewform?usp=header" target="_blank" rel="noopener noreferrer"><span>🐛バグ</span><span>ほうこく</span></a>
+        <button class="big-btn" id="start-btn">スタート！</button>
+        <button id="sound-toggle" class="sound-toggle" aria-label="おとの オン・オフ"><span>🔊おと</span><span>オン</span></button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  /* ===== サウンドエンジン（合成・効果音・2拍子BGM） ===== */
+const Sound = (() => {
+  let ctx = null;
+  let master = null;
+  let comp = null;
+  let userVol = 0.75;
+
+  function init(){
+    if(ctx) return;
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    master = ctx.createGain();
+    master.gain.value = userVol;
+    // やさしいリミッター: 角を丸め耳に痛い音を防ぐ
+    comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -14;
+    comp.knee.value = 26;
+    comp.ratio.value = 3.2;
+    comp.attack.value = 0.004;
+    comp.release.value = 0.18;
+    master.connect(comp);
+    comp.connect(ctx.destination);
+  }
+  function setVol(v){ userVol = v; if(master) master.gain.value = v; }
+  let muted = false;
+  function setMuted(m){
+    muted = m;
+    if(master) master.gain.value = m ? 0 : userVol;
+    if(m) bgmStop();
+  }
+  function toggleMuted(){ setMuted(!muted); return muted; }
+  function now(){ return ctx.currentTime; }
+
+  // --- 基本ボイス: 木質マリンバ系の単音 ---
+  // freq:基音, t0:開始, dur:全体長(s), gain:音量, opts
+  function woodTone(freq, t0, dur, gain, opts={}){
+    const {
+      attack=0.004, decay=null, type='sine',
+      partials=[[1,1.0],[2.76,0.22],[5.4,0.06]], // 木琴的な非整数倍音
+      bright=0,         // 明るさ(ローパス開度)
+      pan=0,
+    } = opts;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(gain, t0+attack);
+    const d = decay!=null ? decay : dur;
+    g.gain.exponentialRampToValueAtTime(0.0001, t0+attack+d);
+
+    const lp = ctx.createBiquadFilter();
+    lp.type='lowpass';
+    lp.frequency.setValueAtTime(Math.min(16000, freq*6 + 1200 + bright*3000), t0);
+    lp.Q.value=0.6;
+
+    const panner = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+    if(panner) panner.pan.value = pan;
+
+    partials.forEach(([mult, amp])=>{
+      const o = ctx.createOscillator();
+      o.type = type;
+      o.frequency.value = freq*mult;
+      const og = ctx.createGain();
+      og.gain.value = amp;
+      o.connect(og); og.connect(g);
+      o.start(t0);
+      o.stop(t0+attack+d+0.05);
+    });
+
+    g.connect(lp);
+    if(panner){ lp.connect(panner); panner.connect(master); }
+    else lp.connect(master);
+  }
+
+  // --- ピチカート(弦をはじく短い音) ---
+  function pizz(freq, t0, gain, opts={}){
+    const {pan=0, dur=0.18} = opts;
+    const o = ctx.createOscillator();
+    o.type='triangle';
+    o.frequency.setValueAtTime(freq*1.01, t0);
+    o.frequency.exponentialRampToValueAtTime(freq, t0+0.02);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001,t0);
+    g.gain.exponentialRampToValueAtTime(gain, t0+0.003);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+    const lp=ctx.createBiquadFilter();
+    lp.type='lowpass'; lp.frequency.value=freq*4+800; lp.Q.value=1.2;
+    const panner = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+    if(panner) panner.pan.value=pan;
+    o.connect(g); g.connect(lp);
+    if(panner){lp.connect(panner);panner.connect(master);} else lp.connect(master);
+    o.start(t0); o.stop(t0+dur+0.05);
+  }
+
+  // --- やわらかいピアノ系単音 ---
+  function softPiano(freq, t0, dur, gain, opts={}){
+    woodTone(freq, t0, dur, gain, {
+      attack:0.006, type:'sine',
+      partials:[[1,1.0],[2,0.4],[3,0.16],[4,0.07]],
+      bright:0.5, ...opts
+    });
+  }
+
+  // --- 木のおもちゃっぽいノック(コトッ) ---
+  function woodKnock(t0, gain=0.4, freq=520){
+    const o=ctx.createOscillator();
+    o.type='sine';
+    o.frequency.setValueAtTime(freq*1.4,t0);
+    o.frequency.exponentialRampToValueAtTime(freq,t0+0.03);
+    const g=ctx.createGain();
+    g.gain.setValueAtTime(0.0001,t0);
+    g.gain.exponentialRampToValueAtTime(gain,t0+0.002);
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+0.12);
+    const bp=ctx.createBiquadFilter();
+    bp.type='bandpass'; bp.frequency.value=freq*1.5; bp.Q.value=2;
+    o.connect(g);g.connect(bp);bp.connect(master);
+    o.start(t0);o.stop(t0+0.18);
+  }
+
+  // 音名→周波数(A4=440)
+  const NOTE={C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11};
+  function nf(name, oct){ const semi=NOTE[name]+(oct-4)*12-9; return 440*Math.pow(2,semi/12); }
+
+  /* ============ 効果音ライブラリ ============ */
+  const SFX = {
+    // 正解: 穴が埋まる。上行する木琴2音 + ピチカート
+    correct(){ init(); const t=now();
+      woodTone(nf('C',5),t,0.22,0.5,{bright:0.6});
+      woodTone(nf('G',5),t+0.07,0.26,0.5,{bright:0.7});
+      pizz(nf('E',6),t+0.12,0.28,{pan:0.15});
+    },
+    // 連続正解(コンボ): もう少し高く弾む
+    correctHi(){ init(); const t=now();
+      woodTone(nf('E',5),t,0.2,0.5,{bright:0.7});
+      woodTone(nf('A',5),t+0.06,0.22,0.5,{bright:0.8});
+      woodTone(nf('C',6),t+0.12,0.26,0.5,{bright:0.9});
+    },
+    // なかま合流: やわらかいピアノの3度ハーモニー
+    join(){ init(); const t=now();
+      softPiano(nf('C',5),t,0.5,0.42,{pan:-0.1});
+      softPiano(nf('E',5),t+0.02,0.5,0.42);
+      softPiano(nf('G',5),t+0.04,0.55,0.42,{pan:0.1});
+      pizz(nf('C',6),t+0.18,0.3,{pan:0.2});
+    },
+    // ゴール: ごほうび。上行アルペジオ + キラッ(控えめ)
+    goal(){ init(); const t=now();
+      const seq=[['C',5],['E',5],['G',5],['C',6],['E',6]];
+      seq.forEach((n,i)=>woodTone(nf(n[0],n[1]),t+i*0.085,0.4,0.46,{bright:0.6+i*0.06}));
+      softPiano(nf('G',6),t+0.5,0.7,0.32);
+      softPiano(nf('C',6),t+0.5,0.8,0.3);
+    },
+    // 記録更新: ごほうび上位。明るく短いファンファーレ(木質)
+    record(){ init(); const t=now();
+      woodTone(nf('G',5),t,0.18,0.5,{bright:0.7});
+      woodTone(nf('C',6),t+0.1,0.18,0.5,{bright:0.8});
+      woodTone(nf('E',6),t+0.2,0.3,0.5,{bright:0.9});
+      pizz(nf('G',6),t+0.3,0.32,{pan:0.2});
+      pizz(nf('C',6),t+0.3,0.3,{pan:-0.2});
+    },
+    // UI: ボタン押下。木のおもちゃのコトッ
+    tap(){ init(); woodKnock(now(),0.4,560); },
+    // UI: 選択切替。短いピチカート
+    select(){ init(); pizz(nf('A',5),now(),0.34,{dur:0.14}); },
+    // UI: 画面が開く。やわらかい上行2音
+    open(){ init(); const t=now();
+      softPiano(nf('E',5),t,0.3,0.36);
+      softPiano(nf('B',5),t+0.08,0.36,0.36);
+    },
+    // UI: 戻る/閉じる。下行2音
+    back(){ init(); const t=now();
+      softPiano(nf('B',5),t,0.26,0.34);
+      softPiano(nf('E',5),t+0.07,0.3,0.34);
+    },
+    // ざんねん: まちがい。やわらかい短2度(刺さらない)
+    wrong(){ init(); const t=now();
+      woodTone(nf('A',4),t,0.26,0.4,{bright:0.3,partials:[[1,1],[2.1,0.18]]});
+      woodTone(nf('G#',4),t+0.04,0.3,0.4,{bright:0.25,partials:[[1,1],[2.1,0.18]]});
+    },
+    // ざんねん: 時間切れ/落下。ぽよん…と下がる(かわいく)
+    fall(){ init(); const t=now();
+      const o=ctx.createOscillator(); o.type='sine';
+      o.frequency.setValueAtTime(nf('G',5),t);
+      o.frequency.exponentialRampToValueAtTime(nf('C',4),t+0.4);
+      const g=ctx.createGain();
+      g.gain.setValueAtTime(0.0001,t);
+      g.gain.exponentialRampToValueAtTime(0.4,t+0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+0.45);
+      o.connect(g);g.connect(master);o.start(t);o.stop(t+0.5);
+    },
+  };
+
+  /* ============ BGM: 2拍子・速いテンポの木のマーチ ============ */
+  // ♩≈138。1小節=2拍(ズン・タッ)。歩いて冒険する弾むループ。
+  // ベース=ピチカート(1拍目強/2拍目軽)、裏=マリンバの軽い刻み、上=弾む旋律。
+  let bgmTimer=null, bgmBeat=0, bgmOn=false;
+  const BEAT = 0.435;           // 1拍の基準秒数(♩≈138)
+  let tempoRate = 1.0;          // テンポ倍率(大きいほど速い)
+  function curBeat(){ return BEAT / tempoRate; }  // 現在の実効1拍秒
+  const BARS = 8;               // 8小節=16拍ループ
+  // コード進行(明るく前進する循環)。各小節の和音(ルート/3rd/5th)
+  const PROG = [
+    [['C',3],['E',4],['G',4]],
+    [['G',3],['D',4],['B',4]],
+    [['A',3],['E',4],['C',5]],
+    [['E',3],['G',4],['B',4]],
+    [['F',3],['A',4],['C',5]],
+    [['C',3],['G',4],['E',5]],
+    [['D',3],['F',4],['A',4]],
+    [['G',3],['B',4],['D',5]],
+  ];
+  // 弾む旋律: 各小節[1拍目, 2拍目]+時々8分の裏拍。nullは休符。
+  const TUNE = [
+    [['G',5],['E',5]],[['D',5],['G',5]],[['C',5],['E',5]],[['B',4],['G',5]],
+    [['A',5],['F',5]],[['G',5],['C',6]],[['F',5],['A',5]],[['G',5],null],
+  ];
+
+  // 1拍ぶんを鳴らす
+  function bgmBeatPlay(){
+    if(!bgmOn) return;
+    const bar = Math.floor(bgmBeat/2) % BARS;
+    const beatInBar = bgmBeat % 2;          // 0=1拍目, 1=2拍目
+    const t = now()+0.02;
+    const chord = PROG[bar];
+
+    if(beatInBar===0){
+      // 1拍目: ベース「ズン」=低いピチカート(強) + ルート確定
+      pizz(nf(chord[0][0],chord[0][1]), t, 0.22, {pan:-0.18,dur:0.34});
+      // マリンバで5度を軽く重ね、芯を出す
+      woodTone(nf(chord[2][0],chord[2][1]), t+0.005, 0.26, 0.12, {bright:0.45,pan:0.1});
+    } else {
+      // 2拍目: 裏「タッ」=和音をマリンバで軽く( off-beat の弾み)
+      chord.forEach((n,i)=>{
+        woodTone(nf(n[0],n[1]+ (i===0?1:0)), t+i*0.012, 0.2, 0.10, {bright:0.5,pan:(i-1)*0.16});
+      });
+      // さらに8分の裏(タッの直後)に短いピチカートでスキップ感
+      pizz(nf(chord[1][0],chord[1][1]+1), t+curBeat()*0.5, 0.12, {pan:0.18,dur:0.16});
+    }
+
+    // 旋律: 各拍に1音、弾むスタッカート
+    const mel = TUNE[bar][beatInBar];
+    if(mel){
+      softPiano(nf(mel[0],mel[1]), t+0.01, 0.22, 0.15, {pan:0.08,decay:0.2});
+      // 2拍目は8分の裏に軽いマリンバを足して「走る」推進感を出す
+      if(beatInBar===1){
+        woodTone(nf(mel[0],mel[1]+1), t+curBeat()*0.5, 0.14, 0.07, {bright:0.6,pan:0.2,decay:0.12});
+      }
+    }
+    bgmBeat++;
+  }
+  function bgmStart(){ if(muted) return; init(); if(bgmOn) return; bgmOn=true; bgmBeat=0; bgmBeatPlay(); bgmTimer=setInterval(bgmBeatPlay, curBeat()*1000); }
+  function bgmStop(){ bgmOn=false; if(bgmTimer){clearInterval(bgmTimer);bgmTimer=null;} }
+  function bgmToggle(){ if(bgmOn){bgmStop();return false;} else {bgmStart();return true;} }
+  // テンポ倍率を設定(1.0=基準)。再生中なら即座にインターバルを貼り直す。
+  function setTempo(rate){
+    rate = Math.max(0.5, Math.min(2.2, rate));
+    if(Math.abs(rate - tempoRate) < 0.001) return;
+    tempoRate = rate;
+    if(bgmOn && bgmTimer){
+      clearInterval(bgmTimer);
+      bgmTimer = setInterval(bgmBeatPlay, curBeat()*1000);
+    }
+  }
+
+  function resume(){ init(); if(ctx.state==='suspended') ctx.resume(); }
+
+  return { init, resume, setVol, setMuted, toggleMuted, setTempo, SFX, bgmToggle, bgmStart, bgmStop, get isBgmOn(){return bgmOn;}, get isMuted(){return muted;} };
+})();
+
+  // question count depends on speed tier: slower tiers get a shorter run,
+  // faster tiers get a longer one
+  const QUESTIONS_BY_TIER = { A: 10, B: 10, C: 20, D: 20 };
+  // level 5 needs more time to read diagrams — slower across all tiers
+  const QUESTIONS_BY_TIER_L5 = { A: 20, B: 20, C: 20, D: 20 };
+  const TIME_LIMIT_BY_TIER = { A: 3.5, B: 3.0, C: 2.4, D: 2.0 };
+  const TIME_LIMIT_BY_TIER_L5 = { A: 5.0, B: 4.2, C: 3.5, D: 2.8 };
+  const SPEED_BY_TIER = { A: 1.2, B: 1.5, C: 2.0, D: 2.8 };
+  const SPEED_BY_TIER_L5 = { A: 0.7, B: 1.0, C: 1.4, D: 1.9 };
+  const FLAT_BETWEEN_BY_TIER = { A: 4, B: 3, C: 2, D: 1 };
+  const FLAT_BETWEEN_BY_TIER_L5 = { A: 6, B: 5, C: 4, D: 3 };
+
+  const state = {
+    mainLevel: 1,    // 1, 2, 3, 4, or 5 — determines road height / question style
+    speedTier: 'A',  // 'A', 'B', or 'C' — determines Cubie's speed
+    roadHeight: 5,
+    totalQuestions: 10,
+    l5questionIndex: 0,   // tracks which of the 20 level-5 questions we're on
+    timeLimitSec: 1.8,
+    cols: [],
+    score: 0,
+    questionCount: 0,
+    challengeMode: false, challengeLevel: 1, challengeCount: 0, challengeSpeed: 1.0,
+    challengeSelected: false,
+    locked: false,        // true while a question is being answered / animating
+    running: false,       // true while the car is actively driving forward
+    scrollX: 0,           // world-x position currently under the car (in columns)
+    lastTime: null,
+    carBaseLeft: 28,       // % position of the car's fixed screen x-position
+    rafId: null,
+
+    // timer / warning state for the current upcoming problem
+    activeProblemIndex: -1,
+    timerStart: null,
+    problemActivatedAt: 0,
+    activatedDistanceToHole: 999,
+    correctCooldownUntil: 0,
+    pendingProblemIndex: -1,  // problem deferred during post-correct cooldown
+
+    // scoring: tracks whether the current problem has had any mistake
+    // (wrong-answer click or a fall/timeout) — if so, it scores 0 even
+    // when eventually solved correctly.
+    mistakeColIndex: -1,     // which column the questionHadMistake flag applies to
+    questionHadMistake: false,
+    // tracks whether Cubie actually fell (timed out) on the current problem —
+    // narrower than questionHadMistake (which also counts simple wrong clicks).
+    // Only a real fall-and-recover earns a band-aid.
+    hadFallThisQuestion: false,
+    bandaidCount: 0,         // how many band-aids Cubie has accumulated this run
+
+    // set once the final question is solved: the column index of the goal
+    // gate Cubie must walk to before the run is considered complete
+    goalColIndex: null,
+    goalEntered: false, // guards against entering the goal sequence twice
+  };
+
+  // ---- DOM refs ----
+  const roadStrip = document.getElementById('road-strip');
+  const car = document.getElementById('car');
+
+  // goal gate: created once, appended into the scrolling road strip, and
+  // positioned/shown only once the final question has been solved
+  // goal gate: a fixed overlay placed directly in #scene (not inside the
+  // scrolling road-strip) so the gate-scene can overflow upward into the
+  // sky without being clipped by #track's overflow-x:hidden
+  const goalGate = document.createElement('div');
+  goalGate.id = 'goal-gate';
+  goalGate.innerHTML = `
+    <div class="gate-scene">
+      <div class="gate-cloud gate-cloud-left"></div>
+      <div class="gate-cloud gate-cloud-right"></div>
+      <div class="gate-rainbow">
+        <div class="rainbow-band"></div>
+        <div class="rainbow-band"></div>
+        <div class="rainbow-band"></div>
+        <div class="rainbow-band"></div>
+        <div class="rainbow-band"></div>
+        <div class="rainbow-band"></div>
+      </div>
+      <div class="gate-label">ゴール</div>
+    </div>
+  `;
+  document.getElementById('scene').appendChild(goalGate);
+  const panel = document.getElementById('panel');
+  const splitDiagram = document.getElementById('split-diagram');
+  const splitTarget = splitDiagram.querySelector('.split-target');
+  const splitKnown = splitDiagram.querySelector('.split-known');
+  const answersEl = document.getElementById('answers');
+  const feedback = document.getElementById('feedback');
+  const scoreLabel = document.getElementById('score-label');
+  const progressLabel = document.getElementById('progress-label');
+  const levelHeader = document.getElementById('level-header');
+  const overlay = document.getElementById('overlay');
+  const track = document.getElementById('track');
+  const ground = document.getElementById('ground');
+  const timerTrack = document.getElementById('timer-bar-track');
+  const timerFill = document.getElementById('timer-bar-fill');
+  const startCard = document.getElementById('start-card');
+  const START_CARD_HTML = startCard.innerHTML;
+
+  // ---- Sizing ----
+  function getBlockSizePx() {
+    return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--block-size'));
+  }
+
+  // how many columns away the hole is when Cubie's leading (right) foot has
+  // fully entered it — not just grazed the edge — computed from the actual
+  // on-screen sizes (Cubie's width vs. the block size), since their ratio
+  // can change with viewport size, so a hardcoded column count wouldn't
+  // hold up across screen sizes. The right leg spans from 64% to 86% of
+  // Cubie's width (see .leg.right's CSS: right:14%, width:22%) — using the
+  // leg's *inner* edge (64%) as the trigger means the whole leg has to be
+  // over the hole before Cubie starts to tilt and fall.
+  function fallLeadCols() {
+    const bs = getBlockSizePx();
+    const cubiePx = state.cubiePx || 48;
+    if (!bs) return 0.2;
+    return (cubiePx * 0.64) / bs;
+  }
+
+  function applySizing() {
+    const panelRow = document.getElementById('panel-row');
+    const hudEl  = document.getElementById('hud');
+
+    const panelRect = panelRow ? panelRow.getBoundingClientRect() : {top: 0, height: 0};
+    const hudRect   = hudEl   ? hudEl.getBoundingClientRect()    : {bottom: 0, height: 0};
+
+    const panelH  = Math.round(panelRect.height);
+    const hudH    = Math.round(hudRect.height);
+    const panelTop = Math.round(panelRect.top); // viewport基準でのpanel上端
+
+    // ブロックが入る実際の高さ = panelの上端 - hudの下端
+    const availH = Math.max(1, panelTop - Math.round(hudRect.bottom));
+    const sceneW = track.clientWidth;
+
+    // block-sizeを決定（常に10段基準）
+    // スマホのアドレスバー・ブラウザUIによる実効高さの減少に対応するため
+    // 0.82をかけて余裕を持たせる
+    let bs = Math.floor(availH / (10 + 1) * 0.82);
+    bs = Math.min(bs, Math.floor(sceneW / 3.5));
+    bs = Math.max(14, bs);
+    document.documentElement.style.setProperty('--block-size', bs + 'px');
+
+    // groundの高さ = (roadHeight+1)*bs、ただしavailHを超えない
+    // bottomに安全マージン8pxを加えてスマホで確実に収まるようにする
+    const groundH = Math.min((state.roadHeight + 1) * bs, availH);
+    ground.style.bottom = (panelH + 8) + 'px';
+    ground.style.height = groundH + 'px';
+
+    const cubiePx = Math.round(bs * 0.92 * 1.3);
+    state.cubiePx = cubiePx;
+    document.documentElement.style.setProperty('--car-w', cubiePx + 'px');
+    document.documentElement.style.setProperty('--car-h', cubiePx + 'px');
+  }
+
+  function carLeftPx() {
+    return track.clientWidth * (state.carBaseLeft / 100);
+  }
+
+  // height (in blocks) of column i, clamped to the available range —
+  // Cubie always walks at the road's intended/finished height (target),
+  // never dipping down into an unsolved hole on its own. The only thing
+  // that ever takes it down to the hole's actual floor (col.height) is the
+  // explicit "fall" animation triggered by a timeout (see triggerFall).
+  function colHeight(i) {
+    if (i < domColStart) return state.cols.length ? state.cols[0].target : state.roadHeight;
+    if (i >= domColStart + state.cols.length) return state.cols[state.cols.length - 1]?.target ?? state.roadHeight;
+    return colAt(i)?.target ?? state.roadHeight;
+  }
+
+  // smoothly interpolated road height (in blocks) under the car right now
+  function currentRoadHeight() {
+    // Level 3: abstract mode — road is visually flat, car always rides at the top
+    if (state.mainLevel === 4) return state.roadHeight;
+    if (state.mainLevel === 5) {
+      // use the target of the current column so the road height matches the question
+      const col = colAt(Math.floor(state.scrollX));
+      return col ? col.target : state.roadHeight;
+    }
+
+    const i = Math.floor(state.scrollX);
+    const frac = state.scrollX - i;
+    const h0 = colHeight(i);
+    const h1 = colHeight(i + 1);
+    return h0 + (h1 - h0) * frac;
+  }
+
+  // place the character horizontally (fixed) and vertically, standing directly
+  // on top of the current road surface (its feet touch the topmost block)
+  const CHARACTER_HEIGHT_OFFSET = 0;
+
+  function positionCar(heightOverride) {
+    const bs = getBlockSizePx();
+    car.style.left = carLeftPx() + 'px';
+    car.style.width = (state.cubiePx || 48) + 'px';
+    const h = (heightOverride !== undefined) ? heightOverride : currentRoadHeight();
+    car.style.bottom = ((h + CHARACTER_HEIGHT_OFFSET) * bs - 4) + 'px';
+  }
+
+  // render the road strip's horizontal offset for the current scrollX
+  function renderScroll() {
+    const bs = getBlockSizePx();
+    const offset = carLeftPx() - state.scrollX * bs;
+    roadStrip.style.transform = `translateX(${offset}px)`;
+    if (state.goalColIndex !== null) {
+      const screenX = offset + state.goalColIndex * bs;
+      goalGate.style.width = bs + 'px';
+      goalGate.style.left = screenX + 'px';
+      // ゴールゲートをground上端（地平線）のすぐ上に配置する。
+      // goalGateはscene内のabsolute配置。
+      // scene.bottomからの相対値としてbottomとheightを設定する。
+      const groundEl2  = document.getElementById('ground');
+      const sceneEl2   = document.getElementById('scene');
+      const groundRect2 = groundEl2 ? groundEl2.getBoundingClientRect() : {top:0,bottom:0};
+      const sceneRect2  = sceneEl2  ? sceneEl2.getBoundingClientRect()  : {top:0,bottom:900};
+      // ゲートの下端 = ground上端（キャラがちょうど地平線上に立つ位置）
+      const gateBottom2 = sceneRect2.bottom - groundRect2.top;
+      // ゲートの高さ = 空エリア全体（上端がHUDと接する程度）
+      const gateHeight2 = Math.max(80, groundRect2.top - sceneRect2.top);
+      goalGate.style.bottom = gateBottom2 + 'px';
+      goalGate.style.height = gateHeight2 + 'px';
+      // friend waits at goal: update screen position each frame until they meet
+      if (!state.goalEntered) {
+        const friend = document.getElementById('car-friend');
+        if (friend && friend.style.display === 'block') {
+          const cpx = state.cubiePx || 48;
+          friend.style.left = (screenX + bs * 1.5 + cpx * 0.5) + 'px';
+          friend.style.bottom = car.style.bottom;
+        }
+      }
+    }
+  }
+
+  // update both horizontal scroll and vertical car position for the current scrollX
+  function renderAll() {
+    renderScroll();
+    positionCar();
+  }
+
+  // ---- Play history (per level+speed combo, stored in localStorage) ----
+  const HISTORY_KEY_PREFIX = 'cubie-road-history-level-';
+  const CHALLENGE_KEY_PREFIX = 'cubie-road-challenge-level-';
+  const HISTORY_MAX_ENTRIES = 10;
+  const SPEED_LABELS = { A: 'ゆっくり', B: 'ふつう', C: 'はやい', D: 'ばくそく' };
+
+  function historyKey(mainLevel, speedTier) {
+    return mainLevel + speedTier;
+  }
+
+  function loadHistory(mainLevel, speedTier) {
+    try {
+      const raw = localStorage.getItem(HISTORY_KEY_PREFIX + historyKey(mainLevel, speedTier));
+      if (!raw) return [];
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveHistory(mainLevel, speedTier, score) {
+    const list = loadHistory(mainLevel, speedTier);
+    const isFirst   = list.length === 0;
+    const prevBest  = list.length > 0 ? Math.max(...list.map(e => e.score)) : -Infinity;
+    const isNewRecord = !isFirst && score > prevBest;
+    list.unshift({ date: new Date().toISOString(), score: score });
+    while (list.length > HISTORY_MAX_ENTRIES) list.pop();
+    try {
+      localStorage.setItem(HISTORY_KEY_PREFIX + historyKey(mainLevel, speedTier), JSON.stringify(list));
+    } catch (e) {}
+    return { isFirst, isNewRecord };
+  }
+
+  function loadChallengeHistory(level) {
+    try {
+      const raw = localStorage.getItem(CHALLENGE_KEY_PREFIX + level);
+      if (!raw) return [];
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) { return []; }
+  }
+
+  function saveChallengeHistory(level, count) {
+    const list = loadChallengeHistory(level);
+    const isFirst  = list.length === 0;
+    const prevBest = list.length > 0 ? Math.max(...list.map(e => e.score)) : -Infinity;
+    const isNewRecord = !isFirst && count > prevBest;
+    list.unshift({ date: new Date().toISOString(), score: count });
+    while (list.length > HISTORY_MAX_ENTRIES) list.pop();
+    try {
+      localStorage.setItem(CHALLENGE_KEY_PREFIX + level, JSON.stringify(list));
+    } catch (e) {}
+    return { isFirst, isNewRecord };
+  }
+
+  function formatHistoryDate(iso) {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    const mm = d.getMonth() + 1;
+    const dd = d.getDate();
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    return `${mm}/${dd} ${hh}:${mi}`;
+  }
+
+  function renderHistory() {
+    const box = document.getElementById('history-box');
+    if (!box) return;
+
+    if (state.challengeSelected) {
+      // チャレンジの記録を表示（単位: もん）
+      const list = loadChallengeHistory(state.challengeLevel);
+      const lvLabels = { 1:'レベル1', 2:'レベル2', 3:'レベル3', 4:'レベル4', 5:'レベル5' };
+      const title = `<p class="history-title">これまでの きろく（${lvLabels[state.challengeLevel] || ''}・はやくなる！）</p>`;
+      if (list.length === 0) {
+        box.innerHTML = title + '<p class="history-empty">まだ きろくが ありません</p>';
+      } else {
+        const best = Math.max(...list.map(e => e.score));
+        const items = [...list].sort((a,b) => b.score - a.score).map(entry => {
+          const dateStr = formatHistoryDate(entry.date);
+          const star = entry.score === best ? ' ⭐' : '';
+          return `<li><span>${dateStr}</span><span class="hist-score">${entry.score}もん${star}</span></li>`;
+        }).join('');
+        box.innerHTML = title + `<ul>${items}</ul>`;
+      }
+    } else {
+      // 通常モードの記録を表示（単位: てん）
+      const list = loadHistory(state.mainLevel, state.speedTier);
+      const speedLabel = SPEED_LABELS[state.speedTier] || state.speedTier;
+      const title = `<p class="history-title">これまでの きろく(レベル${state.mainLevel}・${speedLabel})</p>`;
+      if (list.length === 0) {
+        box.innerHTML = title + '<p class="history-empty">まだ きろくが ありません</p>';
+        return;
+      }
+      const items = [...list]
+        .sort((a, b) => b.score - a.score)
+        .map(entry => {
+          const dateStr = formatHistoryDate(entry.date);
+          return `<li><span>${dateStr}</span><span class="hist-score">${entry.score}てん</span></li>`;
+        }).join('');
+      box.innerHTML = title + `<ul>${items}</ul>`;
+    }
+  }
+
+  // ---- Start-card interactions (delegated so they survive innerHTML swaps) ----
+  startCard.addEventListener('click', (e) => {
+    const speedBtn = e.target.closest('.speed-btn');
+    if (speedBtn) {
+      Sound.resume(); Sound.SFX.select();
+      document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('selected'));
+      document.querySelectorAll('.chl-mode-btn').forEach(b => b.classList.remove('sel'));
+      speedBtn.classList.add('selected');
+      state.mainLevel = parseInt(speedBtn.dataset.level, 10);
+      state.speedTier = speedBtn.dataset.speed;
+      state.challengeSelected = false;
+      renderHistory();
+      return;
+    }
+
+    if (e.target.closest('#start-btn')) {
+      Sound.resume(); Sound.SFX.tap();
+      if (state.challengeSelected) {
+        startChallengeMode();
+      } else {
+        startGame();
+      }
+      return;
+    }
+
+    if (e.target.closest('#retry-btn')) {
+      Sound.resume(); Sound.SFX.tap();
+      showStartScreen();
+      return;
+    }
+
+    // だんだんはやくなる ボタン: 選択状態にして記録を表示
+    const clevelBtn = e.target.closest('.chl-mode-btn[data-clevel]');
+    if (clevelBtn) {
+      Sound.resume(); Sound.SFX.select();
+      document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('selected'));
+      document.querySelectorAll('.chl-mode-btn').forEach(b => b.classList.remove('sel'));
+      clevelBtn.classList.add('sel');
+      state.challengeLevel = parseInt(clevelBtn.dataset.clevel, 10);
+      state.challengeSelected = true;
+      renderHistory();
+      return;
+    }
+
+    // おと オン・オフ
+    if (e.target.closest('#sound-toggle')) {
+      const btn = e.target.closest('#sound-toggle');
+      Sound.resume();
+      const nowMuted = Sound.toggleMuted();
+      btn.classList.toggle('off', nowMuted);
+      btn.innerHTML = nowMuted ? '<span>🔇おと</span><span>オフ</span>' : '<span>🔊おと</span><span>オン</span>';
+      if (!nowMuted) Sound.SFX.tap();
+      return;
+    }
+
+    // バグほうこく: 音だけ鳴らし、リンクは通常どおり新タブで開く
+    if (e.target.closest('.bug-report-btn')) {
+      Sound.resume();
+      Sound.SFX.tap();
+      return;
+    }
+  });
+
+  // ■停止ボタン: プレイ中にスタート画面へ戻る
+  document.getElementById('stop-btn').addEventListener('click', () => {
+    Sound.resume();
+    Sound.SFX.back();
+    Sound.bgmStop();
+    stopDriving();
+    showStartScreen();
+  });
+
+  // persistent header text for levels 1/2 ("あといくつで5になる?" etc.);
+  // level 3 has its own large-number display instead, so the header is empty.
+  function updateHeaderText() {
+    if (state.mainLevel === 5) {
+      levelHeader.textContent = 'いろいろ';
+    } else if (state.mainLevel <= 3) {
+      levelHeader.textContent = `あといくつで ${state.roadHeight}`;
+    } else {
+      levelHeader.textContent = '';
+    }
+  }
+
+  // レベルに応じて走者(#car)とゴール待機(#car-friend)の見た目を割り当てる。
+  // レベル1のみ「ごうぴいが走り、じゅうぴいがゴールで待つ」。
+  function assignCharacters() {
+    const friend = document.getElementById('car-friend');
+    const level1 = (state.mainLevel === 1);
+    // 走者
+    car.classList.toggle('gopy', level1);
+    car.classList.toggle('jupy', !level1);
+    // ゴール待機
+    friend.classList.toggle('jupy', level1);
+    friend.classList.toggle('gopy', !level1);
+    // 名前を覚えておく(セリフ用)
+    state.runnerName = level1 ? 'ごうぴい' : 'じゅうぴい';
+    state.goalName   = level1 ? 'じゅうぴい' : 'ごうぴい';
+  }
+
+  function startGame() {
+    domColStart = 0;  // DOM削除カウンタをリセット
+    state.roadHeight = (state.mainLevel === 1) ? 5 : 10;
+    // level 5: fixed 20 questions (5 per style × 4 styles); roadHeight varies per question
+    state.totalQuestions = (state.mainLevel === 5) ? 20 : (QUESTIONS_BY_TIER[state.speedTier] || 10);
+    state.l5questionIndex = 0;
+
+    const isL5 = state.mainLevel === 5;
+    state.scrollSpeedCols   = (isL5 ? SPEED_BY_TIER_L5       : SPEED_BY_TIER)[state.speedTier]       || (isL5 ? SPEED_BY_TIER_L5.A       : SPEED_BY_TIER.A);
+    state.timeLimitSec      = (isL5 ? TIME_LIMIT_BY_TIER_L5  : TIME_LIMIT_BY_TIER)[state.speedTier]  || (isL5 ? TIME_LIMIT_BY_TIER_L5.A  : TIME_LIMIT_BY_TIER.A);
+    state.score = 0;
+    state.questionCount = 0;
+    state.scrollX = 0;
+    state.locked = false;
+    state.activeProblemIndex = -1;
+    state.timerStart = null;
+    state.correctCooldownUntil = 0;
+    state.pendingProblemIndex = -1;
+    state.mistakeColIndex = -1;
+    state.questionHadMistake = false;
+    state.hadFallThisQuestion = false;
+    state.bandaidCount = 0;
+    state.goalColIndex = null;
+    state.goalEntered = false;
+    goalGate.classList.remove('show');
+    document.getElementById('car-friend').style.display = 'none';
+    car.querySelectorAll('.bandaid').forEach(b => b.classList.remove('show'));
+
+    // ---- キャラの見た目を割り当て ----
+    // レベル1(あわせて5): 走る主人公=ごうぴい / ゴール=じゅうぴい
+    // それ以外(あわせて10): 走る主人公=じゅうぴい / ゴール=ごうぴい
+    assignCharacters();
+
+    // speed depends on the chosen speed tier; the warning distance scales
+    // with speed so the answer-time budget stays the same across tiers
+    // (level 5 uses slower L5 tables to allow time to read diagrams)
+    state.warningDistanceCols = state.scrollSpeedCols * state.timeLimitSec;
+    state.retreatCols = state.warningDistanceCols;
+
+    scoreLabel.textContent = state.score;
+    progressLabel.textContent = `0 / ${state.totalQuestions}`;
+    document.getElementById('score-pill').style.display = 'flex';
+    document.getElementById('speed-pill').style.display = 'none';
+    overlay.classList.add('hidden');
+    panel.classList.remove('show');
+    timerTrack.classList.remove('show');
+
+    // panel-rowの高さを正確に取得するため、先にダミーボタンを生成して
+    // panel-rowの高さを確定させてからapplySizingを呼ぶ。
+    // buildTrackとrenderAllはapplySizing後（block-size確定後）に呼ぶ。
+    initAnswerButtons();    // ダミーボタン生成でpanel-rowの高さを確定
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        applySizing();      // block-size確定
+        buildTrack();       // block-size確定後に道路生成
+        renderAll();
+        updateHeaderText();
+
+        setTimeout(() => {
+          startDriving();
+          Sound.resume();
+          Sound.setTempo(1.0);
+          Sound.bgmStart();
+        }, 300);
+      });
+    });
+  }
+
+  // Level 5: 5 questions per style, 4 styles = 20 questions total
+  // styles: cherry-up, cherry-down, tape2, tape1
+  // target alternates 5/10 within each style group
+  const L5_STYLES = ['cherry-up', 'cherry-down', 'tape2', 'tape1'];
+  function l5StyleFor(qIdx) {
+    return L5_STYLES[Math.floor(qIdx / 5) % 4];
+  }
+  function l5TargetFor(qIdx) {
+    // within each group of 5: 0,2,4 → 5; 1,3 → 10  (or randomised)
+    const posInGroup = qIdx % 5;
+    return (posInGroup % 2 === 0) ? 5 : 10;
+  }
+
+  // ---- Build the road ----
+  // A long strip: a few flat columns at the start, then alternating
+  // flat / problem columns. Each "problem" column has a random missing amount.
+  function buildTrack() {
+    roadStrip.innerHTML = '';
+    state.cols = [];
+
+    const flatStart = 4;
+    // tighter gap on level 1 B/C/D to make those tiers feel faster;
+    // level 2/3 always use the default 4 (harder math needs more reaction time)
+    // same gap for all levels — set by speed tier
+    const flatBetween = (state.mainLevel === 5 ? FLAT_BETWEEN_BY_TIER_L5 : FLAT_BETWEEN_BY_TIER)[state.speedTier] ?? 4;
+    const totalCols = flatStart + state.totalQuestions * (1 + flatBetween) + 30;
+
+    let problemsPlaced = 0;
+    let prevMissing = null;
+    let lastProblemColIndex = -1;
+    for (let i = 0; i < totalCols; i++) {
+      let colData;
+      const isProblemSlot = (i >= flatStart) &&
+        ((i - flatStart) % (1 + flatBetween) === 0) &&
+        problemsPlaced < state.totalQuestions;
+
+      if (isProblemSlot) {
+        const qIdx = problemsPlaced;
+        // level 5: l5target holds the actual question target (5 or 10)
+        const l5target = (state.mainLevel === 5) ? l5TargetFor(qIdx) : state.roadHeight;
+        const roadTarget = state.roadHeight;
+        const missing = randomMissing5(null, l5target);
+        prevMissing = missing;
+        const isL5 = state.mainLevel === 5;
+        colData = {
+          target: roadTarget,
+          // lv4/5: flat road (no visible hole) — abstract mode
+          height: isL5 ? roadTarget : (state.mainLevel === 4 ? roadTarget : roadTarget - missing),
+          missing: missing,
+          splitKnown: l5target - missing,
+          l5target: l5target,
+          isProblem: true,
+          solved: false,
+          l5style: isL5 ? l5StyleFor(qIdx) : null,
+        };
+        problemsPlaced++;
+        lastProblemColIndex = i;
+      } else {
+        colData = {
+          target: state.roadHeight,
+          height: state.roadHeight,
+          missing: 0,
+          splitKnown: state.roadHeight,
+          isProblem: false,
+          solved: true
+        };
+      }
+      state.cols.push(colData);
+      roadStrip.appendChild(renderColumn(colData));
+    }
+
+    // place the goal gate a couple of columns after the final question, so
+    // Cubie has somewhere to walk to once the last problem is solved
+    state.goalColIndex = lastProblemColIndex + 3;
+    state.goalEntered = false;
+    // gate and friend are visible from game start — waiting at the goal
+    goalGate.classList.add('show');
+    const friend = document.getElementById('car-friend');
+    friend.style.display = 'block';
+    friend.style.width  = (state.cubiePx || 48) + 'px';
+    friend.style.height = (state.cubiePx || 48) + 'px';
+    friend.classList.remove('pop-in', 'celebrating');
+  }
+
+  // pick a random complement in [1, target-1], avoiding repeating the previous value
+  function randomMissing5(prevMissing, target) {
+    target = target || state.roadHeight;
+    const maxVal = target - 1;
+    if (maxVal <= 1) return 1;
+
+    if (target === 10 && (state.mainLevel === 2 || state.mainLevel === 3 || state.mainLevel === 5)) {
+      const pool = [
+        3,
+        4,
+        5,
+        6, 6,
+        7, 7,
+        8, 8,
+        9,
+      ];
+      let pick;
+      let tries = 0;
+      do {
+        pick = pool[Math.floor(Math.random() * pool.length)];
+        tries++;
+      } while (pick === prevMissing && tries < 20);
+      return pick;
+    }
+
+    // default: uniform 1..maxVal, no repeat
+    let missing;
+    let tries = 0;
+    do {
+      missing = 1 + Math.floor(Math.random() * maxVal);
+      tries++;
+    } while (missing === prevMissing && tries < 20);
+    return Math.max(1, Math.min(missing, maxVal)); // 必ず1以上、maxVal以下
+  }
+
+  function renderColumn(colData) {
+    const col = document.createElement('div');
+    col.className = 'col';
+
+    // Level 3 (new "まとめ" mode): ALL columns use num-rect;
+    // problem columns also have dark hole blocks above the rect
+    if (state.mainLevel === 3) {
+      const rect = document.createElement('div');
+      rect.className = 'num-rect';
+      rect.style.height = `calc(var(--block-size) * ${colData.height})`;
+      // show the number: problem columns show filled count, flat columns show "10"
+      if (colData.height > 0) rect.textContent = colData.height;
+      col.appendChild(rect);
+      // missing blocks on top (problem columns only)
+      for (let h = colData.height; h < colData.target; h++) {
+        const block = document.createElement('div');
+        block.className = 'block missing';
+        block.dataset.missingSlot = '1';
+        if (h === colData.height)       block.classList.add('missing-bottom');
+        if (h === colData.target - 1)   block.classList.add('missing-top');
+        col.appendChild(block);
+      }
+      return col;
+    }
+
+    // Level 2: 元のブロック表示（全列ブロック積み）
+    if (state.mainLevel === 2) {
+      const halfLineIndex = Math.floor(colData.target / 2) - 1;
+      for (let h = 0; h < colData.target; h++) {
+        const block = document.createElement('div');
+        block.className = 'block';
+        if (h >= colData.height) {
+          block.classList.add('missing');
+          block.dataset.missingSlot = '1';
+          if (h === colData.height) block.classList.add('missing-bottom');
+          if (h === colData.target - 1) block.classList.add('missing-top');
+        }
+        if (h === halfLineIndex) block.classList.add('half-mark');
+        col.appendChild(block);
+      }
+      return col;
+    }
+
+    // Level 4/5: abstract mode — no visible gaps, flat road
+    const displayHeight = (state.mainLevel === 4 || state.mainLevel === 5)
+                          ? colData.target : colData.height;
+
+    // half-line guide: only in level 2
+    const halfLineIndex = (state.mainLevel === 2) ? (Math.floor(colData.target / 2) - 1) : -1;
+
+    for (let h = 0; h < colData.target; h++) {
+      const block = document.createElement('div');
+      block.className = 'block';
+      if (h >= displayHeight) {
+        block.classList.add('missing');
+        block.dataset.missingSlot = '1';
+        if (h === displayHeight) block.classList.add('missing-bottom');
+        if (h === colData.target - 1) block.classList.add('missing-top');
+      }
+      if (h === halfLineIndex) {
+        block.classList.add('half-mark');
+      }
+      col.appendChild(block);
+    }
+    return col;
+  }
+
+  // ---- Main animation loop ----
+  function frame(now) {
+    if (state.lastTime === null) state.lastTime = now;
+    // cap dt at 100 ms — if a frame takes longer (tab hidden, slow device,
+    // GC pause…) the car would jump multiple columns in one step and could
+    // leap clean over a hole without triggering its fall check
+    const dt = Math.min((now - state.lastTime) / 1000, 0.1);
+    state.lastTime = now;
+
+    if (state.running) {
+      const prevColIndex = Math.floor(state.scrollX);
+      state.scrollX += state.scrollSpeedCols * dt;
+      const colIndex = Math.floor(state.scrollX);
+
+      if (colIndex !== prevColIndex) {
+        if (colIndex >= domColStart + state.cols.length - 1) {
+          if (state.challengeMode) { challengeExtendRoad(); }
+          else {
+            // check goal gate before stopping
+            if (!state.goalEntered && state.goalColIndex !== null &&
+                goalGate.classList.contains('show') &&
+                state.scrollX >= state.goalColIndex + 0.3) {
+              enterGoalGate();
+            } else {
+              stopDriving(); renderAll(); return;
+            }
+          }
+        }
+      }
+
+      // check whether we should warn about an upcoming problem
+      checkWarning();
+
+      // if a problem was deferred during the post-correct cooldown, activate
+      // it now that the cooldown has elapsed
+      if (!state.locked &&
+          state.pendingProblemIndex >= 0 &&
+          performance.now() >= state.correctCooldownUntil) {
+        const pIdx = state.pendingProblemIndex;
+        state.pendingProblemIndex = -1;
+        const pcol = colAt(pIdx);
+        if (pcol && pcol.isProblem && !pcol.solved) {
+          activateProblem(pIdx);
+        }
+      }
+
+      // the fall triggers when Cubie's leading foot just starts to reach
+      // the hole's edge — judged by distance, not elapsed time, so it's
+      // tied directly to what's on screen (the timer bar uses the same
+      // distance-based calculation, see updateTimerBar, so the two always
+      // line up exactly)
+      if (state.activeProblemIndex >= 0 && state.timerStart !== null &&
+          performance.now() > state.correctCooldownUntil) {
+        const fallCol = colAt(state.activeProblemIndex);
+        if (fallCol && fallCol.solved) {
+          state.activeProblemIndex = -1;
+          state.timerStart = null;
+        } else {
+          const distanceToHole = state.activeProblemIndex - state.scrollX;
+          // activate直後（じゅうぴいがまだ穴に向かって歩き始めていない）に
+          // 誤ってtriggerFallしないよう、activate時点より距離が縮まった場合のみ発火
+          const hasApproached = distanceToHole < state.activatedDistanceToHole - 0.05;
+          if (distanceToHole <= fallLeadCols() && hasApproached) {
+            triggerFall(state.activeProblemIndex);
+            return;
+          }
+        }
+      }
+
+      // check whether Cubie has reached the goal gate (only relevant after
+      // the final question has been solved and the gate has been revealed)
+      if (!state.goalEntered && state.goalColIndex !== null && goalGate.classList.contains('show') &&
+          state.scrollX >= state.goalColIndex + 0.3) {
+        enterGoalGate();
+      }
+
+      renderAll();
+      updateTimerBar();
+    }
+
+    state.rafId = requestAnimationFrame(frame);
+  }
+
+  // Cubie reaches the goal gate: keep walking right on past it (no stopping
+  // or shrinking) for a beat, then show the results screen
+  function enterGoalGate() {
+    state.goalEntered = true;
+    spawnGoalStars();
+    Sound.SFX.goal();
+    setTimeout(() => {
+      stopDriving();
+      // friend is already there — both celebrate immediately
+      car.classList.add('celebrating');
+      const friend = document.getElementById('car-friend');
+      if (friend) friend.classList.add('celebrating');
+      spawnCelebrationHearts();
+      Sound.SFX.join();
+      showSpeechBubble('うれしいぴぃぃ🎉', 2000, null, true);
+      setTimeout(() => { showClear('complete'); }, 2200);
+    }, 600);
+  }
+
+  function startCelebration() {
+    const cpx = state.cubiePx || 48;
+    const friend = document.getElementById('car-friend');
+
+    // size the friend the same as Cubie
+    friend.style.width  = cpx + 'px';
+    friend.style.height = cpx + 'px';
+    // position the friend to Cubie's right, at the same road height
+    friend.style.left   = (carLeftPx() + cpx * 1.7) + 'px';
+    friend.style.bottom = car.style.bottom;
+    friend.style.display = 'block';
+
+    // pop friend in, then both bounce with joy
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        friend.classList.add('pop-in');
+        Sound.SFX.join();
+      }, 100);
+      setTimeout(() => {
+        car.classList.add('celebrating');
+        friend.classList.add('celebrating');
+        spawnCelebrationHearts();
+        showSpeechBubble('うれしいぴぃぃ🎉', 2000, null, true);
+      }, 700);
+    });
+
+    // show results after the celebration
+    setTimeout(() => {
+      showClear('complete');
+    }, 2600);
+  }
+
+  function spawnCelebrationHearts() {
+    const heartEmojis = ['❤️','💛','💚','💙','💜','🌟','✨'];
+    const track = document.getElementById('track');
+    const cpx = state.cubiePx || 48;
+    const baseX = carLeftPx();
+    const baseY = parseFloat(car.style.bottom) + cpx;
+
+    for (let i = 0; i < 8; i++) {
+      setTimeout(() => {
+        const h = document.createElement('div');
+        h.className = 'cel-heart';
+        h.textContent = heartEmojis[i % heartEmojis.length];
+        const spread = cpx * 1.7;  // span both characters
+        h.style.left   = (baseX - cpx * 0.3 + Math.random() * spread) + 'px';
+        h.style.bottom = (baseY + Math.random() * 20) + 'px';
+        h.style.fontSize = (14 + Math.random() * 10) + 'px';
+        track.appendChild(h);
+        setTimeout(() => h.remove(), 1500);
+      }, i * 130);
+    }
+  }
+
+  // the instant Cubie reaches the goal, a shower of stars falls from the
+  // two clouds flanking the rainbow
+  // show a speech bubble above Cubie (or the given element) for a moment
+  function showSpeechBubble(text, durationMs = 2600, targetEl = null, goalMode = false) {
+    targetEl = targetEl || car;
+    const bubble = document.createElement('div');
+    bubble.className = 'speech-bubble';
+    bubble.textContent = text;
+
+    if (goalMode) {
+      // ゴール用: 画面左側に固定表示、右向き吹き出し（キャラは右にいる）
+      bubble.classList.add('goal-bubble');
+      bubble.style.animationDuration = durationMs + 'ms';
+      // scene配下でもfixed配置はviewport基準なのでsceneに追加でOK
+      const scene = document.getElementById('scene');
+      scene.appendChild(bubble);
+    } else {
+      const cpx = state.cubiePx || 48;
+      const carLeft = parseFloat(targetEl.style.left) || carLeftPx();
+      const carBottom = parseFloat(targetEl.style.bottom) || 0;
+      bubble.style.left   = (carLeft + cpx * 0.5) + 'px';
+      bubble.style.bottom = (carBottom + cpx * 1.5) + 'px';
+      bubble.style.animationDuration = durationMs + 'ms';
+      const scene = document.getElementById('scene');
+      scene.appendChild(bubble);
+    }
+    setTimeout(() => bubble.remove(), durationMs + 100);
+  }
+
+  function spawnGoalStars() {
+    const scene = goalGate.querySelector('.gate-scene');
+    if (!scene) return;
+    const cloudSpots = [
+      { left: '6%' }, { left: '18%' },
+      { left: '82%' }, { left: '94%' },
+      { left: '40%' }, { left: '60%' },
+    ];
+    cloudSpots.forEach((spot, i) => {
+      setTimeout(() => {
+        const star = document.createElement('div');
+        star.className = 'goal-star';
+        star.style.left = spot.left;
+        star.style.top = '6%';
+        star.style.setProperty('--star-fall-dist', (140 + Math.random() * 90) + 'px');
+        star.style.setProperty('--star-spin', (Math.random() * 360 - 180) + 'deg');
+        star.style.fontSize = (14 + Math.random() * 10) + 'px';
+        scene.appendChild(star);
+        setTimeout(() => star.remove(), 1400);
+      }, i * 90);
+    });
+  }
+
+  function startDriving() {
+    car.classList.add('driving');
+    if (state.running) return;
+    state.running = true;
+    state.lastTime = null;
+    if (state.rafId === null) {
+      state.rafId = requestAnimationFrame(frame);
+    }
+  }
+
+  function stopDriving() {
+    state.running = false;
+    state.rafId = null;
+    car.classList.remove('driving');
+  }
+
+  function checkWarning() {
+    if (state.locked) return;
+    // start searching slightly BEHIND the car so that any problem column
+    // skipped in a single large frame (due to lag) is never missed
+    const searchFrom = Math.max(domColStart, Math.floor(state.scrollX) - 2);
+    for (let i = searchFrom; i < domColStart + state.cols.length; i++) {
+      const col = colAt(i);
+      if (!col) break;
+      if (col.isProblem && !col.solved) {
+        const distance = i - state.scrollX;
+        if (distance <= state.warningDistanceCols) {
+          // if within the post-correct cooldown window, defer the activation
+          // so scrollX doesn't race past before the panel opens
+          if (performance.now() < state.correctCooldownUntil) {
+            state.pendingProblemIndex = i;   // remember for later
+          } else {
+            state.pendingProblemIndex = -1;
+            activateProblem(i);
+          }
+        }
+        return;
+      }
+    }
+  }
+
+  // pre-build the answer buttons (disabled) so they're always visible from
+  // the moment the game starts — activateProblem() re-wires their handlers
+  // and enables them when a question appears
+  function initAnswerButtons() {
+    const target = state.roadHeight;  // 5 for level 1, 10 for level 2/3
+    const count = target - 1;         // 4 buttons for level 1, 9 for level 2/3
+    answersEl.innerHTML = '';
+    const maxPerRow = 5;
+    let rows;
+    if (count <= maxPerRow) {
+      rows = [count];
+    } else {
+      const firstRow = Math.ceil(count / 2);
+      rows = [firstRow, count - firstRow];
+    }
+    let num = 1;
+    rows.forEach(rowCount => {
+      const rowEl = document.createElement('div');
+      rowEl.className = 'ans-row';
+      for (let i = 0; i < rowCount; i++) {
+        const n = num++;
+        const btn = document.createElement('button');
+        btn.className = 'ans-btn';
+        btn.textContent = n;
+        btn.disabled = true;  // enabled by buildAnswerButtons when a question fires
+        rowEl.appendChild(btn);
+      }
+      answersEl.appendChild(rowEl);
+    });
+  }
+
+  function activateProblem(colIndex) {
+    if (state.activeProblemIndex === colIndex && state.timerStart !== null) return;
+    state.activeProblemIndex = colIndex;
+    state.timerStart = performance.now();
+    // activate時点の穴までの距離を記録。これより近い距離でのtriggerFallは
+    // 「正解直後に次問がactivateされた瞬間の誤発火」なので無視する。
+    state.activatedDistanceToHole = colIndex - state.scrollX;
+    state.locked = true;
+    if (state.mistakeColIndex !== colIndex) {
+      state.mistakeColIndex = colIndex;
+      state.questionHadMistake = false;
+      state.hadFallThisQuestion = false;
+    }
+    showQuestion(colAt(colIndex), colIndex);
+  }
+
+  function updateTimerBar() {
+    if (state.activeProblemIndex < 0 || state.timerStart === null) return;
+    // mirror the same distance-based measure used to trigger the fall, so
+    // the bar reaching empty always lines up exactly with the moment
+    // Cubie's foot reaches the hole
+    const distanceToHole = state.activeProblemIndex - state.scrollX;
+    const leadCols = fallLeadCols();
+    const usableDistance = state.warningDistanceCols - leadCols;
+    const remaining = Math.max(0, Math.min(1, (distanceToHole - leadCols) / usableDistance));
+    timerFill.style.width = (remaining * 100) + '%';
+    timerFill.classList.toggle('urgent', remaining < 0.3);
+  }
+
+  // car reaches the gap without it being filled -> drop down, then retreat & retry
+  function triggerFall(colIndex) {
+    const col = colAt(colIndex);
+    // if the player answered correctly just before this frame ran,
+    // col.solved is already true — don't penalise them
+    if (col && col.solved) {
+      state.activeProblemIndex = -1;
+      state.timerStart = null;
+      return;
+    }
+    stopDriving();
+    state.questionHadMistake = true;
+
+    if (state.challengeMode) {
+      car.classList.add('fall');
+      state.locked = true;
+      state.pendingProblemIndex = -1;   // pending中の次問をクリア
+      state.activeProblemIndex = -1;
+      state.correctCooldownUntil = performance.now() + 5000;
+      document.querySelectorAll('.ans-btn').forEach(b => b.disabled = true);
+      showFeedback('ざんねん！💦', false);
+      Sound.SFX.fall();
+      setTimeout(() => {
+        car.classList.remove('fall');
+        hideFeedback();
+        challengeGameOver();
+      }, 1300);
+      return;
+    }
+
+    // lock out any further answer immediately — once the fall has started,
+    // even a click that lands a split-second later must NOT be able to
+    // count as solving it. Without this, a "just barely too late" click
+    // could race past this check and get accepted as correct.
+    document.querySelectorAll('.ans-btn').forEach(b => b.disabled = true);
+
+    if (state.mainLevel === 4 || state.mainLevel === 5) {
+      // abstract mode: no visible hole, so just a "miss" beat — no fall animation
+      showFeedback('ぴいぃぃ！', true);
+      Sound.SFX.wrong();
+    } else {
+      // a real fall happened — earns Cubie a band-aid once solved
+      state.hadFallThisQuestion = true;
+      car.classList.add('fall');
+      showFeedback('ぴいぃぃ！', true);
+      Sound.SFX.fall();
+    }
+
+    // retreat and retry the same problem (the game never ends from a fall —
+    // the player keeps trying until they get it right)
+    setTimeout(() => {
+      // a correct click may have landed right at the buzzer and already
+      // solved this problem before this callback ran (the timer-expiry
+      // check and the click handler can race). If so, don't re-show or
+      // retreat — just resume driving, otherwise the player gets stuck on
+      // a "solved" question whose buttons silently do nothing.
+      if (col.solved) {
+        // clean up the visual "fallen" state too (remove the tilt/offset
+        // and the "もう一度" feedback) — otherwise Cubie keeps walking
+        // around at the bottom of the hole even though it's solved
+        car.classList.remove('fall');
+        hideFeedback();
+        startDriving();
+        return;
+      }
+
+      car.classList.remove('fall');
+      hideFeedback();
+
+      state.scrollX = Math.max(0, colIndex - state.retreatCols);
+      state.activeProblemIndex = -1;
+      state.timerStart = null;
+      renderAll();
+
+      setTimeout(() => {
+        if (col.solved) {
+          startDriving();
+          return;
+        }
+        activateProblem(colIndex);
+        startDriving();
+      }, 250);
+    }, 1150);
+  }
+
+  // helper: hide all level-5 diagrams
+  function hideL5Diagrams() {
+    document.querySelectorAll('.l5-diagram').forEach(d => d.classList.remove('show'));
+  }
+
+  // ---- Question panel ----
+  function showQuestion(col, colIndex) {
+    // colが取得できない・不正値の場合は表示しない
+    if (!col || col.solved) return;
+    const target = (state.mainLevel === 5 && col.l5target != null) ? col.l5target : (col.target || state.roadHeight);
+    if (!col.missing || col.missing <= 0 || col.missing >= target) {
+      console.warn('showQuestion: invalid col.missing', col.missing, 'target', target, 'colIndex', colIndex);
+      return;
+    }
+
+    panel.classList.add('show');
+    // timer bar for level 4 and level 5 (no visible hole to gauge distance)
+    if (state.mainLevel === 4 || state.mainLevel === 5) {
+      timerTrack.classList.add('show');
+    } else {
+      timerTrack.classList.remove('show');
+    }
+    timerFill.style.width = '100%';
+    timerFill.classList.remove('urgent');
+
+    const known  = col.splitKnown;
+
+    hideL5Diagrams();
+
+    if (state.mainLevel === 4) {
+      splitTarget.textContent = target;
+      splitKnown.textContent  = known;
+      splitDiagram.classList.add('show');
+    } else if (state.mainLevel === 5) {
+      splitDiagram.classList.remove('show');
+      const style = col.l5style;
+      // knownIsLeft: true(default) = □左・既知右, false = 既知左・□右
+      // (for challenge mode, this is randomised to increase difficulty)
+      const knownLeft = col.knownIsLeft !== false;  // default: unknown on left
+
+      if (style === 'cherry-up') {
+        document.getElementById('l5cu-total').textContent   = target;
+        // left circle: □ if knownLeft, else known
+        document.getElementById('l5cu-unknown').textContent = '';
+        document.getElementById('l5cu-known').textContent   = known;
+        // swap DOM order of the two circles
+        const pair = document.querySelector('#l5-cherry-up .cherry-pair');
+        if (pair) {
+          const [left, right] = pair.children;
+          if (!knownLeft) {
+            // □ right, known left — swap
+            left.classList.remove('unknown'); left.textContent = known;
+            right.classList.add('unknown');   right.textContent = '';
+            // sync IDs
+            left.id = 'l5cu-known'; right.id = 'l5cu-unknown';
+          } else {
+            left.classList.add('unknown');    left.textContent = '';
+            right.classList.remove('unknown'); right.textContent = known;
+            left.id = 'l5cu-unknown'; right.id = 'l5cu-known';
+          }
+        }
+        document.getElementById('l5-cherry-up').classList.add('show');
+      } else if (style === 'cherry-down') {
+        document.getElementById('l5cd-total').textContent   = target;
+        const pair = document.querySelector('#l5-cherry-down .cherry-pair');
+        if (pair) {
+          const [left, right] = pair.children;
+          if (!knownLeft) {
+            left.classList.remove('unknown'); left.textContent = known;
+            right.classList.add('unknown');   right.textContent = '';
+            left.id = 'l5cd-known'; right.id = 'l5cd-unknown';
+          } else {
+            left.classList.add('unknown');    left.textContent = '';
+            right.classList.remove('unknown'); right.textContent = known;
+            left.id = 'l5cd-unknown'; right.id = 'l5cd-known';
+          }
+        }
+        document.getElementById('l5-cherry-down').classList.add('show');
+      } else if (style === 'tape2') {
+        document.getElementById('l5t2-total-num').textContent = target;
+        // swap known/□ bars based on knownLeft, and set flex ratio = known : missing
+        const missing2 = target - known;
+        const partsRow = document.querySelector('#l5-tape2 .tape2-parts-row');
+        if (partsRow) {
+          const [left, right] = partsRow.children;
+          if (!knownLeft) {
+            // known left, □ right
+            left.className  = 'tape-bar known';      left.style.flex = known;
+            left.querySelector('.tape-inner-num').textContent  = known;
+            left.id = 'l5t2-known-bar';
+            right.className = 'tape-bar unknown-box'; right.style.flex = missing2;
+            right.querySelector('.tape-inner-num').textContent = '□';
+          } else {
+            // □ left, known right
+            left.className  = 'tape-bar unknown-box'; left.style.flex = missing2;
+            left.querySelector('.tape-inner-num').textContent  = '□';
+            right.className = 'tape-bar known';       right.style.flex = known;
+            right.querySelector('.tape-inner-num').textContent = known;
+            right.id = 'l5t2-known-bar';
+          }
+        }
+        document.getElementById('l5-tape2').classList.add('show');
+      } else { // tape1: 上段=既知+□バー（数字はバー内）、下段=合計バー
+        const barRow = document.querySelector('#l5-tape1 .t1-bar-row');
+        if (barRow) {
+          const [left, right] = barRow.children;
+          if (!knownLeft) {
+            // known left, □ right
+            left.className  = 'tape-bar known t1-known-seg';   left.style.flex = known;
+            left.querySelector('.tape-inner-num').textContent = known; left.querySelector('.tape-inner-num').style.color = '';
+            right.className = 'tape-bar unknown-box t1-unknown-seg'; right.style.flex = (target - known);
+            right.querySelector('.tape-inner-num').textContent = '□'; right.querySelector('.tape-inner-num').style.color = 'var(--bot-accent-dark)';
+          } else {
+            // □ left, known right
+            left.className  = 'tape-bar unknown-box t1-unknown-seg'; left.style.flex = (target - known);
+            left.querySelector('.tape-inner-num').textContent = '□';  left.querySelector('.tape-inner-num').style.color = 'var(--bot-accent-dark)';
+            right.className = 'tape-bar known t1-known-seg';  right.style.flex = known;
+            right.querySelector('.tape-inner-num').textContent = known; right.querySelector('.tape-inner-num').style.color = '';
+          }
+        }
+        document.getElementById('l5t1-total-num').textContent = target;
+        document.getElementById('l5-tape1').classList.add('show');
+      }
+    } else {
+      splitDiagram.classList.remove('show');
+    }
+
+    buildAnswerButtons(col.missing, target, col, colIndex);
+  }
+
+  // fixed answer buttons: 1, 2, ..., (target - 1), all shown at once
+  function buildAnswerButtons(correctAnswer, target, col, colIndex) {
+    answersEl.innerHTML = '';
+    // missingが0以下や不正値のときは問題をスキップ（表示しない）
+    if (!correctAnswer || correctAnswer <= 0 || correctAnswer >= target) {
+      console.warn('buildAnswerButtons: invalid correctAnswer', correctAnswer, 'target', target);
+      return;
+    }
+    const count = target - 1;
+
+    // split into at most two rows, as evenly as possible, so a count like 9
+    // becomes 5+4 instead of wrapping unevenly (e.g. 7+2)
+    const maxPerRow = 5;
+    let rows;
+    if (count <= maxPerRow) {
+      rows = [count];
+    } else {
+      const firstRow = Math.ceil(count / 2);
+      rows = [firstRow, count - firstRow];
+    }
+
+    let num = 1;
+    rows.forEach(rowCount => {
+      const rowEl = document.createElement('div');
+      rowEl.className = 'ans-row';
+      for (let i = 0; i < rowCount; i++) {
+        const n = num++;
+        const btn = document.createElement('button');
+        btn.className = 'ans-btn';
+        btn.textContent = n;
+        btn.addEventListener('click', () => handleAnswer(n, correctAnswer, btn, col, colIndex));
+        rowEl.appendChild(btn);
+      }
+      answersEl.appendChild(rowEl);
+    });
+  }
+
+  function handleAnswer(selected, correct, btn, col, colIndex) {
+    if (!state.locked) return;
+    if (btn.disabled) return;
+    if (col.solved) return; // already fixed (e.g. timer fired right as they clicked)
+    Sound.resume();
+    document.querySelectorAll('.ans-btn').forEach(b => b.disabled = true);
+
+    if (selected === correct) {
+      btn.classList.add('correct');
+      onCorrect(col, colIndex);
+    } else {
+      btn.classList.add('wrong');
+      onWrong(col, colIndex);
+    }
+  }
+
+  // reveal the next unused band-aid on Cubie's face (capped at 3) — called
+  // when a problem that involved a real fall is finally solved, i.e. the
+  // moment Cubie is "revived" by the blocks filling back in underneath it
+  const BANDAID_MAX = 3;
+  function addBandaid() {
+    if (state.bandaidCount >= BANDAID_MAX) return;
+    state.bandaidCount++;
+    const el = car.querySelector('.bandaid-' + state.bandaidCount);
+    if (el) el.classList.add('show');
+  }
+
+  function onCorrect(col, colIndex) {
+    // if a fall animation/pose is still active (the player answered right
+    // as — or just after — the timer expired), clear it immediately and
+    // make sure driving is (re)started, so Cubie doesn't stay stuck,
+    // frozen, at the bottom of the hole
+    car.classList.remove('fall');
+    startDriving();
+
+    const hadMistake = state.questionHadMistake;
+    const hadFall = state.hadFallThisQuestion;
+    if (hadFall) {
+      // make the band-aid moment obvious with its own feedback message,
+      // instead of the normal "せいかい" text
+      showFeedback('ふっかつ！🩹', false);
+      addBandaid();
+      Sound.SFX.join();
+    } else if (state.mainLevel === 5) {
+      // level 5: show a big ◯ flash — diagrams hide immediately, ◯ pops and fades
+      const flash = document.getElementById('l5-correct-flash');
+      flash.classList.remove('pop');
+      void flash.offsetWidth; // force reflow to restart animation
+      flash.classList.add('pop');
+      Sound.SFX.correct();
+      // only hide the diagrams if a new problem hasn't already been activated
+      // (immediate-next activation may have shown the next diagram already)
+      const snapIndex = colIndex;
+      setTimeout(() => {
+        if (state.activeProblemIndex < 0 || state.activeProblemIndex === snapIndex) {
+          hideL5Diagrams();
+        }
+      }, 60);
+    } else {
+      showFeedback('せいかい！🎉', false);
+      if (!state.questionHadMistake) Sound.SFX.correctHi();
+      else Sound.SFX.correct();
+    }
+    if (state.challengeMode) {
+      state.challengeCount++;
+      // speed up after each correct answer — but for level 5 challenge,
+      // cap the speed at ~25 correct answers and increase difficulty by
+      // randomising which side the unknown □ is on instead
+      const INC = 0.07;
+      const SPEED_CAP_L5 = 0.9 + 25 * INC;   // ≈ 2.65 — frozen after 25 correct
+      if (state.mainLevel === 5) {
+        if (state.challengeSpeed < SPEED_CAP_L5) {
+          // still ramping up (first 25 questions)
+          state.challengeSpeed = Math.min(SPEED_CAP_L5, state.challengeSpeed + INC);
+          state.timeLimitSec   = Math.max(2.8, state.timeLimitSec - 0.06);
+        }
+        // once capped: speed AND time limit stay fixed — only □ position / target vary
+      } else {
+        state.challengeSpeed = Math.min(4.0, state.challengeSpeed + INC);
+        state.timeLimitSec   = Math.max(1.4, state.timeLimitSec - 0.06);
+      }
+      state.scrollSpeedCols = state.challengeSpeed;
+      state.warningDistanceCols = state.challengeSpeed * state.timeLimitSec;
+      state.retreatCols = state.warningDistanceCols;
+      progressLabel.textContent = state.challengeCount + ' もん';
+      updateSpeedMeter();
+      // extend road when near the end
+      if ((domColStart + state.cols.length) - state.scrollX < 15) challengeExtendRoad();
+    } else {
+      if (!hadMistake) {
+        state.score += Math.round(100 / state.totalQuestions);
+      }
+      state.questionCount++;
+      scoreLabel.textContent = state.score;
+      progressLabel.textContent = `${state.questionCount} / ${state.totalQuestions}`;
+    }
+
+    // clear the timer state BEFORE setting col.solved, so that any frame()
+    // running concurrently sees a clean state and won't fire triggerFall
+    state.activeProblemIndex = -1;
+    state.timerStart = null;
+    col.solved = true;
+    col.height = col.target;
+
+    // fill missing blocks with a quick pop-in — kept almost simultaneous
+    const colEl = roadStrip.children[colIndex];
+    const missingBlocks = colEl.querySelectorAll('.block.missing');
+    const STAGGER_TOTAL_MS = 90;
+    const stepMs = missingBlocks.length > 1 ? STAGGER_TOTAL_MS / (missingBlocks.length - 1) : 0;
+    missingBlocks.forEach((b, i) => {
+      setTimeout(() => {
+        b.classList.remove('missing', 'missing-top', 'missing-bottom');
+        b.classList.add('filled-in');
+      }, i * stepMs);
+    });
+    panel.classList.remove('show');
+    timerTrack.classList.remove('show');
+    hideFeedback();
+
+    // (activeProblemIndex and timerStart already cleared above)
+    state.locked = false;
+    state.pendingProblemIndex = -1;
+
+    // 次の問題への遷移:
+    // 通常モード: 即時遷移（正解後すぐ次問）
+    // チャレンジ全レベル: 歩行到達（穴まで歩いて近づいたら次問が出る）
+    const lastQuestionDone = !state.challengeMode &&
+                             state.questionCount >= state.totalQuestions;
+    if (lastQuestionDone) {
+      panel.classList.remove('show');
+      timerTrack.classList.remove('show');
+      splitDiagram.classList.remove('show');
+      hideL5Diagrams();
+    } else if (!state.challengeMode) {
+      // 通常モード: 即時遷移
+      // colIndexは絶対インデックス、cols[]はdomColStart分削除済みなので補正が必要
+      const relativeColIndex = colIndex - domColStart;
+      const nextRelIdx = state.cols.findIndex(
+        (c, i) => i > relativeColIndex && c.isProblem && !c.solved
+      );
+      if (nextRelIdx >= 0) {
+        // 取得した列が有効な問題列かを念のため確認
+        const nextCol = state.cols[nextRelIdx];
+        if (nextCol && nextCol.isProblem && !nextCol.solved &&
+            nextCol.missing > 0 && nextCol.missing < nextCol.target) {
+          state.correctCooldownUntil = 0;
+          activateProblem(nextRelIdx + domColStart);
+          return;
+        }
+      }
+    } else {
+      // チャレンジ全レベル: 道路を継ぎ足し、歩いて到達してから次問
+      challengeExtendRoad();
+      state.correctCooldownUntil = 0;
+      return;
+    }
+
+    // fallback cooldown (reached only when there is no next problem, i.e.
+    // the last question was just answered and the goal gate is ahead)
+    state.correctCooldownUntil = performance.now() + 600;
+
+    if (state.questionCount >= state.totalQuestions) {
+      // All questions done — dash to the goal gate at 3× speed
+      state.scrollSpeedCols = Math.max(state.scrollSpeedCols, 3.0);
+    }
+    // driving continues uninterrupted; car height interpolation will rise smoothly
+  }
+
+  function onWrong(col, colIndex) {
+    state.questionHadMistake = true;
+
+    // CHALLENGE: a single wrong answer ends the run
+    if (state.challengeMode) {
+      stopDriving();
+      state.locked = true;  // prevent any new problem from activating
+      state.correctCooldownUntil = performance.now() + 5000;  // long block
+      state.pendingProblemIndex = -1;   // 次問pending をクリア
+      state.activeProblemIndex = -1;    // アクティブ問題をリセット
+      document.querySelectorAll('.ans-btn').forEach(b => b.disabled = true);
+      showFeedback('ざんねん！💦', false);
+      Sound.SFX.wrong();
+      setTimeout(() => {
+        hideFeedback();
+        challengeGameOver();
+      }, 1000);
+      return;
+    }
+
+    // normal mode: a wrong answer doesn't end the run — let the player retry
+    // the same problem (this problem will score 0 even if eventually solved).
+    showFeedback('ざんねん！', true);
+    Sound.SFX.wrong();
+    setTimeout(() => {
+      document.querySelectorAll('.ans-btn').forEach(b => {
+        b.classList.remove('wrong');
+        b.disabled = false;
+      });
+      hideFeedback();
+    }, 600);
+  }
+
+  function showFeedback(text, isWrong) {
+    feedback.textContent = text;
+    feedback.classList.toggle('wrong-bg', isWrong);
+    feedback.classList.add('show');
+  }
+  function hideFeedback() {
+    feedback.classList.remove('show');
+  }
+
+  // ---- 派手なコンフェッティ ----
+  function launchConfetti(count = 60) {
+    const colors = ['#ff6b9d','#ff9f40','#ffdd57','#48d890','#4fb8ff','#c879ff','#ff4757','#eccc68'];
+    for (let i = 0; i < count; i++) {
+      setTimeout(() => {
+        const el = document.createElement('div');
+        el.className = 'confetti-piece';
+        el.style.left = (10 + Math.random() * 80) + 'vw';
+        el.style.top  = '-12px';
+        el.style.background = colors[Math.floor(Math.random() * colors.length)];
+        el.style.width  = (6 + Math.random() * 10) + 'px';
+        el.style.height = (6 + Math.random() * 10) + 'px';
+        el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        const dur = 1.2 + Math.random() * 1.4;
+        el.style.animationDuration = dur + 's';
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), dur * 1000 + 100);
+      }, i * 30);
+    }
+  }
+
+  function showClear(reason) {
+    panel.classList.remove('show');
+    timerTrack.classList.remove('show');
+    car.classList.remove('celebrating');
+    const friend = document.getElementById('car-friend');
+    if (friend) { friend.style.display = 'none'; friend.classList.remove('pop-in','celebrating'); }
+
+    // save and detect new record / first clear
+    const { isFirst, isNewRecord } = saveHistory(state.mainLevel, state.speedTier, state.score);
+
+    // BGMを止めて結果音を鳴らす
+    Sound.bgmStop();
+    const isGoalSound = reason !== 'failed';
+    if (isGoalSound && (isFirst || isNewRecord)) {
+      setTimeout(() => Sound.SFX.record(), 250);
+    }
+
+    const isGoal = reason !== 'failed';
+    let title = isGoal ? 'ゴール！🏆' : 'ここまでだぴぃぃ';
+
+    // special badge HTML
+    let badgeHtml = '';
+    if (isGoal && isFirst) {
+      badgeHtml = `<div class="first-badge">✨ はじめてのクリア！ ✨<br>すごい！よくできました！🎉</div>`;
+    } else if (isGoal && isNewRecord) {
+      badgeHtml = `<div class="record-badge">🏅 しんきろく！ 🏅</div>`;
+    }
+
+    const speedLabel = SPEED_LABELS[state.speedTier] || state.speedTier;
+    const history = loadHistory(state.mainLevel, state.speedTier);
+    const histItems = [...history]
+      .sort((a, b) => b.score - a.score)
+      .map((entry, i) => {
+        const dateStr = formatHistoryDate(entry.date);
+        const isThis = entry === history[0];
+        return `<li class="${isThis ? 'this-run' : ''}"><span>${dateStr}</span><span class="hist-score">${entry.score}てん</span></li>`;
+      }).join('');
+    const histHtml = `
+      <div class="result-history">
+        <p class="result-history-title">これまでの きろく（レベル${state.mainLevel}・${speedLabel}）</p>
+        <ul>${histItems || '<li style="color:#b0a89a">まだ きろくが ありません</li>'}</ul>
+      </div>`;
+
+    const SPEED_ORDER = ['A', 'B', 'C', 'D'];
+    const MAX_LEVEL = 5;
+    let nextLevel = state.mainLevel;
+    let nextSpeed = null;
+    if (isGoal) {
+      const curSpeedIdx = SPEED_ORDER.indexOf(state.speedTier);
+      if (curSpeedIdx < SPEED_ORDER.length - 1) {
+        // same level, next speed
+        nextSpeed = SPEED_ORDER[curSpeedIdx + 1];
+        nextLevel = state.mainLevel;
+      } else if (state.mainLevel < MAX_LEVEL) {
+        // next level, slowest speed
+        nextSpeed = 'A';
+        nextLevel = state.mainLevel + 1;
+      }
+      // else: L5ばくそく — no next
+    }
+
+    const nextBtn = (isGoal && nextSpeed !== null) ? `
+      <button class="big-btn" id="next-btn" style="background:linear-gradient(135deg,#48d890,#4fb8ff)!important;box-shadow:0 3px 0 #2a9a6e!important;">
+        つぎへ ▶
+      </button>` : '';
+
+    const scoreClass = (isGoal && isNewRecord) ? 'score-num new-record-score' : 'score-num';
+    startCard.innerHTML = `
+      <h1>${title}</h1>
+      ${badgeHtml}
+      <p class="score-label">とくてん</p>
+      <p class="score-result"><span class="${scoreClass}">${state.score}</span><span class="score-unit">てん</span></p>
+      ${histHtml}
+      <div class="result-btn-row">
+        <button class="big-btn retry-again-btn" id="retry-again-btn">もういちど</button>
+        ${nextBtn}
+        <button class="big-btn retry-home-btn" id="retry-btn">トップページへ</button>
+      </div>
+    `;
+
+    // wire up next button
+    if (isGoal && nextSpeed !== null) {
+      const _nextLevel = nextLevel;
+      const _nextSpeed = nextSpeed;
+      document.getElementById('next-btn').addEventListener('click', () => {
+        state.mainLevel = _nextLevel;
+        state.speedTier = _nextSpeed;
+        startGame();
+      });
+    }
+
+    // 「もう一度」ボタン: 同じレベル・スピードで再スタート
+    document.getElementById('retry-again-btn').addEventListener('click', () => {
+      Sound.resume();
+      Sound.SFX.tap();
+      if (state.challengeMode || state.wasChallenge) {
+        startChallengeMode();
+      } else {
+        startGame();
+      }
+    });
+
+    overlay.classList.remove('hidden');
+
+    // launch confetti for special occasions
+    if (isGoal && isFirst)      launchConfetti(40);
+    if (isGoal && isNewRecord)  launchConfetti(80);
+  }
+
+  // restore the original start screen (level/speed select + history), and
+  // refresh the history list for the currently-selected level+speed combo
+  function showStartScreen() {
+    startCard.innerHTML = START_CARD_HTML;
+    document.querySelectorAll('.speed-btn').forEach(b => {
+      const lv = parseInt(b.dataset.level, 10);
+      const sp = b.dataset.speed;
+      const matches = lv === state.mainLevel && sp === state.speedTier;
+      b.classList.toggle('selected', matches);
+      // mark cleared buttons with ⭐
+      const cleared = loadHistory(lv, sp).length > 0;
+      b.dataset.cleared = cleared ? 'true' : 'false';
+    });
+    renderHistory();
+    // サウンドトグルの表示をミュート状態に同期
+    const stog = document.getElementById('sound-toggle');
+    if (stog) {
+      const m = Sound.isMuted;
+      stog.classList.toggle('off', m);
+      stog.innerHTML = m ? '<span>🔇おと</span><span>オフ</span>' : '<span>🔊おと</span><span>オン</span>';
+    }
+    overlay.classList.remove('hidden');
+  }
+
+  window.addEventListener('resize', () => {
+    if (overlay.classList.contains('hidden')) {
+      applySizing();
+      renderAll();
+    }
+  });
+
+  // ============================================================
+  // CHALLENGE MODE
+  // ============================================================
+
+  // speed meter: 6 dots (🐢 ... 🐇), 1 dot lights up every 10 correct answers.
+  // Full meter = 60 correct answers. Dots go green -> orange -> red near full.
+  const SPEED_DOTS = 6;
+  const SPEED_METER_FULL = 60;   // 10問ごとに1段階、6段階で満タン
+  function updateSpeedMeter() {
+    const meter = document.getElementById('speed-meter');
+    if (!meter) return;
+    // floor so each step lights exactly at 10, 20, 30, 40, 50, 60
+    const lit = Math.min(SPEED_DOTS, Math.floor(state.challengeCount / 10));
+    meter.classList.toggle('hot', lit >= 5);
+    meter.classList.toggle('max', lit >= SPEED_DOTS);
+    let html = '';
+    for (let i = 0; i < SPEED_DOTS; i++) {
+      html += `<span class="dot${i < lit ? ' on' : ''}"></span>`;
+    }
+    meter.innerHTML = html;
+    // 速さ段階(lit: 0〜6)に合わせてBGMテンポを段階的に上げる
+    const TEMPO_BY_STAGE = [1.00, 1.08, 1.16, 1.25, 1.34, 1.44, 1.55];
+    Sound.setTempo(TEMPO_BY_STAGE[lit] ?? 1.0);
+  }
+  // gap is always 3 — only the character speed increases
+  const CHALLENGE_GAP = 3;
+
+  function challengeMakeCol(isProb, prevMissing) {
+    if (isProb) {
+      const isL5 = state.mainLevel === 5;
+      const l5target = isL5 ? (Math.random() < 0.5 ? 5 : 10) : state.roadHeight;
+      const missing = randomMissing5(prevMissing, l5target);
+      const knownIsLeft = Math.random() < 0.5;
+      return {
+        target: state.roadHeight,
+        height: isL5 ? state.roadHeight : state.roadHeight - missing,  // L5: flat; L1-4: show hole
+        missing, isProblem: true, solved: false,
+        splitKnown: l5target - missing,
+        l5target: isL5 ? l5target : null,
+        l5style: isL5 ? L5_STYLES[Math.floor(Math.random() * L5_STYLES.length)] : null,
+        knownIsLeft
+      };
+    }
+    return { target: state.roadHeight, height: state.roadHeight,
+             missing: 0, isProblem: false, solved: true };
+  }
+
+  function challengeExtendRoad() {
+    // ゲームオーバー後に呼ばれても何もしない
+    if (!state.challengeMode) return;
+
+    // ---- 画面外に去った古い列をDOMとcols配列から削除してメモリを解放 ----
+    // scrollXの絶対値から既削除数(domColStart)を引いた「cols内の相対位置」で判定する。
+    // scrollX・activeProblemIndex等の絶対座標系は変えない。
+    // cols[]へのアクセスはcolAt(absoluteIndex)ヘルパーを使う。
+    const pruneUpTo = Math.floor(state.scrollX) - 5 - domColStart;
+    if (pruneUpTo > 0) {
+      const del = Math.min(pruneUpTo, state.cols.length - 1);
+      if (del > 0) {
+        for (let d = 0; d < del && roadStrip.firstChild; d++) {
+          roadStrip.removeChild(roadStrip.firstChild);
+        }
+        state.cols.splice(0, del);
+        domColStart += del;
+      }
+    }
+
+    const cycle = CHALLENGE_GAP + 1;
+    const base = state.cols.length + domColStart;
+    let prevMissing = state.cols.filter(c=>c.isProblem).slice(-1)[0]?.missing ?? -1;
+    let posInCycle = ((base - 4) % cycle + cycle) % cycle;
+
+    // 必要最低限だけ追加: 画面右端から20列分のバッファを確保
+    const targetLen = Math.ceil(state.scrollX) + 20 - domColStart;
+    const addCount = Math.max(cycle * 2, targetLen - state.cols.length);
+    for (let n = 0; n < addCount; n++) {
+      const isProb = posInCycle === 0;
+      const col = challengeMakeCol(isProb, prevMissing);
+      if (isProb) prevMissing = col.missing;
+      state.cols.push(col);
+      roadStrip.appendChild(renderColumn(col));
+      posInCycle = (posInCycle + 1) % cycle;
+    }
+  }
+
+  // cols[絶対インデックス] へのアクセスヘルパー。
+  // チャレンジで古い列を削除するとdomColStartがずれるので、それを補正する。
+  function colAt(absoluteIndex) {
+    return state.cols[absoluteIndex - domColStart];
+  }
+
+  let domColStart = 0;  // 累積削除列数
+
+  function startChallengeMode() {
+    domColStart = 0;  // DOM削除カウンタをリセット
+    state.challengeMode     = true;
+    state.mainLevel         = state.challengeLevel;
+    state.roadHeight        = state.mainLevel === 1 ? 5 : 10;
+    // level 5 challenge: start with target 5, will vary per question (use 10 as base)
+    if (state.mainLevel === 5) state.roadHeight = 10;
+    state.speedTier         = 'A';
+    state.challengeCount    = 0;
+    state.challengeSpeed    = 0.9;
+    state.timeLimitSec      = 4.5;
+    state.warningDistanceCols = 0.9 * 4.5;
+    state.retreatCols       = state.warningDistanceCols;
+    state.scrollSpeedCols   = 0.9;          // ← critical: must be set!
+    state.scrollX           = 0;
+    state.lastTime          = null;
+    state.score             = 0;
+    state.questionCount     = 0;
+    state.totalQuestions    = 99999;
+    state.locked            = false;
+    state.activeProblemIndex = -1;
+    state.timerStart        = null;
+    state.correctCooldownUntil = 0;
+    state.pendingProblemIndex = -1;
+    state.goalColIndex      = null;
+    state.goalEntered       = false;
+    state.cubiePx           = null;
+
+    overlay.classList.add('hidden');
+    goalGate.classList.remove('show');
+    document.getElementById('car-friend').style.display = 'none';
+    document.getElementById('challenge-speed-label').style.display = 'none';
+    // challenge uses a speed meter instead of the star score
+    document.getElementById('score-pill').style.display = 'none';
+    document.getElementById('speed-pill').style.display = 'flex';
+
+    state.cols = [];
+    roadStrip.innerHTML = '';
+    applySizing();
+
+    // flat start (4 cols)
+    for (let i = 0; i < 4; i++) {
+      const col = challengeMakeCol(false, -1);
+      state.cols.push(col);
+      roadStrip.appendChild(renderColumn(col));
+    }
+    // first batch of problem+flat cols
+    challengeExtendRoad();
+
+    progressLabel.textContent = '0 もん';
+    scoreLabel.textContent = '';
+    updateSpeedMeter();
+    updateHeaderText();
+    assignCharacters();
+    initAnswerButtons();
+    renderAll();
+    startDriving();
+    Sound.resume();
+    Sound.setTempo(1.0);
+    Sound.bgmStart();
+  }
+
+  function challengeGameOver() {
+    document.getElementById('challenge-speed-label').style.display = 'none';
+    state.challengeMode = false;
+    state.locked = true;   // ゲームオーバー後に新たな問題が活性化しないようロックを保持
+    state.pendingProblemIndex = -1;  // pending中の次問をクリア
+    state.activeProblemIndex = -1;   // アクティブ問題をリセット
+    state.correctCooldownUntil = performance.now() + 10000; // 長めにブロック
+    Sound.bgmStop();
+    const { isFirst, isNewRecord } = saveChallengeHistory(state.challengeLevel, state.challengeCount);
+    if (isFirst || isNewRecord) setTimeout(() => Sound.SFX.record(), 250);
+    const resultMsg = isFirst ? '🎉 はじめてのきろく！' : isNewRecord ? '🏆 さいこうきろく！' : '';
+    const _challengeLevel = state.challengeLevel;
+    startCard.innerHTML = `
+      <h1 style="font-size:clamp(22px,6vw,32px)">ここまでだぴぃぃ</h1>
+      <p class="score-label">せいかいした もんだいは</p>
+      <p class="score-result"><span class="score-num">${state.challengeCount}</span><span class="score-unit">もん</span></p>
+      ${resultMsg ? `<p style="font-size:1.1em;color:#e84d7a;font-weight:800;margin:4px 0 10px;">${resultMsg}</p>` : ''}
+      <div class="result-btn-row">
+        <button class="big-btn retry-again-btn" id="chal-retry-again-btn">もういちど</button>
+        <button class="big-btn retry-home-btn" id="retry-btn">トップページへ</button>
+      </div>`;
+    // 「もう一度」: 同じチャレンジレベルで再スタート
+    document.getElementById('chal-retry-again-btn').addEventListener('click', () => {
+      Sound.resume();
+      Sound.SFX.tap();
+      state.challengeLevel = _challengeLevel;
+      state.challengeSelected = true;
+      startChallengeMode();
+    });
+    overlay.classList.remove('hidden');
+  }
+
+  // challenge level select / start handlers are delegated via the
+  // startCard click listener above, so they survive start-card re-render.
+
+  // ============================================================
+
+  // keyboard shortcut: number keys 1-9 act as answer buttons
+  document.addEventListener('keydown', (e) => {
+    // only active during a question (state.locked = true means a problem is open)
+    if (!state.locked) return;
+    const n = parseInt(e.key, 10);
+    if (isNaN(n) || n < 1) return;
+    // find the answer button with this number and click it
+    const btns = document.querySelectorAll('.ans-btn');
+    for (const btn of btns) {
+      if (parseInt(btn.textContent, 10) === n && !btn.disabled) {
+        btn.click();
+        break;
+      }
+    }
+  });
+
+  // initial sizing for start screen preview
+  applySizing();
+  renderHistory();
+  // mark already-cleared buttons on the initial start screen
+  document.querySelectorAll('.speed-btn').forEach(b => {
+    const lv = parseInt(b.dataset.level, 10);
+    const sp = b.dataset.speed;
+    b.dataset.cleared = loadHistory(lv, sp).length > 0 ? 'true' : 'false';
+  });
+})();
+</script>
+</body>
+</html>
 
