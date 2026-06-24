@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ぐらぐらバナナ｜おさるのバランスだいさくせん</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-top:#86d7ff;
+    --sky-mid:#b6ecff;
+    --sky-bot:#e3f8ff;
+    --sea:#1f9bd0;
+    --sea-d:#1280b0;
+    --sea-deep:#0e6f9c;
+    --leaf:#3fae5a;
+    --leaf-d:#2e8a45;
+    --banana:#ffd23f;
+    --banana-d:#e8a900;
+    --plank:#d6a35e;
+    --plank-d:#b07d3c;
+    --plank-dd:#8c6230;
+    --bark:#9c6b3f;
+    --bark-d:#7a5230;
+    --cream:#fff7e6;
+    --ink:#4a3214;
+    --coral:#ff7a59;
+    --coral-d:#ed5c3c;
+    --shadow:rgba(20,60,80,.22);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;overflow:hidden;}
+  body{
+    font-family:"Noto Sans JP","Hiragino Sans",sans-serif;
+    color:var(--ink);
+    background:linear-gradient(180deg,var(--sky-top),var(--sky-mid) 40%,var(--sky-bot) 60%);
+    user-select:none;-webkit-user-select:none;
+  }
+  #app{position:relative;width:100%;height:100dvh;max-width:760px;margin:0 auto;overflow:hidden;}
+  /* 傾き警告：画面縁が赤く光る */
+  #tiltWarning{position:absolute;inset:0;pointer-events:none;z-index:60;
+    box-shadow:inset 0 0 0 0 rgba(220,40,40,0);border-radius:inherit;
+    opacity:0;}
+  @keyframes tiltPulse{
+    0%,100%{opacity:0;box-shadow:inset 0 0 0 0 rgba(220,40,40,0);}
+    50%    {opacity:1;box-shadow:inset 0 0 44px 20px rgba(220,40,40,.7);}
+  }
+  #tiltWarning.pulsing{animation:tiltPulse .6s ease-in-out infinite;}
+
+  .cloud{position:absolute;font-size:46px;opacity:.9;animation:drift linear infinite;pointer-events:none;z-index:1;}
+  @keyframes drift{from{transform:translateX(-140px)}to{transform:translateX(840px)}}
+
+  /* ===== HUD ===== */
+  #hud{position:absolute;top:0;left:0;right:0;z-index:30;display:flex;justify-content:space-between;
+    padding:10px 12px;gap:8px;pointer-events:none;}
+  .panel{background:var(--cream);border:3px solid #fff;border-radius:18px;
+    box-shadow:0 4px 0 var(--shadow);padding:6px 12px;font-weight:800;}
+  #quitBtn{position:absolute;left:10px;bottom:10px;z-index:31;
+    background:rgba(255,255,255,.7);border:none;border-radius:50%;
+    width:36px;height:36px;font-size:16px;cursor:pointer;
+    display:none;align-items:center;justify-content:center;
+    box-shadow:0 2px 0 var(--shadow);}
+  .panel .big{font-size:22px;line-height:1;}
+
+  /* banana tree on a cloud */
+  #treetop{position:absolute;top:52px;left:50%;transform:translateX(-50%);z-index:2;
+    text-align:center;pointer-events:none;width:210px;}
+  #treetop .tbananas{position:absolute;left:50%;top:30px;transform:translateX(-50%);font-size:18px;letter-spacing:-5px;z-index:2;}
+  #treetop .canopy{font-size:62px;line-height:50px;filter:drop-shadow(0 3px 2px var(--shadow));position:relative;z-index:1;}
+  #treetop .bigcloud{font-size:104px;line-height:38px;margin-top:-16px;filter:drop-shadow(0 5px 3px var(--shadow));}
+
+  /* ===== sea ===== */
+  #sea{position:absolute;left:0;right:0;bottom:0;height:26%;z-index:3;
+    background:linear-gradient(180deg,var(--sea),var(--sea-deep));overflow:hidden;}
+  #sea::before{content:"";position:absolute;left:0;right:0;top:0;height:14px;
+    background:repeating-linear-gradient(90deg,#ffffff66 0 18px,transparent 18px 40px);}
+  .wave{position:absolute;left:-10%;right:-10%;height:40px;border-radius:50%;background:#ffffff14;}
+
+  /* friend boat (monkey B+C) – stays on right during play */
+  #friend{position:absolute;z-index:9;right:8px;bottom:8%;text-align:center;transition:right .1s;}
+  #friend .b{font-size:30px;line-height:1;display:inline-block;}
+  #friend .boat{font-size:34px;line-height:1;margin-top:-4px;}
+  #friend.throwing .b{animation:throwArm .5s ease;}
+  @keyframes throwArm{0%,100%{transform:rotate(0)}40%{transform:rotate(-22deg) translateX(-6px)}}
+  /* boatA: monkeyA waits here during sweep */
+  #boatA{position:absolute;z-index:9;right:60px;bottom:8%;text-align:center;}
+  #boatA .mk{display:block;}
+  #boatA .mk svg{display:block;width:38px;height:auto;}
+  #boatA .boat{font-size:28px;line-height:1;margin-top:-4px;}
+  #boatA.hidden{display:none;}
+  /* clear tow: friend approaches left, then pulls rig right */
+  @keyframes friendApproach{
+    0%  {right:8px;}
+    100%{right:calc(50% + 10px);}
+  }
+  @keyframes friendAndRigTow{
+    0%  {transform:translateX(0);}
+    100%{transform:translateX(150vw);}
+  }
+  #friend.approaching{animation:friendApproach .9s ease-out forwards;}
+  #friend.towing{animation:friendAndRigTow 2s ease-in forwards;}
+  #rig.towing{animation:friendAndRigTow 2s ease-in forwards;}
+
+  /* ===== rig: the shared coordinate space (boat O, plank Q, monkey A, points, marker) ===== */
+  #rig{position:absolute;left:50%;bottom:19%;transform:translateX(-50%);z-index:8;
+    width:92%;max-width:560px;height:150px;display:none;}
+  /* gentle sea rocking of the whole rig (boat + plank sway on the waves) */
+  @keyframes seaRock{
+    0%{transform:translateX(-50%) translateY(0) rotate(-1deg);}
+    50%{transform:translateX(-50%) translateY(3px) rotate(1deg);}
+    100%{transform:translateX(-50%) translateY(0) rotate(-1deg);}
+  }
+  #rig.rocking{animation:seaRock 3.4s ease-in-out infinite;}
+  /* boat: the fulcrum O. tilts around its own center bottom (waterline).
+     plank + monkeyA are children and tilt with it. */
+  #boat{position:absolute;bottom:8px;left:50%;
+    width:60px;height:60px;
+    transform:translateX(-50%);transform-origin:50% 100%;
+    transition:transform .55s cubic-bezier(.34,1.3,.5,1), left .25s;
+    z-index:10;overflow:visible;
+    filter:drop-shadow(0 3px 2px var(--shadow));}
+  #boatEmoji{position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+    font-size:52px;line-height:1;filter:drop-shadow(0 3px 2px var(--shadow));
+    white-space:nowrap;}
+  /* plank is positioned relative to #boat (its parent).
+     We shift it up so the plank bottom sits on the boat top,
+     and center it horizontally. left is adjusted by JS to set Q. */
+  #plank{position:absolute;width:340px;height:16px;border-radius:99px;
+    background:linear-gradient(180deg,var(--plank),var(--plank-d));
+    box-shadow:0 4px 0 var(--plank-dd);overflow:visible;
+    bottom:58px; /* sits on top of the boat */
+    left:50%;transform:translateX(-50%); /* centered on boat by default; JS adjusts for Q offset */
+  }
+  @keyframes settle{
+    0%{transform:translateX(-50%) rotate(9deg);}
+    20%{transform:translateX(-50%) rotate(-7deg);}
+    40%{transform:translateX(-50%) rotate(5deg);}
+    60%{transform:translateX(-50%) rotate(-3deg);}
+    80%{transform:translateX(-50%) rotate(1.5deg);}
+    100%{transform:translateX(-50%) rotate(0deg);}
+  }
+  /* tilt + wobble on #boat */
+  @keyframes boatWobble{
+    0%  {transform:translateX(-50%) rotate(calc(var(--boat-tilt) + 14deg));}
+    12% {transform:translateX(-50%) rotate(calc(var(--boat-tilt) - 11deg));}
+    24% {transform:translateX(-50%) rotate(calc(var(--boat-tilt) +  9deg));}
+    36% {transform:translateX(-50%) rotate(calc(var(--boat-tilt) -  7deg));}
+    50% {transform:translateX(-50%) rotate(calc(var(--boat-tilt) +  5deg));}
+    64% {transform:translateX(-50%) rotate(calc(var(--boat-tilt) -  3deg));}
+    78% {transform:translateX(-50%) rotate(calc(var(--boat-tilt) +  1.5deg));}
+    100%{transform:translateX(-50%) rotate(var(--boat-tilt));}
+  }
+  #boat.wobble{animation:boatWobble 1.8s ease-out forwards;}
+  /* ひっくり返り演出 */
+  @keyframes boatFlip{
+    0%  {transform:translateX(-50%) rotate(var(--boat-tilt));}
+    40% {transform:translateX(-50%) rotate(calc(var(--boat-tilt) - 60deg)) translateY(-20px);}
+    100%{transform:translateX(-50%) rotate(calc(var(--boat-tilt) - 180deg)) translateY(30px);}
+  }
+  #boat.flipping{
+    animation:boatFlip 1.2s ease-in forwards;
+    transition:none;
+  }
+  /* 仲間ボートが近づく・去る（JS制御） */
+  #tiltIndicator{
+    position:absolute;left:50%;bottom:38px;
+    transform:translateX(-50%);
+    font-size:17px;font-weight:900;
+    color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5);
+    white-space:nowrap;pointer-events:none;
+    opacity:0;transition:opacity .3s;
+    z-index:16;
+  }
+  #tiltIndicator.visible{opacity:1;}
+  /* left/right banana cumulative counts */
+  .pan-count{
+    position:absolute;bottom:20px;
+    font-size:15px;font-weight:900;
+    color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);
+    pointer-events:none;z-index:16;
+    background:rgba(0,0,0,.22);border-radius:8px;
+    padding:1px 6px;
+    opacity:0;transition:opacity .3s;
+  }
+  .pan-count.left{left:8px;}
+  .pan-count.right{right:8px;}
+  .pan-count.visible{opacity:1;}
+  #monkeyA{position:absolute;bottom:16px;transform:translateX(-50%);
+    z-index:15;pointer-events:none;width:44px;display:none;}
+  #monkeyA svg{display:block;width:44px;height:auto;filter:drop-shadow(0 2px 2px var(--shadow));}
+  #friend .b .mk svg{display:block;width:34px;height:auto;}
+  #towBoat .mk svg{display:block;width:36px;height:auto;}
+  .ts-monkey .mk svg{display:block;width:52px;height:auto;}
+  #monkeyA.catch{animation:catchPop .4s ease;}
+  @keyframes catchPop{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.2) rotate(-6deg)}}
+  /* baskets doubled width; bananas pile upward and overflow the rim */
+  .basket{position:absolute;bottom:0;width:100px;height:34px;
+    border:3px solid var(--bark);border-top:none;border-radius:0 0 14px 14px;
+    background:linear-gradient(180deg,transparent 55%,rgba(156,107,63,.18));
+    box-shadow:inset 0 -3px 0 rgba(122,82,48,.35);}
+  .basket::before{content:"";position:absolute;top:-3px;left:-6px;right:-6px;height:5px;background:var(--bark-d);border-radius:99px;}
+  .basket.left{left:4px;}.basket.right{right:4px;}
+  .pan{position:absolute;bottom:4px;width:96px;
+    display:flex;flex-wrap:wrap-reverse;align-content:flex-start;justify-content:center;gap:0;overflow:visible;}
+  .pan.left{left:6px;}.pan.right{right:6px;}
+  .pan .b{font-size:17px;line-height:13px;width:16px;text-align:center;}
+
+  /* 7 candidate points sit along the rig, just above the boat line */
+  #points{position:absolute;left:0;right:0;bottom:44px;height:20px;display:none;}
+  .pt{position:absolute;bottom:0;width:16px;height:16px;border-radius:50%;
+    background:#ffffffcc;border:3px solid var(--sea-deep);transform:translateX(-50%);box-shadow:0 2px 0 var(--shadow);}
+  .pt.center{border-color:var(--banana-d);background:var(--banana);}
+  /* sweeping marker travels across the same point line */
+  #marker{position:absolute;bottom:64px;font-size:28px;transform:translateX(-50%);
+    z-index:12;filter:drop-shadow(0 3px 2px var(--shadow));display:none;}
+
+  /* ===== falling banana bunch ===== */
+  #fall{position:absolute;left:50%;top:76px;transform:translateX(-50%);z-index:25;text-align:center;display:none;pointer-events:none;}
+  #fall .num{font-size:30px;font-weight:900;color:var(--ink);background:var(--banana);
+    border:4px solid #fff;border-radius:50%;width:56px;height:56px;display:flex;
+    align-items:center;justify-content:center;margin:0 auto;box-shadow:0 5px 0 var(--banana-d);}
+  #fall .bunch{margin:2px auto 0;max-width:200px;
+    background:rgba(255,255,255,.75);border-radius:10px;padding:3px 6px;}
+  #fall .bunch-row{display:flex;line-height:14px;flex-wrap:nowrap;}
+  #fall .bunch-row.top{justify-content:center;}
+  #fall .bunch-row span{font-size:16px;width:16px;text-align:center;}
+  #fall .bunch span{font-size:16px;width:16px;text-align:center;}
+  @keyframes hurry{0%,100%{transform:translateX(-50%) rotate(-6deg)}50%{transform:translateX(-50%) rotate(6deg)}}
+  #fall.hurry{animation:hurry .25s ease-in-out infinite;}
+  #fall.hurry .num{background:var(--coral);box-shadow:0 5px 0 var(--coral-d);color:#fff;}
+  #deadline{display:none !important;}
+
+  /* ship */
+  #ship{display:none;}
+  #ship .pile{position:absolute;left:0;right:0;bottom:30px;height:58px;
+    display:flex;flex-wrap:wrap-reverse;justify-content:center;align-content:flex-start;}
+  #ship .pile span{font-size:15px;line-height:12px;animation:plop .4s cubic-bezier(.3,1.4,.5,1);}
+  @keyframes plop{0%{transform:translateY(-24px) scale(.5);opacity:0}60%{transform:translateY(2px) scale(1.2);opacity:1}100%{transform:translateY(0) scale(1)}}
+  #ship .hull{font-size:48px;line-height:1;}
+  #ship .cnt{position:absolute;left:50%;bottom:-2px;transform:translateX(-50%);
+    background:var(--banana);color:var(--ink);font-weight:900;font-size:13px;
+    padding:1px 9px;border-radius:99px;border:2px solid #fff;box-shadow:0 2px 0 var(--shadow);}
+
+  /* ===== number pads + center button ===== */
+  #splitRow{display:none;position:absolute;top:72px;left:0;right:0;bottom:0;z-index:22;
+    justify-content:space-between;align-items:flex-start;gap:0;padding:0 6vw;pointer-events:none;}
+  .splitBox{width:34vw;max-width:208px;background:var(--cream);border:3px solid #fff;border-radius:16px;
+    padding:4px 6px 6px;text-align:center;box-shadow:0 4px 0 var(--shadow);pointer-events:auto;
+    transition:background .15s,border-color .15s;}
+  .splitBox .lab{display:none;}
+  .splitBox .val{font-size:28px;font-weight:900;line-height:1;min-height:30px;}
+  .splitBox.wrong{background:#ffe0d8;border-color:var(--coral);}
+  .splitBox.wrong .val{color:var(--coral-d);}
+  .splitBox.right{background:#e3f9e6;border-color:var(--leaf);}
+  .splitBox.right .val{color:var(--leaf-d);}
+  /* テンキー配置: 3列4行 */
+  .numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:5px;}
+  .numpad button{height:38px;border:none;border-radius:8px;font-size:18px;font-weight:900;
+    background:#fff;box-shadow:0 4px 0 var(--shadow);cursor:pointer;font-family:inherit;color:var(--ink);
+    transition:transform .06s,box-shadow .06s;}
+  .numpad button[data-n="0"]{grid-column:span 1;}
+  .numpad button[data-n="10"]{grid-column:span 2;}
+  .numpad button:active{transform:translateY(3px);box-shadow:0 1px 0 var(--shadow);}
+  .numpad button.sel{background:var(--banana);box-shadow:0 4px 0 var(--banana-d);}
+
+  /* ===== bottom deck ===== */
+  #deck{position:absolute;left:0;right:0;bottom:0;z-index:30;
+    padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+    background:linear-gradient(180deg,transparent,var(--cream) 45%);}
+  .bigbtn{display:block;width:100%;border:none;border-radius:22px;padding:16px;font-size:23px;
+    font-weight:900;color:#fff;background:var(--coral);box-shadow:0 6px 0 var(--coral-d);
+    cursor:pointer;transition:transform .05s,box-shadow .05s;font-family:inherit;}
+  .bigbtn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--coral-d);}
+  /* start button */
+  .bigbtn.banana{background:var(--banana);box-shadow:0 6px 0 var(--banana-d);color:var(--ink);}
+  .bigbtn.green{background:var(--leaf);box-shadow:0 6px 0 var(--leaf-d);}
+
+  /* ===== overlays ===== */
+  .overlay{position:absolute;inset:0;z-index:60;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center;padding:24px;gap:16px;
+    background:linear-gradient(180deg,rgba(134,215,255,.55),rgba(227,248,255,.85));backdrop-filter:blur(2px);}
+  #titleOverlay{gap:8px;justify-content:flex-start;padding:12px 24px 20px;overflow-y:auto;}
+  #recordOverlay{align-items:stretch;padding:12px;overflow-y:auto;}
+  #recordBox{background:#fff;border-radius:20px;padding:16px 14px;
+    box-shadow:0 6px 0 var(--shadow);overflow-y:auto;max-height:100%;
+    display:flex;flex-direction:column;gap:10px;}
+  .record-title{font-size:20px;font-weight:900;color:var(--ink);text-align:center;}
+  .record-subtitle{font-size:12px;color:#888;text-align:center;margin-top:-6px;}
+  .record-empty{text-align:center;color:#aaa;font-size:14px;padding:20px;}
+  .record-table{width:100%;border-collapse:collapse;font-size:13px;}
+  .record-table th{background:#1a6a9a;color:#fff;padding:6px 4px;text-align:center;font-size:12px;}
+  .record-table td{padding:7px 4px;text-align:center;border-bottom:1px solid #e0e8f0;color:var(--ink);}
+  .record-table tr:nth-child(1) td{background:#fff8e0;font-weight:900;}
+  .record-table tr:nth-child(2) td{background:#f0f8ff;}
+  .record-rank{font-size:16px;}
+  .record-pts{font-size:15px;font-weight:900;color:var(--coral);}
+  .record-clear-btn{background:#e8f4ff;border:none;border-radius:8px;padding:6px 14px;
+    font-size:11px;font-weight:700;color:#888;cursor:pointer;font-family:inherit;margin-top:4px;align-self:center;}
+  /* ===== ルールページ ===== */
+  #ruleOverlay{align-items:stretch;padding:12px;overflow-y:auto;}
+  #ruleBox{background:#fff;border-radius:20px;padding:16px 14px;
+    box-shadow:0 6px 0 var(--shadow);overflow-y:auto;max-height:100%;
+    display:flex;flex-direction:column;gap:12px;}
+  .rule-title{font-size:22px;font-weight:900;color:var(--ink);text-align:center;}
+  .rule-section{display:flex;flex-direction:column;gap:6px;}
+  .rule-head{font-size:15px;font-weight:900;color:#1a6a9a;border-left:4px solid #1a6a9a;padding-left:8px;}
+  .rule-body p{font-size:13px;font-weight:700;color:var(--ink);margin:2px 0;line-height:1.5;text-align:left;}
+  .rule-body b{color:var(--coral);}
+  .rule-table{width:100%;border-collapse:collapse;font-size:12px;font-weight:700;}
+  .rule-table th{background:#1a6a9a;color:#fff;padding:5px 4px;text-align:center;font-size:12px;}
+  .rule-table td{padding:5px 4px;text-align:center;border-bottom:1px solid #e0e8f0;color:var(--ink);}
+  .rule-table tr:nth-child(even) td{background:#f4f8ff;}
+  .rule-table small{font-size:10px;color:#888;}
+  .pts-cell{font-weight:900;font-size:15px;color:var(--coral);}
+  .lv5row td{background:#fff8e0;color:#c06000;font-weight:900;}
+  .logo-wrap{display:flex;flex-direction:column;align-items:center;gap:2px;}
+  .logo-super{font-size:clamp(12px,3.5vw,18px);font-weight:800;color:#fff;
+    text-shadow:0 2px 0 var(--shadow);letter-spacing:.05em;opacity:.92;}
+  .logo{font-size:clamp(38px,11vw,72px);font-weight:900;color:#fff;line-height:1;
+    text-shadow:0 4px 0 var(--banana-d),0 7px 0 var(--shadow);transform:rotate(-3deg);
+    white-space:nowrap;}
+  .logo-sub{font-size:clamp(14px,4vw,20px);font-weight:900;color:var(--ink);
+    text-shadow:none;letter-spacing:.05em;margin-top:6px;}
+  #titleScene{border-radius:24px;border:4px solid #fff;box-shadow:0 8px 0 var(--shadow);
+    max-width:380px;width:90%;overflow:hidden;flex-shrink:0;}
+  #titleSVG{display:block;width:100%;height:auto;}
+  .bubble h2{margin:0 0 6px;font-size:24px;}
+  .bubble p{margin:6px 0;font-size:15px;font-weight:700;line-height:1.55;}
+  #stageOverlay .bubble h2{font-size:52px;}
+  #stageOverlay .bubble p{font-size:22px;}
+  /* stage picker */
+  .stagepick{display:flex;gap:8px;justify-content:center;width:90%;max-width:380px;}
+  .stgbtn{flex:1;padding:7px 4px;border:none;border-radius:14px;
+    background:#fff;box-shadow:0 5px 0 var(--shadow);cursor:pointer;
+    font-family:inherit;color:var(--ink);font-size:13px;font-weight:900;
+    display:flex;flex-direction:column;align-items:center;gap:2px;transition:transform .06s;}
+  .stgbtn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--shadow);}
+  .stgbtn.sel{background:#2196f3;box-shadow:0 5px 0 #1565c0;color:#fff;}
+  .stgbtn .stg-icon{font-size:18px;line-height:1;}
+  .stgbtn .stg-name{font-size:11px;font-weight:900;}
+  .stgbtn .stg-desc{font-size:9px;font-weight:700;opacity:.75;white-space:nowrap;}
+  .stagepick-label,.levelpick-label{font-size:11px;font-weight:700;color:#1a6a9a;width:90%;max-width:380px;text-align:left;}
+  /* level picker */
+  .levelpick{display:flex;gap:6px;flex-wrap:nowrap;justify-content:center;width:90%;max-width:380px;}
+  .lvbtn{flex:1;min-width:0;padding:5px 2px 6px;border:none;border-radius:16px;
+    background:#fff;box-shadow:0 5px 0 var(--shadow);cursor:pointer;font-family:inherit;color:var(--ink);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
+    text-align:center;transition:transform .06s;}
+  .lvbtn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--shadow);}
+  .lvbtn.sel{background:#2196f3;box-shadow:0 5px 0 #1565c0;color:#fff;}
+  .lv-num{font-size:11px;font-weight:900;line-height:1.1;white-space:nowrap;}
+  .lv-bana{font-size:12px;line-height:1;letter-spacing:-2px;margin-top:1px;}
+  .lv-label{font-size:9px;font-weight:700;line-height:1.2;white-space:nowrap;margin-top:1px;}
+  .lvbtn{flex:1;min-width:0;padding:5px 2px 6px;border:none;border-radius:16px;
+    background:#fff;box-shadow:0 5px 0 var(--shadow);cursor:pointer;font-family:inherit;color:var(--ink);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
+    text-align:center;transition:transform .06s;}
+  .lvbtn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--shadow);}
+  .lvbtn.sel{background:#2196f3;box-shadow:0 5px 0 #1565c0;color:#fff;}
+  .lv-num{font-size:11px;font-weight:900;line-height:1.1;white-space:nowrap;}
+  .lv-bana{font-size:12px;line-height:1;letter-spacing:-2px;margin-top:1px;}
+  .lv-label{font-size:9px;font-weight:700;line-height:1.2;white-space:nowrap;margin-top:1px;}
+
+  /* ===== clear tow animation ===== */
+  #towBoat{position:absolute;z-index:20;font-size:40px;text-align:center;display:none;}
+  #towRope{position:absolute;z-index:19;height:3px;background:var(--bark-d);
+    transform-origin:left center;display:none;}
+
+
+
+  #toast{position:absolute;left:50%;top:36%;transform:translate(-50%,-50%) scale(.6);z-index:55;
+    font-size:30px;font-weight:900;color:#fff;text-shadow:0 3px 0 var(--coral-d);opacity:0;pointer-events:none;
+    text-align:center;line-height:1.3;white-space:nowrap;}
+  #toast .pts{font-size:20px;font-weight:700;display:block;}
+  #toast.show{animation:pop 1.1s ease forwards;}
+  @keyframes pop{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}20%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}
+    80%{opacity:1;transform:translate(-50%,-60%) scale(1)}100%{opacity:0;transform:translate(-50%,-80%) scale(1)}}
+  .spark{position:absolute;z-index:54;font-size:22px;pointer-events:none;animation:sparkle .9s ease forwards;}
+  @keyframes sparkle{0%{opacity:0;transform:translateY(0) scale(.4)}30%{opacity:1}100%{opacity:0;transform:translateY(-60px) scale(1.2)}}
+
+  .hidden{display:none!important;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="tiltWarning"></div>
+
+  <div class="cloud" style="top:16%;animation-duration:36s;">☁️</div>
+  <div class="cloud" style="top:26%;font-size:34px;animation-duration:48s;animation-delay:-14s;">☁️</div>
+
+  <div id="hud">
+    <div class="panel"><small>もんだい</small><span class="big"><span id="qcount">0</span>/<span id="qgoal">10</span>もん</span></div>
+    <div class="panel"><small>てんすう</small><span class="big" id="loaded">0</span></div>
+  </div>
+  <button id="quitBtn" title="やめる">⏹</button>
+
+  <div id="treetop">
+    <div class="tbananas">🍌🍌🍌</div>
+    <div class="canopy">🌴</div>
+    <div class="bigcloud">☁️</div>
+  </div>
+
+  <div id="fall"><div class="num" id="fallNum">10</div><div class="bunch" id="fallBunch"></div></div>
+  <div id="deadline"></div>
+
+  <div id="sea">
+    <div class="wave" style="top:20%;"></div>
+    <div class="wave" style="top:50%;"></div>
+  </div>
+
+  <div id="friend">
+    <div class="b" style="display:flex;gap:2px;justify-content:center;">
+      <span class="mk" style="display:inline-block;width:28px;"></span>
+      <span class="mk" style="display:inline-block;width:28px;"></span>
+    </div>
+    <div class="boat">🛶</div>
+  </div>
+
+  <!-- boatA: monkeyA waits here during sweep phase -->
+  <div id="boatA">
+    <span class="mk"></span>
+    <div class="boat">🚣</div>
+  </div>
+
+  <!-- everything that shares the plank coordinate space lives inside #rig -->
+  <div id="rig">
+    <div id="points"></div>
+    <div id="marker">⬇️</div>
+    <div id="boat">
+      <span id="boatEmoji">⛵</span>
+      <div id="plank">
+        <div class="basket left"></div>
+        <div class="basket right"></div>
+        <div class="pan left" id="panL"></div>
+        <div class="pan right" id="panR"></div>
+        <div id="monkeyA"></div>
+        <div id="tiltIndicator"></div>
+        <div id="panCountL" class="pan-count left"></div>
+        <div id="panCountR" class="pan-count right"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="ship"><div class="pile" id="pile"></div><div class="hull">🚢</div><div class="cnt" id="shipCnt">0</div></div>
+
+  <div id="splitRow">
+    <div class="splitBox"><div class="lab">ひだり</div><div class="val" id="valL">−</div><div class="numpad" id="padL"></div></div>
+    <div class="splitBox"><div class="lab">みぎ</div><div class="val" id="valR">−</div><div class="numpad" id="padR"></div></div>
+  </div>
+
+  <div id="deck"><button class="bigbtn" id="stopBtn">スタート</button></div>
+
+  <div id="towRope"></div>
+  <div id="towBoat"><span class="mk" style="display:inline-block;width:36px"></span><div style="font-size:38px">🛶</div></div>
+
+  <div id="toast"></div>
+
+  <div class="overlay" id="titleOverlay">
+    <div class="logo-wrap">
+      <span class="logo-super"></span>
+      <div class="logo">ぐらぐらバナナ</div>
+      <span class="logo-sub">かずをわけよう</span>
+    </div>
+    <div id="titleScene">
+      <svg id="titleSVG" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 200" width="100%" style="display:block;">
+        <defs>
+          <linearGradient id="skyG" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#56b4e8"/><stop offset="100%" stop-color="#a8d8f0"/>
+          </linearGradient>
+          <linearGradient id="seaG" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#1a7fc0"/><stop offset="100%" stop-color="#0a4a80"/>
+          </linearGradient>
+          <linearGradient id="boatL" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#f0ead0"/><stop offset="100%" stop-color="#d4c8a0"/>
+          </linearGradient>
+          <style>
+            .sv-cloud-l{animation:svDriftL 6s ease-in-out infinite;}
+            .sv-cloud-r{animation:svDriftR 7s ease-in-out infinite;}
+            .sv-cloud-c{animation:svDriftL 8s ease-in-out infinite 1s;}
+            .sv-boat-l{animation:svBoatL 3.2s ease-in-out infinite;}
+            .sv-boat-r{animation:svBoatR 2.8s ease-in-out infinite 0.6s;}
+            @keyframes svDriftL{0%,100%{transform:translateX(0)}50%{transform:translateX(8px)}}
+            @keyframes svDriftR{0%,100%{transform:translateX(0)}50%{transform:translateX(-8px)}}
+            @keyframes svBoatL{
+              0%,100%{transform:translateY(0) rotate(0deg);}
+              25%{transform:translateY(-4px) rotate(1deg);}
+              75%{transform:translateY(2px) rotate(-1deg);}
+            }
+            @keyframes svBoatR{
+              0%,100%{transform:translateY(0) rotate(0deg);}
+              25%{transform:translateY(3px) rotate(-1.5deg);}
+              75%{transform:translateY(-3px) rotate(1.5deg);}
+            }
+          </style>
+        </defs>
+
+        <!-- ===== 空 ===== -->
+        <rect width="380" height="200" fill="url(#skyG)"/>
+
+        <!-- 雲・左 -->
+        <g class="sv-cloud-l">
+          <ellipse cx="38" cy="32" rx="28" ry="14" fill="#fff" opacity=".95"/>
+          <ellipse cx="20" cy="40" rx="18" ry="12" fill="#fff" opacity=".95"/>
+          <ellipse cx="56" cy="40" rx="18" ry="12" fill="#fff" opacity=".95"/>
+        </g>
+        <!-- 雲・右 -->
+        <g class="sv-cloud-r">
+          <ellipse cx="342" cy="28" rx="28" ry="14" fill="#fff" opacity=".90"/>
+          <ellipse cx="324" cy="36" rx="18" ry="12" fill="#fff" opacity=".90"/>
+          <ellipse cx="360" cy="36" rx="18" ry="12" fill="#fff" opacity=".90"/>
+        </g>
+
+        <!-- ===== 中央上：雲の上のヤシ島 ===== -->
+        <g class="sv-cloud-c">
+        <!-- 雲（島の土台） -->
+        <ellipse cx="190" cy="50" rx="42" ry="20" fill="#fff" opacity=".98"/>
+        <ellipse cx="162" cy="60" rx="26" ry="16" fill="#fff" opacity=".98"/>
+        <ellipse cx="218" cy="60" rx="26" ry="16" fill="#fff" opacity=".98"/>
+        <ellipse cx="190" cy="64" rx="38" ry="16" fill="#fff" opacity=".98"/>
+        <!-- ヤシ幹 -->
+        <path d="M190 64 Q186 40 190 14" stroke="#8B5E2A" stroke-width="7" fill="none" stroke-linecap="round"/>
+        <!-- ヤシ葉 -->
+        <path d="M190 16 Q168 4 152 12" stroke="#2e8b2e" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <path d="M190 16 Q178 0 184 -8" stroke="#38a838" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <path d="M190 16 Q204 2 218 8" stroke="#2e8b2e" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <path d="M190 16 Q210 14 224 22" stroke="#38a838" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <path d="M190 16 Q168 20 156 28" stroke="#2e8b2e" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <!-- バナナの房（ヤシから垂れ下がる） -->
+        <!-- 房1 -->
+        <path d="M186 26 C180 22 172 26 174 34 C176 40 184 40 186 34" fill="#F5C800" stroke="#c8960a" stroke-width="1.2"/>
+        <path d="M186 26 C178 24 170 30 173 38 C176 44 184 42 184 36" fill="#F5C800" stroke="#c8960a" stroke-width="1.2"/>
+        <!-- 房2 -->
+        <path d="M192 28 C198 22 206 26 204 34 C202 40 194 40 194 34" fill="#F5C800" stroke="#c8960a" stroke-width="1.2"/>
+        <path d="M192 28 C200 26 208 32 205 40 C202 46 194 44 196 38" fill="#F5C800" stroke="#c8960a" stroke-width="1.2"/>
+
+        <!-- ===== 海 ===== -->
+        <rect y="148" width="380" height="52" fill="url(#seaG)"/>
+        <!-- 波 -->
+        <path d="M0 150 Q20 143 40 150 Q60 157 80 150 Q100 143 120 150 Q140 157 160 150 Q180 143 200 150 Q220 157 240 150 Q260 143 280 150 Q300 157 320 150 Q340 143 360 150 Q370 153 380 150 L380 162 L0 162Z" fill="#3aa0d8" opacity="0.5"/>
+        <path d="M0 162 Q30 156 60 162 Q90 168 120 162 Q150 156 180 162 Q210 168 240 162 Q270 156 300 162 Q330 168 360 162 Q370 164 380 162 L380 172 L0 172Z" fill="#2888c0" opacity="0.4"/>
+
+        </g><!-- /sv-cloud-c -->
+
+        <!-- ===== 左：大きなボート ===== -->
+        <g class="sv-boat-l">
+        <!-- 船体 -->
+        <path d="M12 165 Q16 148 36 144 L178 144 Q194 148 196 165 Z" fill="url(#boatL)"/>
+        <path d="M16 162 Q18 150 36 147 L178 147 Q192 150 194 162 Z" fill="#e8c87a" opacity="0.6"/>
+        <!-- 赤いライン -->
+        <rect x="16" y="151" width="176" height="5" rx="2" fill="#d03030"/>
+        <!-- 船内（茶色） -->
+        <rect x="32" y="144" width="140" height="8" rx="3" fill="#a07840"/>
+        <!-- オール -->
+        <line x1="30" y1="148" x2="14" y2="172" stroke="#8B5E2A" stroke-width="5" stroke-linecap="round"/>
+        <ellipse cx="12" cy="174" rx="8" ry="4" fill="#a07840" transform="rotate(-30 12 174)"/>
+
+        <!-- シーソー板（さる①が両手で支える） -->
+        <!-- 板 -->
+        <rect x="30" y="108" width="230" height="10" rx="5" fill="#a07030" transform="rotate(-10 30 108)"/>
+        <!-- 板のハイライト -->
+        <rect x="30" y="108" width="230" height="3" rx="2" fill="#c8a050" opacity="0.6" transform="rotate(-10 30 108)"/>
+
+        <!-- バナナ山・左（板の左端上） -->
+        <!-- 房を重ねて山にする -->
+        <g transform="rotate(-10 30 108)">
+          <!-- 下段 -->
+          <path d="M42 92 C38 82 48 74 56 80 C62 86 56 96 48 94" fill="#F5C800" stroke="#c8960a" stroke-width="1.2"/>
+          <path d="M54 90 C50 80 60 72 68 78 C74 84 68 94 60 92" fill="#F5C800" stroke="#c8960a" stroke-width="1.2"/>
+          <path d="M66 92 C62 82 72 74 80 80 C86 86 80 96 72 94" fill="#F5C800" stroke="#c8960a" stroke-width="1.2"/>
+          <!-- 上段 -->
+          <path d="M48 80 C44 70 54 62 62 68 C68 74 62 84 54 82" fill="#ffd020" stroke="#c8960a" stroke-width="1.2"/>
+          <path d="M60 78 C56 68 66 60 74 66 C80 72 74 82 66 80" fill="#ffd020" stroke="#c8960a" stroke-width="1.2"/>
+          <!-- ヘタ -->
+          <circle cx="44" cy="92" r="2.5" fill="#5a8a20"/>
+          <circle cx="56" cy="90" r="2.5" fill="#5a8a20"/>
+          <circle cx="68" cy="92" r="2.5" fill="#5a8a20"/>
+          <circle cx="50" cy="80" r="2.5" fill="#5a8a20"/>
+          <circle cx="62" cy="78" r="2.5" fill="#5a8a20"/>
+        </g>
+
+        <!-- バナナ・右（板の右端に2本） -->
+        <g transform="rotate(-10 30 108)">
+          <path d="M232 96 C228 86 238 78 246 84 C252 90 246 100 238 98" fill="#F5C800" stroke="#c8960a" stroke-width="1.5"/>
+          <path d="M246 94 C242 84 252 76 260 82 C266 88 260 98 252 96" fill="#ffd020" stroke="#c8960a" stroke-width="1.5"/>
+          <circle cx="234" cy="96" r="2.8" fill="#5a8a20"/>
+          <circle cx="248" cy="94" r="2.8" fill="#5a8a20"/>
+        </g>
+
+        <!-- ===== さる①（大ボート・板を両手で持ち上げ） ===== -->
+        <!-- しっぽ -->
+        <path d="M122 142 Q136 132 134 146 Q132 158 122 154" fill="none" stroke="#7B4F2E" stroke-width="3.5" stroke-linecap="round"/>
+        <!-- 胴体 -->
+        <rect x="98" y="118" width="26" height="28" rx="11" fill="#A0623A"/>
+        <!-- お腹（薄い色） -->
+        <ellipse cx="111" cy="130" rx="9" ry="11" fill="#D4956A"/>
+        <!-- 左腕（上・板を支える） -->
+        <path d="M98 122 Q88 112 96 104" fill="none" stroke="#A0623A" stroke-width="7" stroke-linecap="round"/>
+        <ellipse cx="96" cy="102" rx="5" ry="5" fill="#C8845A"/>
+        <!-- 右腕（上・板を支える） -->
+        <path d="M124 120 Q134 110 128 102" fill="none" stroke="#A0623A" stroke-width="7" stroke-linecap="round"/>
+        <ellipse cx="128" cy="100" rx="5" ry="5" fill="#C8845A"/>
+        <!-- 足 -->
+        <path d="M104 144 Q102 150 100 152" fill="none" stroke="#A0623A" stroke-width="6" stroke-linecap="round"/>
+        <path d="M118 144 Q120 150 122 152" fill="none" stroke="#A0623A" stroke-width="6" stroke-linecap="round"/>
+        <ellipse cx="99" cy="153" rx="7" ry="4" fill="#C8845A"/>
+        <ellipse cx="123" cy="153" rx="7" ry="4" fill="#C8845A"/>
+        <!-- 耳 -->
+        <circle cx="92" cy="100" r="8" fill="#A0623A"/><circle cx="92" cy="100" r="5" fill="#D4956A"/>
+        <circle cx="130" cy="98" r="8" fill="#A0623A"/><circle cx="130" cy="98" r="5" fill="#D4956A"/>
+        <!-- 頭 -->
+        <ellipse cx="111" cy="98" rx="22" ry="20" fill="#A0623A"/>
+        <!-- マズル -->
+        <ellipse cx="111" cy="106" rx="13" ry="10" fill="#D4956A"/>
+        <!-- ほっぺ -->
+        <circle cx="100" cy="105" r="4" fill="#e8806a" opacity="0.5"/>
+        <circle cx="122" cy="105" r="4" fill="#e8806a" opacity="0.5"/>
+        <!-- 目 -->
+        <circle cx="104" cy="94" r="6.5" fill="#fff"/><circle cx="104" cy="95" r="4.5" fill="#2a1005"/><circle cx="105" cy="93" r="2" fill="#fff"/>
+        <circle cx="118" cy="94" r="6.5" fill="#fff"/><circle cx="118" cy="95" r="4.5" fill="#2a1005"/><circle cx="119" cy="93" r="2" fill="#fff"/>
+        <!-- 鼻 -->
+        <circle cx="108" cy="103" r="2.2" fill="#7B4F2E"/><circle cx="114" cy="103" r="2.2" fill="#7B4F2E"/>
+        <!-- 口（笑顔・開き） -->
+        <path d="M103 109 Q111 116 119 109" fill="#d05030" stroke="#7B4F2E" stroke-width="1.5" stroke-linecap="round"/>
+        <!-- キラキラ（力を入れている） -->
+        <path d="M74 110 L78 106 M72 106 L80 110 M76 102 L76 114" stroke="#f0c000" stroke-width="2.5" stroke-linecap="round"/>
+
+        </g><!-- /sv-boat-l -->
+
+        <!-- ===== 右：小さなボート+さる②③ ===== -->
+        <g class="sv-boat-r">
+        <!-- 船体 -->
+        <path d="M244 166 Q247 152 262 148 L346 148 Q358 152 360 166 Z" fill="url(#boatL)"/>
+        <rect x="248" y="154" width="108" height="5" rx="2" fill="#d03030"/>
+        <!-- 操舵室 -->
+        <rect x="320" y="134" width="36" height="20" rx="4" fill="#f0ead0"/>
+        <rect x="320" y="134" width="36" height="6" rx="4" fill="#d03030"/>
+        <!-- 窓 -->
+        <circle cx="338" cy="147" r="6" fill="#a8d0e8" stroke="#aaa" stroke-width="1.5"/>
+        <!-- 旗竿 -->
+        <line x1="340" y1="134" x2="340" y2="110" stroke="#8B5E2A" stroke-width="3"/>
+        <!-- 旗 -->
+        <path d="M340 110 L340 124 L360 118 Z" fill="#2050d0"/>
+
+        <!-- さる②（左・手を振る） -->
+        <!-- 胴体 -->
+        <rect x="256" y="128" width="20" height="22" rx="8" fill="#A0623A"/>
+        <ellipse cx="266" cy="138" rx="7" ry="9" fill="#D4956A"/>
+        <!-- 右腕（手を振る） -->
+        <path d="M276 132 Q286 120 288 110" fill="none" stroke="#A0623A" stroke-width="5.5" stroke-linecap="round"/>
+        <ellipse cx="289" cy="108" rx="4.5" ry="4.5" fill="#C8845A"/>
+        <!-- 左腕 -->
+        <path d="M256 134 Q248 132 246 140" fill="none" stroke="#A0623A" stroke-width="5.5" stroke-linecap="round"/>
+        <ellipse cx="245" cy="142" rx="4" ry="3.5" fill="#C8845A"/>
+        <!-- 耳 -->
+        <circle cx="252" cy="118" r="6" fill="#A0623A"/><circle cx="252" cy="118" r="3.8" fill="#D4956A"/>
+        <circle cx="280" cy="118" r="6" fill="#A0623A"/><circle cx="280" cy="118" r="3.8" fill="#D4956A"/>
+        <!-- 頭 -->
+        <ellipse cx="266" cy="117" rx="17" ry="15" fill="#A0623A"/>
+        <ellipse cx="266" cy="123" rx="10" ry="8" fill="#D4956A"/>
+        <!-- ほっぺ -->
+        <circle cx="258" cy="122" r="3.5" fill="#e8806a" opacity="0.5"/>
+        <circle cx="274" cy="122" r="3.5" fill="#e8806a" opacity="0.5"/>
+        <!-- 目 -->
+        <circle cx="260" cy="113" r="5.5" fill="#fff"/><circle cx="260" cy="114" r="3.8" fill="#2a1005"/><circle cx="261" cy="112" r="1.6" fill="#fff"/>
+        <circle cx="272" cy="113" r="5.5" fill="#fff"/><circle cx="272" cy="114" r="3.8" fill="#2a1005"/><circle cx="273" cy="112" r="1.6" fill="#fff"/>
+        <circle cx="263" cy="120" r="1.8" fill="#7B4F2E"/><circle cx="269" cy="120" r="1.8" fill="#7B4F2E"/>
+        <path d="M258 125 Q266 130 274 125" fill="#d05030" stroke="#7B4F2E" stroke-width="1.5" stroke-linecap="round"/>
+        <!-- キラキラ -->
+        <path d="M292 106 L295 102 M290 102 L297 107 M293 99 L293 110" stroke="#e03020" stroke-width="2" stroke-linecap="round"/>
+
+        <!-- さる③（右・にっこり） -->
+        <rect x="292" y="130" width="20" height="22" rx="8" fill="#A0623A"/>
+        <ellipse cx="302" cy="140" rx="7" ry="9" fill="#D4956A"/>
+        <!-- 右腕（胸の前） -->
+        <path d="M312 134 Q318 130 316 140" fill="none" stroke="#A0623A" stroke-width="5.5" stroke-linecap="round"/>
+        <ellipse cx="316" cy="142" rx="4" ry="3.5" fill="#C8845A"/>
+        <!-- 左腕 -->
+        <path d="M292 136 Q284 134 284 144" fill="none" stroke="#A0623A" stroke-width="5.5" stroke-linecap="round"/>
+        <ellipse cx="283" cy="146" rx="4" ry="3.5" fill="#C8845A"/>
+        <!-- しっぽ -->
+        <path d="M312 150 Q322 142 320 154 Q318 162 310 159" fill="none" stroke="#7B4F2E" stroke-width="3" stroke-linecap="round"/>
+        <!-- 耳 -->
+        <circle cx="288" cy="120" r="6" fill="#A0623A"/><circle cx="288" cy="120" r="3.8" fill="#D4956A"/>
+        <circle cx="316" cy="120" r="6" fill="#A0623A"/><circle cx="316" cy="120" r="3.8" fill="#D4956A"/>
+        <!-- 頭 -->
+        <ellipse cx="302" cy="119" rx="17" ry="15" fill="#A0623A"/>
+        <ellipse cx="302" cy="125" rx="10" ry="8" fill="#D4956A"/>
+        <!-- ほっぺ -->
+        <circle cx="294" cy="124" r="3.5" fill="#e8806a" opacity="0.5"/>
+        <circle cx="310" cy="124" r="3.5" fill="#e8806a" opacity="0.5"/>
+        <!-- 目（細めて笑顔） -->
+        <path d="M296 115 Q302 112 308 115" fill="none" stroke="#2a1005" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="299" cy="113" r="4.5" fill="#fff"/><circle cx="299" cy="114" r="3" fill="#2a1005"/><circle cx="300" cy="112" r="1.4" fill="#fff"/>
+        <circle cx="305" cy="113" r="4.5" fill="#fff"/><circle cx="305" cy="114" r="3" fill="#2a1005"/><circle cx="306" cy="112" r="1.4" fill="#fff"/>
+        <circle cx="299" cy="122" r="1.8" fill="#7B4F2E"/><circle cx="305" cy="122" r="1.8" fill="#7B4F2E"/>
+        <path d="M295 127 Q302 132 309 127" fill="#d05030" stroke="#7B4F2E" stroke-width="1.5" stroke-linecap="round"/>
+        </g><!-- /sv-boat-r -->
+      </svg>
+    </div>
+    <div class="stagepick-label">ステージをえらぼう</div>
+    <div class="stagepick" id="stagePick"></div>
+    <div class="levelpick-label">レベルをえらぼう</div>
+    <div class="levelpick" id="levelPick"></div>
+    <button class="bigbtn green" id="startBtn" style="width:50%;min-width:120px;margin:0 auto;">スタート！</button>
+    <div style="display:flex;gap:12px;justify-content:center;width:90%;max-width:380px;flex-wrap:wrap;">
+      <button id="ruleBtn" style="background:none;border:none;color:#1a6a9a;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;text-decoration:underline;">📖 ルールをみる</button>
+      <button id="recordBtn" style="background:none;border:none;color:#c06000;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;text-decoration:underline;">🏆 きろくをみる</button>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;justify-content:center;width:90%;max-width:380px;">
+      <button id="bgmBtn" style="background:rgba(255,255,255,.8);border:2px solid #cce;border-radius:20px;padding:6px 14px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;color:#1a6a9a;white-space:nowrap;flex:1;">🔊 おんがく：オン</button>
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSen03GqmuSSITIVAnq78pHOmk8KiXkWC4JBiw3qn912SbTnGQ/viewform?usp=header" target="_blank" style="font-size:12px;font-weight:700;color:#999;font-family:inherit;text-decoration:none;white-space:nowrap;">🐛 バグほうこく</a>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="ruleOverlay">
+    <div id="ruleBox">
+      <div class="rule-title">📖 ルール</div>
+
+      <div class="rule-section">
+        <div class="rule-head">🎮 あそびかた</div>
+        <div class="rule-body">
+          <p>①「とめる！」ボタンをおして、シーソーのしかけ（バランスのちゅうしん）をきめよう。</p>
+          <p>②バナナが うえから おちてくる！おちてくるまでに、ひだりと みぎに <b>わけかたをえらんで</b> ボタンをおそう。</p>
+          <p>③シーソーがかたむきすぎると<b>ゲームオーバー</b>！うまくわけてバランスをたもとう！</p>
+        </div>
+      </div>
+
+      <div class="rule-section">
+        <div class="rule-head">⚖️ かたむきのしくみ</div>
+        <div class="rule-body">
+          <p>シーソーの かたむきは、<b>ひだりとみぎのバナナのごうけいのさ</b>できまります。</p>
+        </div>
+        <table class="rule-table">
+          <tr><th>ひだりとみぎのさ</th><th>おしらせ</th></tr>
+          <tr><td>1〜3ほん</td><td>⬜ ふつう</td></tr>
+          <tr><td>4〜5ほん</td><td style="color:#ff8800;font-weight:900;">🟠 きけん！</td></tr>
+          <tr><td>6〜7ほん</td><td style="color:#ff4444;font-weight:900;">🔴 あぶない！⚠️</td></tr>
+          <tr><td>8〜9ほん</td><td style="color:#cc0000;font-weight:900;">💥 ゲームオーバー！</td></tr>
+        </table>
+        <div class="rule-body" style="margin-top:4px;">
+          <p>※しかけのいちも かたむきにえいきょうします。はしにとめると すこし かたむいてスタート！</p>
+        </div>
+      </div>
+
+      <div class="rule-section">
+        <div class="rule-head">⭐ てんすうのしくみ</div>
+        <table class="rule-table">
+          <tr><th>わけかた</th><th>てんすう</th><th>ひょうじ</th></tr>
+          <tr><td>ぴったり はんぶん<br><small>（さが０・ぐうすうのとき）</small></td><td class="pts-cell">３てん</td><td>⭐ はんぶん！</td></tr>
+          <tr><td>きすうのとき さが１<br><small>（れい：9→5と4）</small></td><td class="pts-cell">３てん</td><td>✨ ほぼはんぶん！</td></tr>
+          <tr><td>それいがい</td><td class="pts-cell">１てん</td><td>おっとっと💦</td></tr>
+        </table>
+      </div>
+
+      <div class="rule-section">
+        <div class="rule-head">📊 レベルのちがい</div>
+        <table class="rule-table">
+          <tr><th>レベル</th><th>バナナのかず</th><th>ゴール</th><th>おちるまでの<br>じかん</th></tr>
+          <tr><td>レベル１🍌</td><td>2・4・6・8・10</td><td>10もん</td><td>12びょう</td></tr>
+          <tr><td>レベル２🍌🍌</td><td>3〜10</td><td>15もん</td><td>10びょう</td></tr>
+          <tr><td>レベル３🍌🍌🍌</td><td>8・10・12・14・16・18</td><td>15もん</td><td>9びょう</td></tr>
+          <tr><td>レベル４🍌🍌🍌🍌</td><td>8〜18</td><td>20もん</td><td>7.5びょう</td></tr>
+          <tr class="lv5row"><td>レベル５<br>はやくなる！</td><td>8〜20</td><td>しっぱい<br>するまで</td><td>だんだん<br>はやくなる！</td></tr>
+        </table>
+      </div>
+
+      <button class="bigbtn green" id="ruleCloseBtn" style="width:60%;min-width:140px;margin:4px auto 0;display:block;">とじる</button>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="recordOverlay">
+    <div id="recordBox">
+      <div class="record-title">🏆 きろく</div>
+      <div class="record-subtitle">レベル５「はやくなる！」のきろく</div>
+      <div id="recordList"></div>
+      <button class="record-clear-btn" id="recordClearBtn">きろくをけす</button>
+      <button class="bigbtn green" id="recordCloseBtn" style="width:60%;min-width:140px;margin:4px auto 0;display:block;">とじる</button>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="stageOverlay"><div class="bubble"><h2 id="stageTitle">レベル1</h2><p id="stageSub"></p></div></div>
+
+  <div class="overlay hidden" id="overOverlay">
+    <div class="logo" style="font-size:46px;">🙈</div>
+    <div class="bubble"><h2 id="overTitle">あらら！</h2>
+      <p>といたもんだい：<b id="overScore">0</b>もん<br>てんすう：<b id="overLoaded">0</b>てん<br>さいこうてん：<b id="overHi">0</b>てん</p></div>
+    <button class="bigbtn banana" id="retryBtn">もういちど</button>
+    <button class="bigbtn" id="backToTitleBtn" style="margin-top:8px;font-size:18px;background:#eee;color:var(--ink);box-shadow:0 4px 0 #bbb;">スタートがめんにもどる</button>
+  </div>
+
+  <div class="overlay hidden" id="clearOverlay">
+    <div class="logo" style="font-size:52px;">🚢✨🍌</div>
+    <div class="bubble"><h2>とどけたよ！</h2>
+      <p>といたもんだい：<b id="clearScore">0</b>もん<br>てんすう：<b id="clearLoaded">0</b>てん</p></div>
+    <button class="bigbtn green" id="nextBtn">つぎのうみへ →</button>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const $=id=>document.getElementById(id);
+
+  /* ===== full-body monkey SVG ===== */
+  function monkeySVG(){
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 90" aria-hidden="true">
+  <path d="M42 61 Q58 57 56 71 Q54 83 44 79" fill="none" stroke="#7B4F2E" stroke-width="4" stroke-linecap="round"/>
+  <rect x="18" y="38" width="24" height="26" rx="10" fill="#A0623A"/>
+  <path d="M18 46 Q4 44 6 58 Q7 64 14 64" fill="none" stroke="#A0623A" stroke-width="7" stroke-linecap="round"/>
+  <path d="M42 46 Q56 44 54 58 Q53 64 46 64" fill="none" stroke="#A0623A" stroke-width="7" stroke-linecap="round"/>
+  <ellipse cx="11" cy="66" rx="6" ry="4" fill="#C8845A"/>
+  <ellipse cx="49" cy="66" rx="6" ry="4" fill="#C8845A"/>
+  <path d="M23 62 Q21 72 18 78" fill="none" stroke="#A0623A" stroke-width="6" stroke-linecap="round"/>
+  <path d="M37 62 Q39 72 42 78" fill="none" stroke="#A0623A" stroke-width="6" stroke-linecap="round"/>
+  <ellipse cx="16" cy="80" rx="7" ry="4" fill="#C8845A"/>
+  <ellipse cx="44" cy="80" rx="7" ry="4" fill="#C8845A"/>
+  <circle cx="8"  cy="22" r="8" fill="#A0623A"/>
+  <circle cx="8"  cy="22" r="5" fill="#D4956A"/>
+  <circle cx="52" cy="22" r="8" fill="#A0623A"/>
+  <circle cx="52" cy="22" r="5" fill="#D4956A"/>
+  <ellipse cx="30" cy="20" rx="22" ry="20" fill="#A0623A"/>
+  <ellipse cx="30" cy="27" rx="13" ry="11" fill="#D4956A"/>
+  <circle cx="22" cy="16" r="7" fill="#fff"/>
+  <circle cx="38" cy="16" r="7" fill="#fff"/>
+  <circle cx="22" cy="17" r="5" fill="#3B1F0A"/>
+  <circle cx="38" cy="17" r="5" fill="#3B1F0A"/>
+  <circle cx="24" cy="15" r="2" fill="#fff"/>
+  <circle cx="40" cy="15" r="2" fill="#fff"/>
+  <circle cx="27" cy="25" r="2" fill="#7B4F2E"/>
+  <circle cx="33" cy="25" r="2" fill="#7B4F2E"/>
+  <path d="M21 30 Q30 37 39 30" fill="none" stroke="#7B4F2E" stroke-width="2.2" stroke-linecap="round"/>
+</svg>`;
+  }
+  function monkeySadSVG(){
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 90" aria-hidden="true">
+  <!-- 体 -->
+  <path d="M42 61 Q58 57 56 71 Q54 83 44 79" fill="none" stroke="#7B4F2E" stroke-width="4" stroke-linecap="round"/>
+  <rect x="18" y="38" width="24" height="26" rx="10" fill="#A0623A"/>
+  <path d="M18 46 Q4 44 6 58 Q7 64 14 64" fill="none" stroke="#A0623A" stroke-width="7" stroke-linecap="round"/>
+  <path d="M42 46 Q56 44 54 58 Q53 64 46 64" fill="none" stroke="#A0623A" stroke-width="7" stroke-linecap="round"/>
+  <ellipse cx="11" cy="66" rx="6" ry="4" fill="#C8845A"/>
+  <ellipse cx="49" cy="66" rx="6" ry="4" fill="#C8845A"/>
+  <path d="M23 62 Q21 72 18 78" fill="none" stroke="#A0623A" stroke-width="6" stroke-linecap="round"/>
+  <path d="M37 62 Q39 72 42 78" fill="none" stroke="#A0623A" stroke-width="6" stroke-linecap="round"/>
+  <ellipse cx="16" cy="80" rx="7" ry="4" fill="#C8845A"/>
+  <ellipse cx="44" cy="80" rx="7" ry="4" fill="#C8845A"/>
+  <!-- 耳 -->
+  <circle cx="8"  cy="22" r="8" fill="#A0623A"/>
+  <circle cx="8"  cy="22" r="5" fill="#D4956A"/>
+  <circle cx="52" cy="22" r="8" fill="#A0623A"/>
+  <circle cx="52" cy="22" r="5" fill="#D4956A"/>
+  <!-- 頭 -->
+  <ellipse cx="30" cy="20" rx="22" ry="20" fill="#A0623A"/>
+  <!-- マズル -->
+  <ellipse cx="30" cy="27" rx="13" ry="11" fill="#D4956A"/>
+  <!-- 目（見開き・白目大きめ） -->
+  <circle cx="22" cy="15" r="8" fill="#fff"/>
+  <circle cx="38" cy="15" r="8" fill="#fff"/>
+  <circle cx="22" cy="16" r="5" fill="#3B1F0A"/>
+  <circle cx="38" cy="16" r="5" fill="#3B1F0A"/>
+  <circle cx="24" cy="13" r="2" fill="#fff"/>
+  <circle cx="40" cy="13" r="2" fill="#fff"/>
+  <!-- 焦り眉（八の字：内側が上がる） -->
+  <path d="M15 7 Q19 4 23 7" fill="none" stroke="#7B4F2E" stroke-width="2.8" stroke-linecap="round"/>
+  <path d="M37 7 Q41 4 45 7" fill="none" stroke="#7B4F2E" stroke-width="2.8" stroke-linecap="round"/>
+  <!-- 鼻 -->
+  <circle cx="27" cy="25" r="2" fill="#7B4F2E"/>
+  <circle cx="33" cy="25" r="2" fill="#7B4F2E"/>
+  <!-- 口（「あ」の形・開いた楕円） -->
+  <ellipse cx="30" cy="32" rx="5" ry="4" fill="#7B3020"/>
+  <ellipse cx="30" cy="31" rx="3.5" ry="2" fill="#e06050"/>
+  <!-- 冷や汗（顔の右横に水滴） -->
+  <ellipse cx="51" cy="8"  rx="2.2" ry="3.2" fill="#7ec8f0" opacity=".9" transform="rotate(-15 51 8)"/>
+  <ellipse cx="55" cy="15" rx="1.8" ry="2.6" fill="#7ec8f0" opacity=".8" transform="rotate(-10 55 15)"/>
+  <ellipse cx="53" cy="24" rx="1.4" ry="2.0" fill="#7ec8f0" opacity=".7" transform="rotate(-5 53 24)"/>
+</svg>`;
+  }
+  function injectMonkeys(){
+    document.querySelectorAll(".mk").forEach(el=>{el.innerHTML=monkeySVG();});
+    $("monkeyA").innerHTML=monkeySVG();
+  }
+  document.addEventListener("DOMContentLoaded", injectMonkeys);
+
+  let actx=null;
+  let bgmPlaying=false;let bgmSchedId=null;
+
+  // ── ウクレレ音色（サイン波倍音合成）──
+  function pluck(freq,when,dur,vol){
+    if(!actx)return;
+    [1,2,3].forEach((h,i)=>{
+      const o=actx.createOscillator(),g=actx.createGain();
+      const vols=[vol,vol*0.42,vol*0.16];
+      o.type='sine';o.frequency.value=freq*h;
+      g.gain.setValueAtTime(0.001,when);
+      g.gain.linearRampToValueAtTime(vols[i],when+0.007);
+      g.gain.exponentialRampToValueAtTime(0.001,when+Math.min(dur,1.6));
+      o.connect(g);g.connect(actx.destination);
+      o.start(when);o.stop(when+Math.min(dur,1.6));
+    });
+  }
+  function bgmStrum(f1,f2,when,dur,vol){
+    pluck(f1,when,dur,vol||0.10);
+    pluck(f2,when+0.028,dur,(vol||0.10)*0.85);
+  }
+  function bgmNote(f,when,dur,vol){pluck(f,when,dur,vol||0.09);}
+
+  const BF={
+    G3:196,A3:220,B3:246.9,
+    C4:261.6,D4:293.7,E4:329.6,F4:349.2,G4:392,A4:440,B4:493.9,
+    C5:523.3,D5:587.3,E5:659.3,F5:698.5,
+  };
+  const BCH={
+    C: [BF.C4,BF.E4,BF.G4,BF.C5],
+    F: [BF.F4,BF.A4,BF.C5,BF.F5],
+    Am:[BF.A3,BF.C4,BF.E4,BF.A4],
+    G: [BF.G3,BF.B3,BF.D4,BF.G4],
+  };
+
+  function bgmStrokeBar(ch,t,beat){
+    const [f0,f1,f2,f3]=ch;
+    bgmStrum(f0,f2, t,        beat*3.0, 0.11);
+    bgmStrum(f0,f1, t+beat,   beat*0.4, 0.05);
+    bgmStrum(f1,f3, t+beat*2, beat*1.8, 0.10);
+    bgmStrum(f0,f1, t+beat*3, beat*0.4, 0.05);
+  }
+  function bgmSkipBar(ch,t,beat){
+    const [f0,f1,f2,f3]=ch;
+    const L=beat*0.75,S=beat*0.25;
+    bgmNote(f0, t,       L*1.2, 0.11);
+    bgmNote(f1, t+L,     S*1.5, 0.08);
+    bgmNote(f2, t+beat,  L*1.2, 0.10);
+    bgmNote(f1, t+beat+L,S*1.5, 0.07);
+    bgmNote(f1, t+beat*2,  L*1.2, 0.10);
+    bgmNote(f3, t+beat*2+L,S*1.5, 0.09);
+    bgmNote(f2, t+beat*3,  L*1.2, 0.09);
+    bgmNote(f0, t+beat*3+L,S*1.5, 0.08);
+  }
+  const BGM_SEQ=['C','F','Am','G'];
+  const BGM_CYCLE=[bgmStrokeBar,bgmSkipBar,bgmStrokeBar,bgmSkipBar];
+
+  function startBGM(){
+    if(bgmPlaying)return;
+    if(!actx)try{actx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){return;}
+    if(actx.state==='suspended')actx.resume();
+    bgmPlaying=true;
+    const beat=60/104;
+    const barLen=beat*4;
+    let bar=0;
+    const t0=actx.currentTime+0.1;
+    function sched(){
+      if(!bgmPlaying)return;
+      const ch=BCH[BGM_SEQ[bar%4]];
+      BGM_CYCLE[bar%4](ch, t0+bar*barLen, beat);
+      bar++;
+      bgmSchedId=setTimeout(sched,Math.max(10,(t0+bar*barLen-actx.currentTime-0.25)*1000));
+    }
+    sched();
+  }
+  function stopBGM(){bgmPlaying=false;clearTimeout(bgmSchedId);}
+
+  function beep(f,d,t,v){try{if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();
+    const o=actx.createOscillator(),g=actx.createGain();o.type=t||"sine";o.frequency.value=f;
+    g.gain.value=v||.12;o.connect(g);g.connect(actx.destination);o.start();
+    g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+(d||.15));o.stop(actx.currentTime+(d||.15));}catch(e){}}
+  const sfx={
+    sweep:()=>beep(420,.04,"square",.04),
+    stop:()=>beep(300,.12,"sawtooth",.08),
+    catch:()=>{beep(520,.08,"square",.07);setTimeout(()=>beep(720,.1,"sine",.09),70);},
+    pick:()=>beep(440,.05,"square",.05),
+    get:()=>{beep(660,.1);setTimeout(()=>beep(880,.12),90);},
+    good:()=>{beep(523,.1);setTimeout(()=>beep(659,.1),100);setTimeout(()=>beep(784,.16),200);},
+    bad:()=>beep(160,.3,"sawtooth",.1),
+    tilt:()=>beep(220,.18,"triangle",.09),
+    miss:()=>{beep(330,.15,"sawtooth",.12);setTimeout(()=>beep(262,.2,"sawtooth",.12),160);setTimeout(()=>beep(196,.4,"sawtooth",.10),340);},
+    warn:()=>{beep(440,.08,"square",.10);setTimeout(()=>beep(440,.08,"square",.10),200);}
+  };
+  let bgmEnabled=true;
+  function updateBgmBtn(){$("bgmBtn").textContent=bgmEnabled?"🔊 おんがく：オン":"🔇 おんがく：オフ";}
+  function toggleBGM(){
+    bgmEnabled=!bgmEnabled;
+    if(bgmEnabled)startBGM();else stopBGM();
+    updateBgmBtn();
+  }
+  function unlockAudio(){if(!actx){try{actx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}}
+  $("bgmBtn").addEventListener("click",toggleBGM);
+
+  const LEVELS={
+    1:{speed:1.0, nums:[2,4,6,8,10],        name:"レベル1", timeMs:12000, goal:10},
+    2:{speed:1.4, nums:[3,4,5,6,7,8,9,10],  name:"レベル2", timeMs:10000, goal:15},
+    3:{speed:1.8, nums:[8,10,12,14,16,18],   name:"レベル3", timeMs:9000,  goal:15},
+    4:{speed:2.0, nums:[8,9,10,11,12,13,14,15,16,17,18], name:"レベル4", timeMs:7500, goal:20},
+    5:{speed:0,   nums:[8,9,10,11,12,13,14,15,16,17,18,19,20], name:"レベル5",
+       chaos:true, timeMs:9000, timeMsMin:1500, timeDecay:300, goal:9999}
+  };
+  const NPOINTS=7;
+  const CENTER=(NPOINTS-1)/2;
+  const TILT_LIMIT=8;
+  const FALL_TOP=76;
+
+  let state={};
+  function resetState(level){
+    state={level:level,cfg:LEVELS[level],qIndex:-1,markerPos:0,dir:1,sweeping:false,
+      phase:"sweep",diff:0,loaded:0,streak:0,banana:0,L:null,R:null,panL:0,panR:0,raf:null,roundCount:0,qCount:0};
+  }
+
+  function rigWidth(){return $("rig").clientWidth||300;}
+  // the plank is 66% wide (half = 33%). Q (plank center) can range so the plank
+  // stays within the rig: 34%..66%. O is at 50%.
+  const PLANK_L=0.17, PLANK_R=0.83;            // plank spans 66% of rig
+  const Q_MIN=0.34, Q_MAX=0.66;                // where the plank's center can sit
+  function pointX(i){const w=rigWidth();return (Q_MIN+(Q_MAX-Q_MIN)*(i/(NPOINTS-1)))*w;}
+
+  function buildPoints(){
+    const wrap=$("points");wrap.innerHTML="";
+    for(let i=0;i<NPOINTS;i++){
+      const p=document.createElement("div");
+      p.className="pt"+(i===CENTER?" center":"");
+      p.style.left=pointX(i)+"px";p.dataset.i=i;
+      wrap.appendChild(p);
+    }
+  }
+
+  function placeMarker(){
+    const lo=Math.floor(state.markerPos),hi=Math.min(NPOINTS-1,lo+1),f=state.markerPos-lo;
+    const x=pointX(lo)+(pointX(hi)-pointX(lo))*f;
+    const m=$("marker");
+    m.style.display="block";
+    m.style.left=x+"px";
+  }
+
+  function startSweep(){
+    state.sweeping=true;state.phase="sweep";
+    $("rig").style.display="block";
+    buildPoints();
+    $("points").style.display="none";
+    $("marker").style.display="none";
+    $("monkeyA").style.display="none";
+    $("boatA").classList.remove("hidden");
+    $("boatA").querySelector(".mk").innerHTML=monkeySVG();
+    $("rig").classList.add("rocking");
+    $("quitBtn").style.display="flex";
+    layoutRig();
+    // 8秒で自動確定
+    const autoStop=setTimeout(()=>{if(state.sweeping)catchPlank();},8000);
+    state.autoStop=autoStop;
+    let last=performance.now();
+    function loop(now){
+      if(!state.sweeping)return;
+      const dt=(now-last)/16.67;last=now;
+      let sp=state.cfg.speed;
+      if(state.cfg.chaos){sp=1.4;if(Math.random()<0.02)state.dir*=-1;}
+      state.markerPos+=state.dir*sp*0.14*dt;
+      if(state.markerPos<=0){state.markerPos=0;state.dir=1;sfx.sweep();}
+      if(state.markerPos>=NPOINTS-1){state.markerPos=NPOINTS-1;state.dir=-1;sfx.sweep();}
+      layoutRig();
+      state.raf=requestAnimationFrame(loop);
+    }
+    state.raf=requestAnimationFrame(loop);
+  }
+
+  function stopSweep(){
+    if(!state.sweeping)return;
+    state.sweeping=false;cancelAnimationFrame(state.raf);sfx.stop();
+    state.qIndex=Math.round(state.markerPos);state.markerPos=state.qIndex;
+    // Q right of center: left side of plank longer past O -> left tips DOWN
+    const off=Math.round((state.qIndex-CENTER)*1);
+    state.diff=off;
+    layoutRig();
+    catchPlank();
+  }
+
+  function catchPlank(){
+    clearTimeout(state.autoStop);
+    state.sweeping=false;cancelAnimationFrame(state.raf);
+    $("points").style.display="none";
+    layoutRig();
+    $("friend").classList.remove("throwing");void $("friend").offsetWidth;$("friend").classList.add("throwing");
+    // boatAを隠してmonkeyAを板の支点Q真上に表示
+    $("boatA").classList.add("hidden");
+    $("monkeyA").style.display="block";
+    $("monkeyA").innerHTML=monkeySVG();
+    setTimeout(()=>{
+      sfx.catch();
+      $("monkeyA").classList.remove("catch");void $("monkeyA").offsetWidth;$("monkeyA").classList.add("catch");
+      renderTilt();
+    },350);
+    setTimeout(()=>{state.phase="split";nextBanana();},1150);
+  }
+
+  function layoutRig(){
+    const w=rigWidth();
+    const O=w/2;  // boat fixed at rig center
+    const pos=(state.phase==="sweep")?state.markerPos:state.qIndex;
+    const lo=Math.floor(pos),hi=Math.min(NPOINTS-1,lo+1),f=pos-lo;
+    const qx=pointX(lo)+(pointX(hi)-pointX(lo))*f;
+    // plank is a child of #boat. Boat is at O in rig coords.
+    // We shift plank left/right so Q(qx) aligns with boat center O.
+    // In boat coords, boat center = 30px (half of boat width 60px).
+    // plank width = 560px, default centered on boat = marginLeft 0.
+    // To put Q at O: plank needs to shift by -(qx - O).
+    const plankOffset = O - qx;  // shift plank so Q is above boat center
+    $("plank").style.marginLeft = plankOffset + "px";
+    // monkeyA must stand above boat center O within plank coords.
+    // plank default center = 170px. When plank shifts by plankOffset, boat center in plank = 170 - plankOffset
+    $("monkeyA").style.left = (170 - plankOffset) + "px";
+    // boat stays at O
+    $("boat").style.left=O+"px";
+  }
+
+  function renderTilt(){
+    const deg=Math.max(-45,Math.min(45,-state.diff*2));
+    const boat=$("boat");
+    boat.style.setProperty("--boat-tilt", deg+"deg");
+    boat.style.transform=`translateX(-50%) rotate(${deg}deg)`;
+    // 傾き方向インジケーター（中央）
+    const ind=$("tiltIndicator");
+    const absDiff=Math.abs(state.diff);
+    if(absDiff===0){
+      ind.classList.remove("visible");
+    } else {
+      // diff>0 → panLが多い → 左が重い → 左に傾く → 矢印は左
+      const arrow=state.diff>0?"←":"→";
+      const color=absDiff>=6?"#ff4444":absDiff>=4?"#ff8800":"#fff";
+      ind.textContent=arrow+" "+absDiff+" "+arrow;
+      ind.style.color=color;
+      ind.classList.add("visible");
+    }
+    // 左右それぞれの累計バナナ数
+    const cL=$("panCountL"), cR=$("panCountR");
+    if(state.panL>0||state.panR>0){
+      cL.textContent="🍌"+state.panL;
+      cR.textContent="🍌"+state.panR;
+      cL.classList.add("visible");
+      cR.classList.add("visible");
+    } else {
+      cL.classList.remove("visible");
+      cR.classList.remove("visible");
+    }
+  }
+  function wobble(){
+    const b=$("boat");
+    const deg=Math.max(-45,Math.min(45,-state.diff*2));
+    b.style.setProperty("--boat-tilt", deg+"deg");
+    b.classList.remove("wobble");void b.offsetWidth;b.classList.add("wobble");
+    setTimeout(()=>{
+      b.classList.remove("wobble");
+      b.style.transform=`translateX(-50%) rotate(${deg}deg)`;
+    }, 1850);
+  }
+
+  function buildPads(){
+    const order=[7,8,9,4,5,6,1,2,3,0,10];
+    ["L","R"].forEach(side=>{
+      const pad=$(side==="L"?"padL":"padR");pad.innerHTML="";
+      order.forEach(n=>{
+        const b=document.createElement("button");b.textContent=n;b.dataset.n=n;
+        b.addEventListener("click",()=>pickNumber(side,n));pad.appendChild(b);
+      });
+    });
+    refreshPads();
+  }
+  function pickNumber(side,n){
+    if(state.phase!=="split")return;
+    state[side]=n;sfx.pick();refreshPads();renderSplit();
+    // auto-commit once both sides are chosen and sum is correct
+    if(state.L!==null && state.R!==null){
+      if(state.L+state.R===state.banana){
+        setTimeout(commitSplit, 320);  // brief pause so the player sees both selections
+      }
+    }
+  }
+  function refreshPads(){
+    ["L","R"].forEach(side=>{
+      const pad=$(side==="L"?"padL":"padR");const mine=state[side];
+      Array.prototype.forEach.call(pad.children,b=>b.classList.toggle("sel",parseInt(b.dataset.n,10)===mine));
+    });
+  }
+  function renderSplit(){
+    $("valL").textContent=state.L===null?"−":state.L;
+    $("valR").textContent=state.R===null?"−":state.R;
+    const bl=$("valL").closest(".splitBox"),br=$("valR").closest(".splitBox");
+    bl.classList.remove("wrong","right");br.classList.remove("wrong","right");
+    if(state.L===null||state.R===null)return;
+    if(state.L+state.R===state.banana){bl.classList.add("right");br.classList.add("right");}
+    else{bl.classList.add("wrong");br.classList.add("wrong");}
+  }
+
+  let fallRaf=null;
+  function nextBanana(){
+    state.phase="split";const cfg=state.cfg;
+    const nums=cfg.nums;
+    let n;
+    if(nums.length===1){
+      n=nums[0];
+    } else {
+      do{n=nums[Math.floor(Math.random()*nums.length)];}
+      while(n===state.banana);
+    }
+    state.banana=n;state.L=null;state.R=null;buildPads();
+    $("fallNum").textContent=n;
+    const bunch=$("fallBunch");bunch.innerHTML="";
+    // 1列目：最大10本、2列目：端数
+    const row1=document.createElement("div");row1.className="bunch-row top";
+    const n1=Math.min(n,10);
+    for(let i=0;i<n1;i++){const s=document.createElement("span");s.textContent="🍌";row1.appendChild(s);}
+    bunch.appendChild(row1);
+    if(n>10){
+      const row2=document.createElement("div");row2.className="bunch-row top";
+      for(let i=10;i<n;i++){const s=document.createElement("span");s.textContent="🍌";row2.appendChild(s);}
+      bunch.appendChild(row2);
+    }
+    const fb=$("fall");fb.classList.remove("hurry");fb.style.top=FALL_TOP+"px";fb.style.display="block";void fb.offsetWidth;
+    // ステージ2はバナナ絵を非表示（数字のみ）
+    $("fallBunch").style.display=(state.stage===2)?"none":"block";
+    $("splitRow").style.display="flex";$("deck").style.display="none";
+    // monkeyA stays above the fulcrum O
+    
+    renderSplit();renderTilt();startFall();
+  }
+  function computeFall(){
+    const rig=$("rig").getBoundingClientRect(),app=$("app").getBoundingClientRect();
+    state.fallTop=FALL_TOP;
+    state.fallBottom=Math.max(FALL_TOP+40,(rig.top-app.top)-20);
+  }
+  function startFall(){
+    stopFall();computeFall();
+    const fb=$("fall");
+    // レベル6は落下速度漸増：ラウンドごとにtimeMsをtimeDecayずつ短くする
+    let budget=state.cfg.timeMs||9000;
+    if(state.cfg.timeDecay){
+      budget=Math.max(state.cfg.timeMsMin||1500, budget - state.roundCount*(state.cfg.timeDecay||300));
+    }
+    state.fallStart=performance.now();
+    const top=state.fallTop,bottom=state.fallBottom;
+    $("deadline").style.top=bottom+"px";$("deadline").style.display="block";
+    function loop(now){
+      const t=Math.min(1,(now-state.fallStart)/budget);
+      fb.style.top=(top+(bottom-top)*t)+"px";
+      if(t>0.75)fb.classList.add("hurry");else fb.classList.remove("hurry");
+      if(t>=1){stopFall();bananaMissed();return;}
+      fallRaf=requestAnimationFrame(loop);
+    }
+    fallRaf=requestAnimationFrame(loop);
+  }
+  function stopFall(){if(fallRaf)cancelAnimationFrame(fallRaf);fallRaf=null;$("fall").classList.remove("hurry");}
+  function bananaMissed(){
+    if(state.phase!=="split")return;
+    state.phase="result";
+    sfx.miss();
+    showToast("おっと！💦");
+    setTimeout(()=>gameOver("miss"),900);
+  }
+
+  function commitSplit(){
+    if(state.phase!=="split")return;
+    if(state.L===null||state.R===null||state.L+state.R!==state.banana){flashBad();return;}
+    stopFall();$("deadline").style.display="none";state.phase="result";
+    // accumulate into the baskets — bananas stay on the plank until stage clear
+    state.panL+=state.L;state.panR+=state.R;
+    fillPan($("panL"),state.panL);fillPan($("panR"),state.panR);
+    $("fall").style.display="none";$("splitRow").style.display="none";
+    // diffは実際の累計差（panL - panR）で正確に管理する
+    // 支点オフセット：中央からのずれ1段 ≒ バナナ3本分の重さ差
+    const off=Math.round((state.qIndex-CENTER)*1);
+    state.diff=(state.panL-state.panR)+off;
+    renderTilt();wobble();sfx.tilt();
+    if(Math.abs(state.diff)>TILT_LIMIT){setTimeout(()=>gameOver("tilt"),700);return;}
+    if(Math.abs(state.diff)>=6){
+      sfx.warn();flashTiltWarning();
+      $("monkeyA").innerHTML=monkeySadSVG();
+    } else {
+      stopTiltWarning();
+      $("monkeyA").innerHTML=monkeySVG();
+    }
+    // スコア：クリア1問につき1点＋ボーナス
+    const diff=Math.abs(state.R-state.L);
+    const isOdd=state.banana%2===1;
+    let pts=1,toastMsg="おっとっと💦<br><span class='pts'>１てん</span>";
+    if(diff===0){pts=3;toastMsg="⭐ はんぶん！<br><span class='pts'>３てん</span>";}
+    else if(diff===1&&isOdd){pts=3;toastMsg="✨ ほぼはんぶん！<br><span class='pts'>３てん</span>";}
+    state.loaded+=pts;state.streak++;state.roundCount++;state.qCount++;
+    sfx.get();sparkle();showToast(toastMsg);updateHud();
+    if(state.qCount>=state.cfg.goal){setTimeout(stageClear,700);return;}
+    setTimeout(()=>{nextBanana();},1100);
+  }
+  // bananas pile up and spill toward the top of the basket (overflowing look)
+  function fillPan(p,n){
+    p.innerHTML="";
+    for(let i=0;i<n;i++){const s=document.createElement("span");s.className="b";s.textContent="🍌";p.appendChild(s);}
+  }
+  function clearPan(p){p.innerHTML="";}
+  function flashTiltWarning(){const w=$("tiltWarning");w.classList.add("pulsing");}
+  function stopTiltWarning(){$("tiltWarning").classList.remove("pulsing");$("tiltIndicator").classList.remove("visible");$("panCountL").classList.remove("visible");$("panCountR").classList.remove("visible");}
+  function flashBad(){sfx.bad();const d=$("splitRow");d.style.animation="none";void d.offsetWidth;d.style.animation="shake .3s";}
+  const sty=document.createElement("style");
+  sty.textContent="@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}";
+  document.head.appendChild(sty);
+
+  function showToast(html){const e=$("toast");e.innerHTML=html;e.classList.remove("show");void e.offsetWidth;e.classList.add("show");}
+  function sparkle(){
+    const r=$("rig").getBoundingClientRect(),a=$("app").getBoundingClientRect();
+    for(let i=0;i<6;i++){const s=document.createElement("div");s.className="spark";
+      s.textContent=["✨","⭐","🍌"][i%3];
+      s.style.left=(r.left-a.left+Math.random()*r.width)+"px";
+      s.style.top=(r.top-a.top+10)+"px";$("app").appendChild(s);setTimeout(()=>s.remove(),900);}
+  }
+
+  function updateHud(){
+    $("qcount").textContent=state.qCount;
+    $("qgoal").textContent=state.cfg.goal>=9999?"∞":state.cfg.goal;
+    $("loaded").textContent=state.loaded;
+    updatePile();
+  }
+  function updatePile(){
+    const pile=$("pile");const want=state.loaded,have=pile.children.length;
+    if(want<have)pile.innerHTML="";
+    for(let i=pile.children.length;i<want;i++){const b=document.createElement("span");b.textContent="🍌";pile.appendChild(b);}
+    $("shipCnt").textContent=want;
+  }
+
+  function gameOver(reason){
+    stopFall();$("deadline").style.display="none";$("splitRow").style.display="none";
+    stopTiltWarning();$("quitBtn").style.display="none";
+    state.sweeping=false;cancelAnimationFrame(state.raf);
+    $("boatA").classList.add("hidden");
+    const hi=saveHi(state.loaded);
+    if(state.level===5) saveRecord(state.loaded, state.qCount);
+    $("overScore").textContent=state.qCount;
+    $("overLoaded").textContent=state.loaded;$("overHi").textContent=hi;
+    $("overTitle").textContent=(reason==="tilt")?"グラッ…！":"あらら！";
+
+    if(reason==="tilt"){
+      // ひっくり返り演出
+      tiltCrashAnimation(()=>show($("overOverlay")));
+    } else {
+      sfx.bad();
+      $("monkeyA").innerHTML=monkeySadSVG();$("monkeyA").style.display="block";
+      $("friend").querySelectorAll(".mk").forEach(el=>{el.innerHTML=monkeySadSVG();});
+      show($("overOverlay"));
+    }
+  }
+
+  function tiltCrashAnimation(onDone){
+    const boat=$("boat");
+    const friend=$("friend");
+    const app=$("app");
+    const appW=app.offsetWidth;
+
+    // step1: 悲しい顔にして効果音
+    sfx.bad();
+    $("monkeyA").innerHTML=monkeySadSVG();
+    $("friend").querySelectorAll(".mk").forEach(el=>{el.innerHTML=monkeySadSVG();});
+
+    // step2: 船がひっくり返る（1.2秒）
+    boat.classList.remove("wobble");void boat.offsetWidth;
+    boat.classList.add("flipping");
+
+    // step3: ひっくり返り後、friendが右から左へ駆けつける
+    setTimeout(()=>{
+      // 猿Aを焦り顔のまま板から浮かせる演出（opacityでぷかぷか）
+      $("monkeyA").style.transition="transform 0.5s ease";
+
+      // friendをleft制御に切り替えて右端から開始
+      const friendW=friend.offsetWidth;
+      let friendLeft=appW-friendW-8;
+      friend.style.right="auto";
+      friend.style.left=friendLeft+"px";
+
+      // 仲間が左へ駆けつける（0.9秒）
+      const targetLeft=appW/2+20;
+      const approachStart=performance.now();
+      const approachDur=900;
+
+      function approachStep(now){
+        const t=Math.min(1,(now-approachStart)/approachDur);
+        const ease=1-Math.pow(1-t,3);
+        friend.style.left=(friendLeft+(targetLeft-friendLeft)*ease)+"px";
+        if(t<1){requestAnimationFrame(approachStep);}
+        else{
+          // step4: 仲間が到着。猿Aをfriendに乗せる（3匹全員）
+          // 3人全員笑顔で脱出
+          $("friend").querySelectorAll(".mk").forEach(el=>{el.innerHTML=monkeySVG();});
+          // friendのbに猿Aを追加（3匹目として）
+          const extra=document.createElement("span");
+          extra.className="mk";extra.style.cssText="display:inline-block;width:24px;";
+          extra.innerHTML=monkeySVG();
+          $("friend").querySelector(".b").appendChild(extra);
+          // 板上の猿Aを非表示
+          $("monkeyA").style.display="none";
+
+          // step5: 全員で右へ去る（1.8秒）
+          setTimeout(()=>{
+            const escStart=performance.now();
+            const escDur=1800;
+            const rigStartLeft=parseFloat($("rig").style.left)||appW/2;
+            const friendStartLeft=parseFloat(friend.style.left);
+            const dest=appW+300;
+
+            function escStep(now){
+              const t=Math.min(1,(now-escStart)/escDur);
+              const ease=t*t;
+              $("rig").style.transform=`translateX(-50%) translateX(${(dest-rigStartLeft)*ease}px)`;
+              friend.style.left=(friendStartLeft+(dest-friendStartLeft)*ease)+"px";
+              if(t<1){requestAnimationFrame(escStep);}
+              else{
+                // cleanup & show overlay
+                $("rig").style.transform="translateX(-50%)";
+                friend.style.left="auto";friend.style.right="8px";
+                // 追加した猿Aを削除
+                if(extra.parentNode)extra.parentNode.removeChild(extra);
+                onDone();
+              }
+            }
+            requestAnimationFrame(escStep);
+          }, 400);
+        }
+      }
+      requestAnimationFrame(approachStep);
+    }, 1400);
+  }
+  function stageClear(){
+    stopFall();$("deadline").style.display="none";$("splitRow").style.display="none";
+    stopTiltWarning();$("quitBtn").style.display="none";
+    saveHi(state.loaded);$("clearScore").textContent=state.qCount;$("clearLoaded").textContent=state.loaded;
+    sfx.good();setTimeout(sfx.good,280);
+
+    const app=$("app");
+    const rig=$("rig");
+    const friend=$("friend");
+    const appW=app.offsetWidth;
+
+    // friendの現在right位置をleft位置に変換
+    const friendW=friend.offsetWidth;
+    let friendLeft=appW - friendW - 8; // right:8px相当
+
+    // rigのleft位置（translateX(-50%)で中央寄せ）
+    const rigLeft=rig.offsetLeft; // 通常はappW/2 - rig.offsetWidth/2
+
+    // step1: friendを左（rigの右端付近）まで移動（0.8秒）
+    const targetFriendLeft = appW/2 + 100; // rigの右側付近
+    const step1Duration = 800;
+    const step1Start = performance.now();
+
+    // leftで制御するためrightを解除
+    friend.style.right="auto";
+    friend.style.left=friendLeft+"px";
+    friend.style.transition="none";
+
+    function step1(now){
+      const t=Math.min(1,(now-step1Start)/step1Duration);
+      const ease=t<0.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+      friend.style.left=(friendLeft+(targetFriendLeft-friendLeft)*ease)+"px";
+      if(t<1){requestAnimationFrame(step1);}
+      else{
+        // step2: 到着したらrigとfriendを一緒に右へ
+        sfx.get();
+        const rigStartLeft=parseFloat(rig.style.left)||appW/2;
+        const friendStartLeft=parseFloat(friend.style.left);
+        const step2Duration=1800;
+        const step2Start=performance.now();
+        const dest=appW+200; // 画面外右
+
+        function step2(now){
+          const t=Math.min(1,(now-step2Start)/step2Duration);
+          const ease=t*t; // ease-in
+          const dx=(dest-rigStartLeft)*ease;
+          rig.style.left=(rigStartLeft+dx)+"px";
+          rig.style.transform=`translateX(-50%) translateX(${dx}px)`;
+          friend.style.left=(friendStartLeft+dx)+"px";
+          if(t<1){requestAnimationFrame(step2);}
+          else{
+            // step3: クリア画面表示
+            setTimeout(()=>{
+              show($("clearOverlay"));
+              // rigとfriendをリセット
+              rig.style.transform="translateX(-50%)";
+              rig.style.left="50%";
+              friend.style.left="auto";
+              friend.style.right="8px";
+              friend.style.transition="";
+            },200);
+          }
+        }
+        requestAnimationFrame(step2);
+      }
+    }
+    requestAnimationFrame(step1);
+  }
+  function saveHi(s){let hi=0;try{hi=parseInt(localStorage.getItem("guragura_hi")||"0",10)||0;}catch(e){}
+    if(s>hi){hi=s;try{localStorage.setItem("guragura_hi",hi);}catch(e){}}return hi;}
+
+  // レベル5の記録を保存（最大10件）
+  function saveRecord(pts,qCount){
+    let records=[];
+    try{records=JSON.parse(localStorage.getItem("guragura_lv5")||"[]");}catch(e){}
+    const now=new Date();
+    const dateStr=`${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}`;
+    records.unshift({pts,qCount,date:dateStr});
+    if(records.length>10)records=records.slice(0,10);
+    try{localStorage.setItem("guragura_lv5",JSON.stringify(records));}catch(e){}
+  }
+
+  function buildRecordList(){
+    const el=$("recordList");
+    let records=[];
+    try{records=JSON.parse(localStorage.getItem("guragura_lv5")||"[]");}catch(e){}
+    if(records.length===0){
+      el.innerHTML='<div class="record-empty">まだきろくがありません。<br>レベル５にちょうせんしよう！</div>';
+      return;
+    }
+    const medals=["🥇","🥈","🥉"];
+    let html='<table class="record-table"><tr><th>じゅんい</th><th>てんすう</th><th>もんすう</th><th>にち</th></tr>';
+    // 点数順にソートしてから表示
+    const sorted=[...records].sort((a,b)=>b.pts-a.pts);
+    sorted.forEach((r,i)=>{
+      const rank=medals[i]||(i+1)+"い";
+      html+=`<tr><td class="record-rank">${rank}</td><td class="record-pts">${r.pts}てん</td><td>${r.qCount}もん</td><td>${r.date}</td></tr>`;
+    });
+    html+='</table>';
+    el.innerHTML=html;
+  }
+
+  function show(o){o.classList.remove("hidden");}
+  function hide(o){o.classList.add("hidden");}
+
+  let chosenLevel=1;
+  let chosenStage=1;
+
+  function buildStagePicker(){
+    const w=$("stagePick");w.innerHTML="";
+    const stages=[
+      {n:1,icon:"🍌",name:"ステージ１",desc:"イラストあり"},
+      {n:2,icon:"🔢",name:"ステージ２",desc:"すうじ"},
+    ];
+    stages.forEach(s=>{
+      const b=document.createElement("button");
+      b.className="stgbtn"+(s.n===chosenStage?" sel":"");
+      b.dataset.st=s.n;
+      b.innerHTML=`<span class="stg-icon">${s.icon}</span><span class="stg-desc">${s.desc}</span>`;
+      b.addEventListener("click",()=>{
+        chosenStage=s.n;
+        w.querySelectorAll(".stgbtn").forEach(x=>x.classList.toggle("sel",x.dataset.st==s.n));
+      });
+      w.appendChild(b);
+    });
+  }
+  function startStage(level,stage){
+    stopBGM();
+    stage=stage||1;
+    resetState(level);state.stage=stage;stopFall();$("deadline").style.display="none";
+    $("monkeyA").innerHTML=monkeySVG();$("monkeyA").style.display="none";
+    $("boatA").classList.remove("hidden");
+    $("boatA").querySelector(".mk").innerHTML=monkeySVG();
+    $("rig").style.display="none";$("rig").classList.remove("rocking","towing");
+    $("rig").style.transform="translateX(-50%)";
+    // 船の傾き・アニメーションを完全リセット
+    const boat=$("boat");
+    boat.classList.remove("flipping","wobble");
+    boat.style.setProperty("--boat-tilt","0deg");
+    boat.style.transform="translateX(-50%)";
+    boat.style.transition="none";
+    void boat.offsetWidth; // reflow
+    boat.style.transition="";
+    $("towBoat").style.display="none";$("towBoat").classList.remove("towing");
+    $("fall").style.display="none";
+    $("splitRow").style.display="none";$("deck").style.display="block";
+    $("marker").style.display="none";
+    clearPan($("panL"));clearPan($("panR"));
+    state.markerPos=0;updateHud();
+    $("qcount").textContent=0;$("qgoal").textContent=state.cfg.goal>=9999?"∞":state.cfg.goal;
+    $("stageTitle").textContent=state.cfg.name;
+    $("stageSub").textContent="";
+    show($("stageOverlay"));
+    setTimeout(()=>{
+      hide($("stageOverlay"));
+      startSweep();
+      $("splitRow").style.display="none";$("deck").style.display="block";
+      $("stopBtn").textContent="とめる！";$("stopBtn").className="bigbtn coral";
+    },1300);
+  }
+
+  $("stopBtn").addEventListener("click",()=>{unlockAudio();if(state.phase==="sweep"&&state.sweeping)stopSweep();});
+  $("points").addEventListener("click",e=>{
+    const p=e.target.closest(".pt");if(!p||state.phase!=="sweep"||!state.sweeping)return;
+    state.markerPos=parseInt(p.dataset.i,10);stopSweep();
+  });
+
+  function buildLevelPicker(){
+    const w=$("levelPick");w.innerHTML="";
+    const bananas=["🍌","🍌🍌","🍌🍌🍌","🍌🍌🍌🍌",""];
+    const labels=["かんたん","ふつう","むずかしい","もっと！",""];
+    for(let i=1;i<=5;i++){
+      const b=document.createElement("button");
+      b.className="lvbtn"+(i===chosenLevel?" sel":"");b.dataset.lv=i;
+      if(i===5){
+        b.innerHTML=`<span class="lv-num">レベル５</span><br><span class="lv-label" style="font-size:9px;white-space:nowrap">はやくなる！</span>`;
+      } else {
+        b.innerHTML=`<span class="lv-num">レベル${i}</span><br><span class="lv-bana">${bananas[i-1]}</span>`;
+      }
+      b.addEventListener("click",()=>{chosenLevel=i;w.querySelectorAll(".lvbtn").forEach(x=>x.classList.toggle("sel",x.dataset.lv==i));});
+      w.appendChild(b);
+    }
+  }
+  $("startBtn").addEventListener("click",()=>{
+    hide($("titleOverlay"));
+    stopBGM();
+    startStage(chosenLevel,chosenStage);
+  });
+  $("ruleBtn").addEventListener("click",()=>{stopBGM();show($("ruleOverlay"));});
+  $("quitBtn").addEventListener("click",()=>{gameOver("miss");});
+  $("recordBtn").addEventListener("click",()=>{stopBGM();buildRecordList();show($("recordOverlay"));});
+  $("recordCloseBtn").addEventListener("click",()=>{hide($("recordOverlay"));if(bgmEnabled)startBGM();});
+  $("recordClearBtn").addEventListener("click",()=>{
+    if(confirm("きろくをけしますか？")){
+      try{localStorage.removeItem("guragura_lv5");}catch(e){}
+      buildRecordList();
+    }
+  });
+  $("ruleCloseBtn").addEventListener("click",()=>{hide($("ruleOverlay"));if(bgmEnabled)startBGM();});
+  $("retryBtn").addEventListener("click",()=>{
+    hide($("overOverlay"));
+    $("boat").classList.remove("flipping","wobble");
+    $("friend").querySelectorAll(".mk").forEach(el=>{el.innerHTML=monkeySVG();});
+    startStage(chosenLevel,state.stage);
+  });
+  $("backToTitleBtn").addEventListener("click",()=>{
+    hide($("overOverlay"));
+    $("rig").style.display="none";$("rig").classList.remove("rocking","towing");
+    show($("titleOverlay"));buildStagePicker();buildLevelPicker();
+    if(bgmEnabled)startBGM();
+  });
+  $("nextBtn").addEventListener("click",()=>{hide($("clearOverlay"));chosenLevel=Math.min(5,chosenLevel+1);startStage(chosenLevel,state.stage);});
+
+  window.addEventListener("resize",()=>{
+    if(state.phase==="sweep"){buildPoints();placeMarker();}
+    else if(state.qIndex>=0){buildPoints();layoutRig();}
+  });
+
+  buildStagePicker();buildLevelPicker();
+  // タイトル画面でBGM自動開始（初回タップ後に）
+  document.addEventListener('click',function startOnce(){
+    if(bgmEnabled)startBGM();
+    document.removeEventListener('click',startOnce);
+  },{once:true});
+})();
+</script>
+</body>
+</html>
