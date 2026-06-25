@@ -73,8 +73,29 @@ function sndMiss(){  tone(220,.14,'sawtooth',.3); tone(160,.22,'sawtooth',.22,.1
 function sndBlock(){ tone(300,.1,'square',.25); tone(200,.15,'sawtooth',.2,.08); }
 function sndCombo(n){ [523,659,784,1047,1319].slice(0,Math.min(n,5)).forEach((f,i)=>tone(f,.12,'sine',.18,i*.09)); }
 function sndClear(){  [523,659,784,1047,1319].forEach((f,i)=>tone(f,.15,'sine',.22,i*.07)); tone(1760,.45,'sine',.22,.35); }
+function sndGameOver(){
+  if(!AC) return;
+  // 下降メロディー（ゲームオーバーらしい音）
+  [[494,0,.35],[392,.38,.35],[330,.76,.4],[262,1.16,.9]].forEach(([f,d,dur])=>tone(f,dur,'sawtooth',.18,d));
+  // 低音ドン
+  tone(80,.9,'sine',.28,1.2);
+  tone(65,1.4,'sine',.18,1.5);
+}
 
 // ── Web Speech API 発音 ──
+// 女性声キャッシュ
+let _voices=[];
+if(window.speechSynthesis){
+  _voices=speechSynthesis.getVoices();
+  speechSynthesis.onvoiceschanged=()=>{ _voices=speechSynthesis.getVoices(); };
+}
+function _femaleVoice(){
+  // 女性声を優先して探す
+  return _voices.find(v=>v.lang.startsWith('en')&&/female|samantha|victoria|karen|moira|fiona|zira|kyoko/i.test(v.name))
+      || _voices.find(v=>v.lang.startsWith('en')&&!/male/i.test(v.name))
+      || null;
+}
+
 function speakQuestion(){
   if(!window.speechSynthesis) return;
   let text;
@@ -103,7 +124,7 @@ function doMel(){
   MEL.forEach((f,i)=>{ if(f) tone(f/2,.17,'triangle',.065,t+i*.22-AC.currentTime); });
   bgmT=setTimeout(doMel,(MEL.length*.22-.1)*1000);
 }
-function startBGM(){ if(!bgmOn&&AC){bgmOn=true;doMel();} }
+function startBGM(){ /* BGM無効 */ }
 function stopBGM(){ bgmOn=false; clearTimeout(bgmT); }
 
 // ════════════════════════════════════════════
@@ -144,8 +165,8 @@ function resetG(){
   G={
     screen:'title',   // title|mode|playing|boss|result
     stage:1, diff:0,
-    score:0, combo:0, maxCombo:0,
-    timer:90, timerMax:90,
+    score:0, combo:0, maxCombo:0, totalCorrect:0,
+    timer:60, timerMax:60,
     question:null, letterIdx:0, questionDone:false,
     balloons:[], obsA:[], obsB:[],  // obsA=clouds(L→R), obsB=birds(R→L)
     arrows:[],          // active arrows in flight
@@ -156,6 +177,7 @@ function resetG(){
     bossWord:null, bossLetterIdx:0, bossHP:0, bossMaxHP:0,
     bossX:VW/2, bossY:CY.ball, bossDX:.6, bossFlash:0,
     _bossTriggered:false,
+    _intro:null,
     best:[0,0], bestCombo:[0,0], unlocked:[true,false],
   };
   try{
@@ -179,7 +201,7 @@ function mkBalloon(letter, targetX, delay=0){
   const startX=targetX<VW/2 ? -55 : VW+55;
   return {
     letter, x:startX, targetX, baseY, y:baseY,
-    color:rndC(), r:23,
+    color:rndC(), r:30,
     driftVx:rand(-.22,.22),   // 到着後のゆっくり漂い
     phase:rand(0,Math.PI*2), spd:rand(.009,.018),
     alpha:0, scale:1,
@@ -226,6 +248,7 @@ function spreadBalloons(letters){
   letters.forEach((l,i)=> G.balloons.push(mkBalloon(l, xs[i], i*0.09)));
 }
 
+function _shuffle(arr){ for(let i=arr.length-1;i>0;i--){const j=ri(0,i);[arr[i],arr[j]]=[arr[j],arr[i]];}return arr; }
 function fillBalloons(){
   const usedSet=new Set();
   if(G.screen==='boss'){
@@ -233,39 +256,45 @@ function fillBalloons(){
     usedSet.add(needed);
     const pool=alpha.split('').filter(l=>l!==needed);
     while(usedSet.size<5) usedSet.add(pool[ri(0,pool.length-1)]);
-    spreadBalloons([...usedSet]);
+    spreadBalloons(_shuffle([...usedSet]));
   } else {
     // Stage 2
     const needed=G.question.answer[G.letterIdx].toLowerCase();
     usedSet.add(needed);
     const pool=alpha.split('').filter(l=>l!==needed);
     while(usedSet.size<5) usedSet.add(pool[ri(0,pool.length-1)]);
-    spreadBalloons([...usedSet]);
+    spreadBalloons(_shuffle([...usedSet]));
   }
 }
 
 // ════════════════════════════════════════════
 //  OBSTACLES
 // ════════════════════════════════════════════
-// obsB = birds, move right→left, in OBS-B band
-// obsA = clouds, move left→right, in OBS-A band
-// 夜空なので障害物は雲のみ
-const CLOUD_EMOJIS=['☁️','☁️','☁️','🌫️'];
+// 難易度別テーマ設定（背景・障害物） ─ 全レベル荒野の西部劇
+const OBS_SETS=[
+  { a:['🐰','🐇','🐰','🐰'],  b:['🐦','🐦‍⬛','🐦','🐦'],  perm:['🌵','💀','🌪️','🏜️','🔥','🌵'], lA:'野うさぎ →', lB:'◀ 鳥' },
+  { a:['🌵','🌵','🌵','🌵'],  b:['🌪️','💨','🌪️','💨'],    perm:['🌵','💀','🌪️','🏜️','☠️','🌵'], lA:'サボテン →', lB:'◀ 砂嵐' },
+  { a:['🦅','🦅','🦅','🦇'],  b:['🦅','🦇','🦅','🐦'],    perm:['🌵','💀','🌪️','🦅','☠️','🌵'], lA:'タカ →',     lB:'◀ ワシ' },
+  { a:['🐗','🦌','🐗','🦌'],  b:['🦌','🐗','🦌','🐗'],    perm:['🌵','💀','🌪️','🏜️','🐗','🦌'], lA:'イノシシ →', lB:'◀ シカ' },
+  { a:['🪐','☄️','💫','🌑'],  b:['👾','👾','🛸','☄️'],    perm:['👾','🛸','☄️','🌑','💥','🪐'], lA:'流星 →',    lB:'◀ 宇宙人' },
+];
+const CLOUD_EMOJIS=['☁️','☁️','☁️','🌫️']; // 後方互換用
 
 // ── Weapon / difficulty definitions ───────────────
 const WEAPONS=[
-  {id:'rocket', name:'🚀 ロケットアーム',   tag:'速い・まっすぐ',      color:'#FF6B6B', vy:-14},
-  {id:'rope',   name:'🤠 カウボーイロープ',  tag:'遅い・弧を描く',      color:'#FFD93D', vy:-5 },
-  {id:'net',    name:'🎯 ネットランチャー',  tag:'広範囲・誤答も注意',  color:'#4D96FF', vy:-9 },
-  {id:'bugnet', name:'🦋 超ロング虫取り網', tag:'ゆっくり・障害物失敗', color:'#6BCB77', vy:-2 },
-  {id:'chaos',  name:'⚡ カオスモード',      tag:'誤答→障害物が増殖',  color:'#C77DFF', vy:-10},
+  {id:'rocket', name:'🔫 火縄銃ガンマン',      tag:'速い・まっすぐ',           color:'#FF6B6B', vy:-14},
+  {id:'arrow',  name:'🏹 インディアンの弓矢', tag:'まあまあ速い・まっすぐ',   color:'#E0F8FF', vy:-11},
+  {id:'rope',   name:'🤠 カウボーイロープ',   tag:'カーブ・少し遅い',          color:'#B8FF60', vy:-6 },
+  {id:'net',    name:'🎯 ネットランチャー',   tag:'広範囲・遅い',              color:'#C0390A', vy:-8 },
+  {id:'bugnet', name:'🦋 ロング虫取り網',     tag:'とても遅い・障害物をすり抜け', color:'#6BCB77', vy:-4 },
 ];
 const PERM_OBS_EMOJIS=['☁️','🐦‍⬛','🛸','🌪️','💥','✈️'];
 
 function spawnPermObs(){
   const y=rand(LY.obsBTop+20, LY.obsABot-20);
   const x=rand(36, VW-36);
-  G.permObs.push({e:PERM_OBS_EMOJIS[ri(0,PERM_OBS_EMOJIS.length-1)], x, y, w:46, h:40});
+  const pool=(OBS_SETS[G.diff]||OBS_SETS[0]).perm;
+  G.permObs.push({e:pool[ri(0,pool.length-1)], x, y, w:46, h:40});
   spawnLabel(VW/2, LY.obsABot-10,'⚠️ 障害物増加！','#C77DFF',20);
 }
 function isCorrectBalloon(b){
@@ -283,8 +312,8 @@ function netCapture(netX, netY, radius){
     b.popped=true;
     spawnParts(b.x,b.y,'#aaa',6);
     G.combo=0; G._lastCorrectTime=0;
-    G.score-=50;
-    spawnLabel(b.x,b.y-20,'-50','#FF6B6B',18);
+    addScore(-10);
+    spawnLabel(b.x,b.y-20,'-10','#FF6B6B',18);
   }
   if(wrongs.length>0){ sndMiss(); G.frozen=0.8; }
   if(rights.length>0){
@@ -312,10 +341,11 @@ function makeObstacleSet(n, speed, cy, emojis){
 }
 
 function initObstacles(){
-  const spd=0.8+G.diff*0.22;          // L1:0.8 → L5:1.7
-  const cnt=2+Math.floor(G.diff/2);   // L1:2 L2:2 L3:3 L4:3 L5:4
-  G.obsB = makeObstacleSet(cnt,               -(spd+0.2), CY.obsB, CLOUD_EMOJIS); // 雲・右→左
-  G.obsA = makeObstacleSet(Math.max(1,cnt-2),  spd,        CY.obsA, CLOUD_EMOJIS); // 雲・左→右
+  const spd=0.8+G.diff*0.22;
+  const cnt=G.diff===4?2:2+Math.floor(G.diff/2); // L5は2に減らす(宇宙人少なめ)
+  const set=OBS_SETS[G.diff]||OBS_SETS[0];
+  G.obsB = makeObstacleSet(cnt,               -(spd+0.2), CY.obsB, set.b);
+  G.obsA = makeObstacleSet(Math.max(1,cnt-2),  spd,        CY.obsA, set.a);
 }
 
 // ════════════════════════════════════════════
@@ -329,6 +359,7 @@ function _spawnWeapon(px){
     weapon:w.id,
     done:false, trail:[],
     netR:0,
+    retracting:false, retractColor:null, retractR:0,
   });
   sndShoot();
 }
@@ -362,13 +393,18 @@ function spawnLabel(x,y,text,color,sz=22){
 // ════════════════════════════════════════════
 //  CAPTURE LOGIC
 // ════════════════════════════════════════════
-function addScore(pts){ G.score+=Math.round(pts); }
+function addScore(pts){ G.score=Math.max(0,G.score+Math.round(pts)); }
+// 正解時：コンボを更新し 10×コンボ数 を返す
 function incCombo(){
   const now=Date.now();
-  const bonus=(G._lastCorrectTime && now-G._lastCorrectTime<3000);
+  const inCombo=(G._lastCorrectTime && now-G._lastCorrectTime<5000);
   G._lastCorrectTime=now;
-  G.combo++; if(G.combo>G.maxCombo) G.maxCombo=G.combo;
-  if(bonus){ addScore(10); sndCombo(3); spawnLabel(VW/2,340,'+10 COMBO!','#4D96FF',24); }
+  if(!inCombo) G.combo=0;
+  G.combo++; if(G.combo>G.maxCombo) G.maxCombo=G.combo; G.totalCorrect++;
+  const pts=10*G.combo;
+  addScore(pts);
+  if(G.combo>=2){ sndCombo(Math.min(G.combo,5)); spawnLabel(VW/2,335,'×'+G.combo+' COMBO! +'+pts,'#4D96FF',22); }
+  return pts;
 }
 
 function onBalloonHit(balloon){
@@ -386,7 +422,7 @@ function onBalloonHit(balloon){
         // Word complete → damage boss
         G.bossHP=Math.max(0,G.bossHP-1);
         G.bossFlash=0.55;
-        addScore(30); incCombo();
+        incCombo();
         spawnLabel(VW/2,280,'⚔️ HIT!','#FFD93D',26);
         spawnParts(G.bossX,G.bossY,rndC(),22);
         if(G.bossHP<=0){
@@ -400,8 +436,8 @@ function onBalloonHit(balloon){
         G.bossWord=BOSS_WORDS[ri(0,BOSS_WORDS.length-1)];
         setTimeout(fillBalloons,600);
       } else {
-        addScore(10); incCombo();
-        spawnLabel(balloon.x,balloon.y-35,'✓ +10','#6BCB77',20);
+        const hpts=incCombo();
+        spawnLabel(balloon.x,balloon.y-35,'✓ +'+hpts,'#6BCB77',20);
         setTimeout(fillBalloons,450);
       }
     } else {
@@ -417,8 +453,7 @@ function onBalloonHit(balloon){
     if(correct){
       spawnParts(balloon.x,balloon.y,balloon.color,16);
       sndPop();
-      const pts=10;
-      addScore(pts); incCombo();
+      const pts=incCombo();
       spawnLabel(balloon.x,balloon.y-35,'+'+pts,balloon.color,24);
       G.questionDone=true;
       setTimeout(nextQuestion,600); // 残りの風船から次の問題を出す
@@ -437,14 +472,13 @@ function onBalloonHit(balloon){
     G.letterIdx++;
     spawnLabel(balloon.x,balloon.y-35,'✓ '+balloon.letter.toUpperCase(),'#6BCB77',22);
     if(G.letterIdx>=G.question.answer.length){
-      const pts=10*G.question.answer.length;
-      addScore(pts); incCombo();
+      const pts=incCombo();
       sndClear();
       spawnLabel(VW/2,310,'WORD CLEAR! +'+pts,'#FFD93D',26);
       G.questionDone=true;
       setTimeout(nextQuestion,1100);
     } else {
-      addScore(10); incCombo();
+      incCombo();
       setTimeout(fillBalloons,450);
     }
   } else {
@@ -455,9 +489,9 @@ function onBalloonHit(balloon){
 
 function wrongHit(x,y){
   G.combo=0; G._lastCorrectTime=0;
-  G.score-=50;
+  addScore(-10);
   sndMiss();
-  spawnLabel(x,y-30,'-50 ✗','#FF6B6B',22);
+  spawnLabel(x,y-30,'-10 ✗','#FF6B6B',22);
   if(G.diff===4) spawnPermObs();
   // 誤答記録（復習用）
   if(G.screen==='boss' && G.bossWord){
@@ -517,11 +551,11 @@ function nextQuestion(){
 //  GAME FLOW
 // ════════════════════════════════════════════
 function startGame(){
-  G.timer=90; G.timerMax=90;
+  G.timer=60; G.timerMax=60;
   G.score=0; G.combo=0; G.maxCombo=0;
   G.balloons=[]; G.arrows=[]; G.parts=[]; G.labels=[]; G.permObs=[];
   G.frozen=0; G.tick=0; G._bossTriggered=false; G._lastCorrectTime=0;
-  G._speakTimer=0; G._charging=false; G._chargeTimer=0;
+  G._speakTimer=0; G._charging=false; G._chargeTimer=0; G._cdSpoken=new Set(); G._timeoutFlash=0;
   G.wrongAnswers=[]; G._wrongSet=new Set();
   G.player={x:VW/2}; G.keys={left:false,right:false};
   usedS1.clear(); usedS2.clear();
@@ -536,7 +570,9 @@ function startGame(){
     nextQuestion();
   }
 
-  G.screen='playing';
+  // 馬に乗った登場演出（'intro'画面 → 完了後 'playing' へ）
+  G._intro={ x:-120, phase:'enter', timer:0 };
+  G.screen='intro';
   startBGM();
 }
 
@@ -558,7 +594,7 @@ function endGame(){
   if(G.stage===1 && G.score>=30) G.unlocked[1]=true;
   saveG();
   // 復習セットアップ
-  G._reviewIdx=-1; G._reviewTimer=0.8; G._reviewActive=G.wrongAnswers.length>0;
+  G._reviewIdx=-1; G._reviewTimer=0.8; G._reviewActive=G.wrongAnswers.length>0; G._reviewSpeakCount=0;
   G.screen='result';
 }
 function _reviewSpeak(item){
@@ -574,6 +610,30 @@ function _reviewSpeak(item){
 // ════════════════════════════════════════════
 function update(dt){
   G.tick+=dt;
+
+  // ── 登場演出（intro） ──
+  if(G.screen==='intro' && G._intro){
+    const intro=G._intro;
+    if(intro.phase==='enter'){
+      intro.x+=7;
+      if(intro.x>=VW/2){ intro.phase='pause'; intro.timer=1.0; }
+    } else if(intro.phase==='pause'){
+      intro.timer-=dt;
+      if(intro.timer<=0) intro.phase='exit';
+    } else {
+      intro.x+=10;
+      if(intro.x>VW+130){ G.screen='playing'; G._intro=null; speakQuestion(); }
+    }
+    goto_effects(dt);
+    return; // ゲームロジックはまだ動かさない
+  }
+
+  // タイムアウト演出
+  if(G.screen==='timeout'){
+    G._timeoutFlash-=dt;
+    if(G._timeoutFlash<=0) endGame();
+    return;
+  }
   const playing=G.screen==='playing'||G.screen==='boss';
 
   if(playing){
@@ -582,7 +642,21 @@ function update(dt){
     // Timer & boss trigger
     if(G.screen==='playing'||G.screen==='boss'){
       G.timer-=dt;
-      if(G.timer<=0){ G.timer=0; endGame(); return; }
+      // 残り5秒：カウントダウン発音
+      if(G.timer<=5 && G.timer>0){
+        const n=Math.ceil(G.timer);
+        if(!G._cdSpoken.has(n)){
+          G._cdSpoken.add(n);
+          if(window.speechSynthesis){
+            window.speechSynthesis.cancel();
+            const u=new SpeechSynthesisUtterance(String(n));
+            u.lang='en-US'; u.rate=1.0; u.pitch=1.3; u.volume=1.0;
+            const fv=_femaleVoice(); if(fv) u.voice=fv;
+            window.speechSynthesis.speak(u);
+          }
+        }
+      }
+      if(G.timer<=0){ G.timer=0; G._timeoutFlash=1.8; G.screen='timeout'; stopBGM(); sndGameOver(); return; }
       if(G.stage===1 && G.score>=100 && !G._bossTriggered){
         G._bossTriggered=true;
         startBoss(); return;
@@ -657,16 +731,31 @@ function update(dt){
       if(ar.trail.length>14) ar.trail.shift();
       ar.y+=ar.vy;
 
-      // Rope: sinusoidal swing
+      // ── ロープ/虫取り網：縮み中（捕獲済み、引き戻し）
+      if((ar.weapon==='rope'||ar.weapon==='bugnet') && ar.retracting){
+        if(ar.weapon==='rope') ar.x=ar.startX; // まっすぐ戻る
+        if(ar.y>=LY.aimBot+10) ar.done=true;
+        continue;
+      }
+
+      // ── ネットランチャー：縮み中
+      if(ar.weapon==='net' && ar.retracting){
+        ar.netR=Math.max(0,ar.netR-8);
+        if(ar.netR<=0) ar.done=true;
+        continue;
+      }
+
+      // Rope: sinusoidal swing（縮み中以外）
       if(ar.weapon==='rope'){
         ar.x=ar.startX+Math.sin(ar.age*5)*30;
         ar.x=Math.max(10,Math.min(VW-10,ar.x));
       }
 
-      // Net: freeze in balloon band and expand
+      // Net: バンド中央(CY.ball)まで進んでから展開
       if(ar.weapon==='net' && ar.y<=LY.ballBot+10 && ar.y>=LY.ballTop-20){
-        ar.vy=0; ar.netR+=5;
-        if(ar.netR>=70){ ar.done=true; netCapture(ar.x,ar.y,ar.netR); }
+        if(ar.y > CY.ball+6){ ar.vy=-5; }
+        else { ar.vy=0; ar.y=Math.min(ar.y,CY.ball); ar.netR+=7; }
+        if(ar.netR>=60){ netCapture(ar.x,ar.y,ar.netR); ar.retracting=true; } // 縮み開始
         continue;
       }
 
@@ -675,32 +764,32 @@ function update(dt){
         if(Math.abs(ar.x-po.x)<po.w/2+4 && Math.abs(ar.y-po.y)<po.h/2+6){
           ar.done=true; sndBlock(); spawnParts(ar.x,ar.y,'#C77DFF',8);
           if(ar.weapon==='bugnet'){ spawnLabel(ar.x,ar.y-10,'虫取り失敗！','#6BCB77',18); }
-          else { spawnLabel(ar.x,ar.y-10,'ブロック！ -30','#FFD93D',18); G.frozen=0.7; G.combo=0; G.score-=30; if(G.diff===4) spawnPermObs(); }
+          else { spawnLabel(ar.x,ar.y-10,'ブロック！ -10','#FFD93D',18); G.frozen=0.7; G.combo=0; addScore(-10); if(G.diff===4) spawnPermObs(); }
           break;
         }
       }
       if(ar.done) continue;
 
-      // ── Collision: OBS-B band (clouds, right→left)
+      // ── Collision: OBS-B band
       if(ar.y>=LY.obsBTop-6 && ar.y<=LY.obsBBot+6){
         for(const o of G.obsB){
           if(Math.abs(ar.x-o.x)<o.w/2+4){
             ar.done=true; sndBlock(); spawnParts(ar.x,ar.y,'#aaa',8);
             if(ar.weapon==='bugnet'){ spawnLabel(ar.x,ar.y-10,'虫取り失敗！','#6BCB77',18); }
-            else { spawnLabel(ar.x,ar.y-10,'ぶつかった！ -30','#FF6B6B',18); G.frozen=0.7; G.combo=0; G.score-=30; if(G.diff===4) spawnPermObs(); }
+            else { spawnLabel(ar.x,ar.y-10,'ぶつかった！ -10','#FF6B6B',18); G.frozen=0.7; G.combo=0; addScore(-10); if(G.diff===4) spawnPermObs(); }
             break;
           }
         }
       }
       if(ar.done) continue;
 
-      // ── Collision: OBS-A band (clouds, left→right)
+      // ── Collision: OBS-A band
       if(ar.y>=LY.obsATop-6 && ar.y<=LY.obsABot+6){
         for(const o of G.obsA){
           if(Math.abs(ar.x-o.x)<o.w/2+4){
             ar.done=true; sndBlock(); spawnParts(ar.x,ar.y,'#aaa',8);
             if(ar.weapon==='bugnet'){ spawnLabel(ar.x,ar.y-10,'虫取り失敗！','#6BCB77',18); }
-            else { spawnLabel(ar.x,ar.y-10,'ブロック！ -30','#FFD93D',18); G.frozen=0.7; G.combo=0; G.score-=30; if(G.diff===4) spawnPermObs(); }
+            else { spawnLabel(ar.x,ar.y-10,'ブロック！ -10','#FFD93D',18); G.frozen=0.7; G.combo=0; addScore(-10); if(G.diff===4) spawnPermObs(); }
             break;
           }
         }
@@ -712,7 +801,17 @@ function update(dt){
         const alive=G.balloons.filter(b=>!b.popped);
         if(alive.length>0){
           const near=alive.reduce((a,b)=>Math.abs(a.x-ar.x)<Math.abs(b.x-ar.x)?a:b);
-          if(Math.abs(near.x-ar.x)<near.r+10){ ar.done=true; onBalloonHit(near); continue; }
+          if(Math.abs(near.x-ar.x)<near.r+10){
+            if(ar.weapon==='rope'||ar.weapon==='bugnet'){
+              // 捕獲：即スコア計上して引き戻しアニメ開始
+              ar.retracting=true; ar.vy=9;
+              ar.retractColor=near.color; ar.retractR=near.r*0.75;
+              onBalloonHit(near);
+            } else {
+              ar.done=true; onBalloonHit(near);
+            }
+            continue;
+          }
         }
         if(ar.y<LY.ballTop-20) ar.done=true;
       }
@@ -743,9 +842,24 @@ function goto_effects(dt){
   if(G.screen==='result' && G._reviewActive && G.wrongAnswers.length>0){
     G._reviewTimer-=dt;
     if(G._reviewTimer<=0){
-      G._reviewIdx=(G._reviewIdx+1)%G.wrongAnswers.length;
-      G._reviewTimer=2.2;
-      _reviewSpeak(G.wrongAnswers[G._reviewIdx]);
+      if(G._reviewIdx<0){
+        // 最初の文字：即発音
+        G._reviewIdx=0; G._reviewSpeakCount=1; G._reviewTimer=1.0;
+        _reviewSpeak(G.wrongAnswers[0]);
+      } else if(G._reviewSpeakCount<3){
+        // 同じ文字をもう一度（計3回まで）
+        _reviewSpeak(G.wrongAnswers[G._reviewIdx]);
+        G._reviewSpeakCount++; G._reviewTimer=1.0;
+      } else {
+        // 次の文字へ
+        const nxt=G._reviewIdx+1;
+        if(nxt<G.wrongAnswers.length){
+          G._reviewIdx=nxt; G._reviewSpeakCount=1; G._reviewTimer=1.0;
+          _reviewSpeak(G.wrongAnswers[nxt]);
+        } else {
+          G._reviewActive=false; // 全部終了→静かに
+        }
+      }
     }
   }
 }
@@ -770,56 +884,95 @@ function IR(px,py,x,y,w,h){ return px>=x&&px<=x+w&&py>=y&&py<=y+h; }
 // ════════════════════════════════════════════
 //  DRAW: BACKGROUND + LAYERS
 // ════════════════════════════════════════════
-function drawBG(){
-  // Deep sky gradient
-  const gr=cx.createLinearGradient(0,0,0,VH);
-  gr.addColorStop(0,'#06091f');
-  gr.addColorStop(.3,'#0b1e52');
-  gr.addColorStop(.65,'#1a3a7a');
-  gr.addColorStop(1,'#0d1b3e');
-  cx.fillStyle=gr; cx.fillRect(0,0,VW,VH);
-
-  // Stars (only in balloon area and above)
-  for(let i=0;i<40;i++){
-    const sx=(i*137.5)%VW, sy=(i*79.3)%(LY.ballBot+20);
-    const t=Math.sin(G.tick*1.4+i)*.5+.5;
-    cx.globalAlpha=.1+t*.5; cx.fillStyle='#fff';
-    cx.beginPath(); cx.arc(sx,sy,.6+t*.7,0,Math.PI*2); cx.fill();
-  }
-  cx.globalAlpha=1;
-
-  // ── Layer bands ──
-  // Balloon layer: light blue tint
+// ── 共通：レイヤー帯と方向ラベル ──
+function _drawLayers(bandA,bandB,sepCol,lblCol,lA,lB){
   const gBall=cx.createLinearGradient(0,LY.ballTop,0,LY.ballBot);
-  gBall.addColorStop(0,'rgba(40,80,160,.18)');
-  gBall.addColorStop(1,'rgba(20,50,120,.06)');
+  gBall.addColorStop(0,bandA[0]); gBall.addColorStop(1,bandA[1]);
   cx.fillStyle=gBall; cx.fillRect(0,LY.ballTop,VW,LY.ballBot-LY.ballTop);
-
-  // OBS-B layer (birds, R→L): warm red tint
-  const gObsB=cx.createLinearGradient(0,LY.obsBTop,0,LY.obsBBot);
-  gObsB.addColorStop(0,'rgba(180,40,40,.08)');
-  gObsB.addColorStop(1,'rgba(120,20,20,.04)');
-  cx.fillStyle=gObsB; cx.fillRect(0,LY.obsBTop,VW,LY.obsBBot-LY.obsBTop);
-
-  // OBS-A layer (clouds, L→R): amber tint
-  const gObsA=cx.createLinearGradient(0,LY.obsATop,0,LY.obsABot);
-  gObsA.addColorStop(0,'rgba(160,120,30,.08)');
-  gObsA.addColorStop(1,'rgba(100,70,10,.04)');
-  cx.fillStyle=gObsA; cx.fillRect(0,LY.obsATop,VW,LY.obsABot-LY.obsATop);
-
-  // Layer separator lines
-  cx.strokeStyle='rgba(255,255,255,.1)'; cx.lineWidth=1;
+  const gB=cx.createLinearGradient(0,LY.obsBTop,0,LY.obsBBot);
+  gB.addColorStop(0,bandB[0]); gB.addColorStop(1,bandB[1]);
+  cx.fillStyle=gB; cx.fillRect(0,LY.obsBTop,VW,LY.obsBBot-LY.obsBTop);
+  const gA=cx.createLinearGradient(0,LY.obsATop,0,LY.obsABot);
+  gA.addColorStop(0,bandB[1]); gA.addColorStop(1,bandA[0]);
+  cx.fillStyle=gA; cx.fillRect(0,LY.obsATop,VW,LY.obsABot-LY.obsATop);
+  cx.strokeStyle=sepCol; cx.lineWidth=1;
   [LY.ballTop,LY.ballBot,LY.obsBBot,LY.obsABot].forEach(y=>{
     cx.beginPath(); cx.moveTo(0,y); cx.lineTo(VW,y); cx.stroke();
   });
+  // レイヤーラベル非表示
+}
 
-  // Layer direction indicators
-  cx.fillStyle='rgba(255,255,255,.18)'; cx.font='10px Arial';
-  cx.textAlign='left'; cx.textBaseline='middle';
-  cx.fillText('← 鳥', 6, CY.obsB);
-  cx.fillText('雲 →', 6, CY.obsA);
-  cx.textAlign='right';
-  cx.fillText('🎈 バルーン', VW-6, LY.ballTop+12);
+function _bgSky(){
+  const gr=cx.createLinearGradient(0,0,0,VH);
+  gr.addColorStop(0,'#1a7fd4'); gr.addColorStop(.35,'#4aaee8');
+  gr.addColorStop(.7,'#87cef5'); gr.addColorStop(1,'#c8eaff');
+  cx.fillStyle=gr; cx.fillRect(0,0,VW,VH);
+  // うろこ雲
+  cx.globalAlpha=.13; cx.fillStyle='#fff';
+  for(let i=0;i<12;i++){
+    const x2=(i*83+G.tick*6)%(VW+100)-50, y2=30+i*7, r=14+i%3*8;
+    cx.beginPath(); cx.ellipse(x2,y2,r,r*.45,0,0,Math.PI*2); cx.fill();
+    cx.beginPath(); cx.ellipse(x2+r*.6,y2-3,r*.7,r*.35,0,0,Math.PI*2); cx.fill();
+  }
+  cx.globalAlpha=1;
+  const s=OBS_SETS[G.diff]||OBS_SETS[0];
+  _drawLayers(['rgba(100,180,255,.12)','rgba(150,210,255,.06)'],
+              ['rgba(255,255,255,.07)','rgba(200,230,255,.04)'],
+              'rgba(255,255,255,.15)','rgba(30,60,120,.45)',s.lA,s.lB);
+}
+
+function _bgWestern(){
+  // 夕日の空
+  const gr=cx.createLinearGradient(0,0,0,VH);
+  gr.addColorStop(0,'#1a0a2e'); gr.addColorStop(.18,'#4a1560');
+  gr.addColorStop(.42,'#c0390a'); gr.addColorStop(.65,'#f07020');
+  gr.addColorStop(.82,'#f5a030'); gr.addColorStop(1,'#d4602a');
+  cx.fillStyle=gr; cx.fillRect(0,0,VW,VH);
+  // 太陽
+  const sunY=LY.obsABot-10;
+  const sunGr=cx.createRadialGradient(VW*.6,sunY,4,VW*.6,sunY,55);
+  sunGr.addColorStop(0,'rgba(255,255,180,1)'); sunGr.addColorStop(.4,'rgba(255,200,50,.7)');
+  sunGr.addColorStop(1,'rgba(255,120,0,0)');
+  cx.fillStyle=sunGr; cx.fillRect(0,0,VW,VH);
+  // 地平線シルエット（丘）
+  cx.fillStyle='#1a0a0a';
+  cx.beginPath();
+  cx.moveTo(0,VH);
+  [0,80,140,200,270,340,400,480].forEach((x,i)=>{
+    const h=[0,30,15,45,20,38,10,0][i];
+    cx.lineTo(x,VH-h);
+  });
+  cx.lineTo(VW,VH); cx.closePath(); cx.fill();
+  _drawLayers(['rgba(255,120,40,.10)','rgba(200,80,10,.06)'],
+              ['rgba(255,80,20,.08)','rgba(180,40,0,.04)'],
+              'rgba(255,150,50,.2)','rgba(255,220,100,.55)',(OBS_SETS[G.diff]||OBS_SETS[0]).lA,(OBS_SETS[G.diff]||OBS_SETS[0]).lB);
+}
+
+function _bgSpace(){
+  const gr=cx.createLinearGradient(0,0,0,VH);
+  gr.addColorStop(0,'#000008'); gr.addColorStop(.3,'#06091f');
+  gr.addColorStop(.7,'#0b1540'); gr.addColorStop(1,'#150830');
+  cx.fillStyle=gr; cx.fillRect(0,0,VW,VH);
+  // 星
+  for(let i=0;i<55;i++){
+    const sx=(i*137.5)%VW, sy=(i*79.3)%(LY.ballBot+60);
+    const t=Math.sin(G.tick*1.4+i)*.5+.5;
+    cx.globalAlpha=.12+t*.55; cx.fillStyle=i%5===0?'#ffe':'#fff';
+    cx.beginPath(); cx.arc(sx,sy,.5+t*.9,0,Math.PI*2); cx.fill();
+  }
+  // 惑星
+  cx.globalAlpha=.28;
+  const pgr=cx.createRadialGradient(VW*.8,50,5,VW*.8,50,30);
+  pgr.addColorStop(0,'#9b59b6'); pgr.addColorStop(.6,'#6c3483'); pgr.addColorStop(1,'rgba(60,20,80,0)');
+  cx.fillStyle=pgr; cx.beginPath(); cx.arc(VW*.8,50,30,0,Math.PI*2); cx.fill();
+  cx.globalAlpha=1;
+  _drawLayers(['rgba(80,20,160,.12)','rgba(40,10,100,.06)'],
+              ['rgba(120,0,200,.08)','rgba(60,0,120,.04)'],
+              'rgba(180,100,255,.2)','rgba(200,150,255,.6)','流星 →','← 宇宙人');
+}
+
+function drawBG(){
+  _bgWestern(); // 全レベル荒野の西部劇
 }
 
 // ════════════════════════════════════════════
@@ -850,9 +1003,11 @@ function drawBalloons(){
     cx.beginPath(); cx.ellipse(-b.r*.32,-b.r*.52,b.r*.2,b.r*.14,-.4,0,Math.PI*2);
     cx.fillStyle='rgba(255,255,255,.32)'; cx.fill();
 
-    // Letter
+    // Letter（小文字は手書き体フォント）
     SH('#000',5);
-    T(b.letter,0,-2,`bold ${b.r*.95}px 'Segoe UI',Arial`,'#fff');
+    const _isLower=b.letter===b.letter.toLowerCase()&&b.letter!==b.letter.toUpperCase();
+    const _bfont=_isLower?`bold ${b.r*.95}px 'Comic Sans MS',cursive`:`bold ${b.r*.95}px 'Segoe UI',Arial`;
+    T(b.letter,0,-2,_bfont,'#fff');
     NSH();
     cx.restore();
   }
@@ -865,11 +1020,10 @@ function drawTarget(){ }
 //  DRAW: OBSTACLES
 // ════════════════════════════════════════════
 function drawObstacles(){
-  // Birds (right→left, OBS-B band)
+  // Birds (right→left, OBS-B band) — 絵文字は左向きのままでOK
   for(const o of G.obsB){
     cx.save();
     cx.translate(o.x, o.y);
-    // 右→左に飛ぶので、左向きの絵文字をそのまま使う（scale反転不要）
     cx.font=`${o.h*1.9}px Arial`;
     cx.textAlign='center'; cx.textBaseline='middle';
     cx.fillText(o.emoji,0,0);
@@ -880,11 +1034,15 @@ function drawObstacles(){
     cx.fillRect(o.x-o.w/2, o.y-o.h/2, o.w, o.h);
     cx.globalAlpha=1;
   }
-  // Clouds (left→right, OBS-A band)
+  // Animals (left→right, OBS-A band) — 左向き絵文字を右向きに反転
   for(const o of G.obsA){
+    cx.save();
+    cx.translate(o.x, o.y);
+    cx.scale(-1,1); // 左→右移動なので右向きに反転
     cx.font=`${o.h*1.9}px Arial`;
     cx.textAlign='center'; cx.textBaseline='middle';
-    cx.fillText(o.emoji, o.x, o.y);
+    cx.fillText(o.emoji,0,0);
+    cx.restore();
     cx.globalAlpha=.1;
     cx.fillStyle='#FFD93D';
     cx.fillRect(o.x-o.w/2, o.y-o.h/2, o.w, o.h);
@@ -943,36 +1101,49 @@ function drawArrows(){
     cx.globalAlpha=1;
 
     if(ar.weapon==='rocket'){
-      SH(w.color,12);
-      cx.strokeStyle=w.color; cx.lineWidth=3; cx.lineCap='round';
-      cx.beginPath(); cx.moveTo(ar.x,ar.y+14); cx.lineTo(ar.x,ar.y); cx.stroke();
+      // 火縄銃の弾：丸い弾丸
+      SH(w.color,14);
       cx.fillStyle=w.color;
-      cx.beginPath(); cx.moveTo(ar.x,ar.y-14); cx.lineTo(ar.x-5,ar.y); cx.lineTo(ar.x+5,ar.y); cx.closePath(); cx.fill();
+      cx.beginPath(); cx.ellipse(ar.x,ar.y-4,5,8,0,0,Math.PI*2); cx.fill();
+      cx.fillStyle='rgba(255,255,200,.8)';
+      cx.beginPath(); cx.ellipse(ar.x-1,ar.y-7,2,3,-.3,0,Math.PI*2); cx.fill();
+      NSH();
+    } else if(ar.weapon==='arrow'){
+      // 弓矢：黒アウトライン＋明るいシアン白で高コントラスト
+      cx.lineCap='round';
+      cx.strokeStyle='rgba(0,0,0,.7)'; cx.lineWidth=6;
+      cx.beginPath(); cx.moveTo(ar.x,ar.y+12); cx.lineTo(ar.x,ar.y-18); cx.stroke();
+      cx.fillStyle='rgba(0,0,0,.6)';
+      cx.beginPath(); cx.moveTo(ar.x,ar.y-23); cx.lineTo(ar.x-7,ar.y-10); cx.lineTo(ar.x+7,ar.y-10); cx.closePath(); cx.fill();
+      SH(w.color,22);
+      cx.strokeStyle=w.color; cx.lineWidth=3; cx.lineCap='round';
+      cx.beginPath(); cx.moveTo(ar.x,ar.y+12); cx.lineTo(ar.x,ar.y-18); cx.stroke();
+      cx.fillStyle=w.color;
+      cx.beginPath(); cx.moveTo(ar.x,ar.y-23); cx.lineTo(ar.x-6,ar.y-10); cx.lineTo(ar.x+6,ar.y-10); cx.closePath(); cx.fill();
+      cx.strokeStyle=w.color; cx.lineWidth=2;
+      cx.beginPath(); cx.moveTo(ar.x-6,ar.y+12); cx.lineTo(ar.x,ar.y+2); cx.lineTo(ar.x+6,ar.y+12); cx.stroke();
       NSH();
     } else if(ar.weapon==='rope'){
-      SH(w.color,8);
-      cx.strokeStyle=w.color; cx.lineWidth=2.5; cx.lineCap='round';
+      // ロープ：黒アウトライン＋明るいライムグリーンで高コントラスト
+      cx.strokeStyle='rgba(0,0,0,.65)'; cx.lineWidth=7; cx.lineCap='round';
       cx.beginPath(); cx.moveTo(ar.x+8,ar.y+20); cx.quadraticCurveTo(ar.x+16,ar.y+8,ar.x,ar.y); cx.stroke();
-      cx.beginPath(); cx.arc(ar.x,ar.y-8,7,0,Math.PI*2); cx.stroke();
+      cx.beginPath(); cx.arc(ar.x,ar.y-8,8,0,Math.PI*2); cx.stroke();
+      SH(w.color,24);
+      cx.strokeStyle=w.color; cx.lineWidth=3.5; cx.lineCap='round';
+      cx.beginPath(); cx.moveTo(ar.x+8,ar.y+20); cx.quadraticCurveTo(ar.x+16,ar.y+8,ar.x,ar.y); cx.stroke();
+      cx.beginPath(); cx.arc(ar.x,ar.y-8,8,0,Math.PI*2); cx.stroke();
       NSH();
     } else if(ar.weapon==='bugnet'){
-      SH(w.color,10);
+      // 虫取り網：白アウトライン→色
+      cx.strokeStyle='rgba(0,0,0,.45)'; cx.lineWidth=5; cx.lineCap='round';
+      cx.beginPath(); cx.moveTo(ar.x+2,ar.y+30); cx.lineTo(ar.x-1,ar.y-10); cx.stroke();
+      cx.beginPath(); cx.ellipse(ar.x,ar.y-22,13,6,0,0,Math.PI*2); cx.stroke();
+      SH('#fff',14);
       cx.strokeStyle=w.color; cx.lineWidth=3; cx.lineCap='round';
       cx.beginPath(); cx.moveTo(ar.x+2,ar.y+30); cx.lineTo(ar.x-1,ar.y-10); cx.stroke();
       cx.beginPath(); cx.ellipse(ar.x,ar.y-22,13,6,0,0,Math.PI*2); cx.stroke();
       cx.lineWidth=1.5; cx.globalAlpha=0.6;
       cx.beginPath(); cx.moveTo(ar.x-13,ar.y-22); cx.lineTo(ar.x,ar.y-10); cx.lineTo(ar.x+13,ar.y-22); cx.stroke();
-      cx.globalAlpha=1; NSH();
-    } else if(ar.weapon==='chaos'){
-      SH(w.color,14);
-      cx.strokeStyle=w.color; cx.lineWidth=3; cx.lineCap='round';
-      cx.beginPath(); cx.moveTo(ar.x,ar.y+14); cx.lineTo(ar.x,ar.y); cx.stroke();
-      cx.fillStyle=w.color;
-      cx.beginPath(); cx.moveTo(ar.x,ar.y-14); cx.lineTo(ar.x-5,ar.y); cx.lineTo(ar.x+5,ar.y); cx.closePath(); cx.fill();
-      for(let i=0;i<4;i++){
-        const a=(ar.age||0)*8+i*Math.PI/2;
-        cx.globalAlpha=0.55; cx.beginPath(); cx.arc(ar.x+Math.cos(a)*9,ar.y+Math.sin(a)*9,2.5,0,Math.PI*2); cx.fill();
-      }
       cx.globalAlpha=1; NSH();
     } else {
       // fallback: standard arrow
@@ -983,6 +1154,19 @@ function drawArrows(){
       cx.beginPath(); cx.moveTo(ar.x,ar.y-14); cx.lineTo(ar.x-5,ar.y); cx.lineTo(ar.x+5,ar.y); cx.closePath(); cx.fill();
       NSH();
     }
+
+    // ロープ/虫取り網：引き戻し中に捕獲バルーンを道具の先端に描画
+    if((ar.weapon==='rope'||ar.weapon==='bugnet') && ar.retracting && ar.retractColor){
+      const br=ar.retractR||16;
+      const tipY=ar.weapon==='rope'? ar.y-8 : ar.y-22;
+      cx.save();
+      cx.shadowColor=ar.retractColor; cx.shadowBlur=14;
+      cx.beginPath(); cx.arc(ar.x,tipY-br,br,0,Math.PI*2);
+      cx.fillStyle=ar.retractColor+'99'; cx.fill();
+      cx.strokeStyle=ar.retractColor; cx.lineWidth=2; cx.stroke();
+      cx.restore();
+    }
+
     cx.restore();
   }
 }
@@ -1018,17 +1202,29 @@ function drawPlayer(){
   SH(wep.color,10);
   cx.lineCap='round';
   if(wep.id==='rocket'){
-    cx.strokeStyle=wep.color; cx.lineWidth=4;
-    cx.beginPath(); cx.arc(0,0,22,Math.PI*.65,Math.PI*1.35,false); cx.stroke();
-    cx.strokeStyle='rgba(255,255,255,.7)'; cx.lineWidth=1.5;
-    cx.beginPath();
-    cx.moveTo(Math.cos(Math.PI*.65)*22,Math.sin(Math.PI*.65)*22);
-    cx.lineTo(Math.cos(Math.PI*1.35)*22,Math.sin(Math.PI*1.35)*22);
-    cx.stroke();
-    cx.strokeStyle=wep.color; cx.lineWidth=3;
-    cx.beginPath(); cx.moveTo(0,18); cx.lineTo(0,-18); cx.stroke();
+    // 火縄銃：銃身を上に向けたガン
+    cx.strokeStyle=wep.color; cx.lineWidth=5;
+    cx.beginPath(); cx.moveTo(-6,20); cx.lineTo(-6,-5); cx.stroke();
+    cx.lineWidth=3;
+    cx.beginPath(); cx.moveTo(-6,-5); cx.lineTo(0,-26); cx.stroke();
+    cx.strokeStyle='rgba(255,255,255,.5)'; cx.lineWidth=2;
+    cx.beginPath(); cx.moveTo(-10,5); cx.lineTo(-2,5); cx.stroke(); // 引き金
     cx.fillStyle=wep.color;
-    cx.beginPath(); cx.moveTo(0,-26); cx.lineTo(-5,-16); cx.lineTo(5,-16); cx.closePath(); cx.fill();
+    cx.beginPath(); cx.ellipse(-6,20,5,4,0,0,Math.PI*2); cx.fill(); // グリップ
+    cx.fillStyle='rgba(255,220,0,.9)';
+    cx.beginPath(); cx.ellipse(0,-28,3,4,0,0,Math.PI*2); cx.fill(); // 銃口の光
+  } else if(wep.id==='arrow'){
+    // 弓矢：弓を持つ
+    const bend=Math.sin(G.tick*1.5)*4;
+    cx.strokeStyle=wep.color; cx.lineWidth=2.5;
+    cx.beginPath(); cx.moveTo(-14,-20+bend); cx.quadraticCurveTo(-4,0,-14,20-bend); cx.stroke();
+    cx.strokeStyle='rgba(255,255,255,.6)'; cx.lineWidth=1;
+    cx.beginPath(); cx.moveTo(-14,-20+bend); cx.lineTo(-14,20-bend); cx.stroke(); // 弦
+    // 矢
+    cx.strokeStyle='#c8a060'; cx.lineWidth=2;
+    cx.beginPath(); cx.moveTo(-14,0); cx.lineTo(8,-22); cx.stroke();
+    cx.fillStyle=wep.color;
+    cx.beginPath(); cx.moveTo(8,-22); cx.lineTo(2,-14); cx.lineTo(14,-16); cx.closePath(); cx.fill();
   } else if(wep.id==='rope'){
     const sw=Math.sin(G.tick*3)*0.4;
     cx.strokeStyle=wep.color; cx.lineWidth=3;
@@ -1054,17 +1250,6 @@ function drawPlayer(){
     cx.lineWidth=1.5; cx.globalAlpha=0.65;
     cx.beginPath(); cx.moveTo(-14,-28); cx.lineTo(0,-14); cx.lineTo(14,-28); cx.stroke();
     cx.globalAlpha=1;
-  } else if(wep.id==='chaos'){
-    cx.strokeStyle=wep.color; cx.lineWidth=3;
-    cx.beginPath(); cx.moveTo(0,22); cx.lineTo(0,-8); cx.stroke();
-    for(let i=0;i<6;i++){
-      const a=(G.tick*4)+i*Math.PI/3;
-      const r=16+Math.sin(G.tick*6+i)*4;
-      cx.lineWidth=2; cx.globalAlpha=0.55+Math.sin(G.tick*5+i)*.35;
-      cx.beginPath(); cx.moveTo(0,-8); cx.lineTo(Math.cos(a)*r,-8+Math.sin(a)*r); cx.stroke();
-    }
-    cx.globalAlpha=1;
-    cx.fillStyle=wep.color; cx.beginPath(); cx.arc(0,-8,6,0,Math.PI*2); cx.fill();
   }
   NSH();
   cx.restore();
@@ -1081,14 +1266,14 @@ function drawPlayer(){
   cx.fillStyle=lSel?'rgba(100,180,255,.55)':'rgba(255,255,255,.12)';
   RR(52, LY.btnY-25, 76, 50, 10); cx.fill();
   cx.strokeStyle='rgba(255,255,255,.2)'; cx.lineWidth=1; cx.stroke();
-  T('◀ 移動', 90, LY.btnY, 'bold 15px Arial', lSel?'#fff':'rgba(255,255,255,.7)');
+  T('◀', 90, LY.btnY, 'bold 22px Arial', lSel?'#fff':'rgba(255,255,255,.7)');
 
   // RIGHT
   const rSel=G.keys.right;
   cx.fillStyle=rSel?'rgba(100,180,255,.55)':'rgba(255,255,255,.12)';
   RR(VW-112, LY.btnY-25, 100, 50, 10); cx.fill();
   cx.strokeStyle='rgba(255,255,255,.2)'; cx.lineWidth=1; cx.stroke();
-  T('移動  ▶', VW-62, LY.btnY, 'bold 16px Arial', rSel?'#fff':'rgba(255,255,255,.7)');
+  T('▶', VW-62, LY.btnY, 'bold 22px Arial', rSel?'#fff':'rgba(255,255,255,.7)');
 
   // FIRE
   const canFire=G.frozen<=0 && !G.arrows.some(a=>!a.done);
@@ -1100,7 +1285,7 @@ function drawPlayer(){
     cx.strokeStyle=`rgba(255,${120+Math.floor(pulse*80)},50,.8)`;
     cx.lineWidth=2; RR(VW/2-62, LY.btnY-28, 124, 56, 14); cx.stroke();
   }
-  const FIRE_LABELS={rocket:'🚀 発射！',rope:G._charging?'チャージ中…':'🤠 投げる！',net:'🎯 発射！',bugnet:'🦋 伸ばす！',chaos:'⚡ 発射！'};
+  const FIRE_LABELS={rocket:'🔫 投げる',arrow:'🏹 放つ！',rope:G._charging?'チャージ中…':'🤠 なげる',net:'🎯 発射！',bugnet:'🦋 伸ばす！'};
   T(FIRE_LABELS[(WEAPONS[G.diff]||WEAPONS[0]).id]||'発射！', VW/2, LY.btnY, 'bold 18px Arial', canFire||G._charging?'#fff':'#555');
   NSH();
 }
@@ -1137,7 +1322,8 @@ function drawHUD(){
   // Timer bar
   const tw=(VW-20)*(G.timer/G.timerMax);
   cx.fillStyle='rgba(255,255,255,.1)'; RR(10,70,VW-20,12,4); cx.fill();
-  const tc=G.timer<20?'#FF6B6B':G.timer<40?'#FFD93D':'#6BCB77';
+  const _cdBlink=G.timer<=5 && Math.sin(G.tick*12)>0;
+  const tc=G.timer<=5?(_cdBlink?'#FF0000':'rgba(200,0,0,.3)'):G.timer<20?'#FF6B6B':G.timer<40?'#FFD93D':'#6BCB77';
   cx.fillStyle=tc; RR(10,70,tw,12,4); cx.fill();
 
   // Score / time / combo
@@ -1161,7 +1347,8 @@ function drawBossHUD(){
   const bw=VW-80;
   const bpct=Math.max(0,G.timer/G.timerMax);
   cx.fillStyle='rgba(255,255,255,.1)'; RR(40,33,bw,14,5); cx.fill();
-  const btc=G.timer<20?'#FF6B6B':G.timer<40?'#FFD93D':'#6BCB77';
+  const _bcdBlink=G.timer<=5 && Math.sin(G.tick*12)>0;
+  const btc=G.timer<=5?(_bcdBlink?'#FF0000':'rgba(200,0,0,.3)'):G.timer<20?'#FF6B6B':G.timer<40?'#FFD93D':'#6BCB77';
   cx.fillStyle=btc; RR(40,33,bw*bpct,14,5); cx.fill();
   T(Math.ceil(G.timer)+'秒', VW-32, 40, 'bold 11px Arial','#fff','right');
 
@@ -1199,13 +1386,88 @@ function drawFrozen(){
   if(G.frozen<=0) return;
   cx.fillStyle=`rgba(100,0,0,${Math.min(.25,G.frozen*.2)})`; cx.fillRect(0,0,VW,VH);
   cx.save(); cx.globalAlpha=Math.min(1,G.frozen*.9);
-  SH('#FF6B6B',20); T('気をつけよう！',VW/2,VH*.54,'bold 22px Arial','#FF6B6B'); NSH();
+  SH('#FF6B6B',20); T('Miss!',VW/2,VH*.54,'bold 26px Arial','#FF6B6B'); NSH();
   cx.restore();
 }
 
 // ════════════════════════════════════════════
 //  SCREEN: TITLE
 // ════════════════════════════════════════════
+// ════════════════════════════════════════════
+//  DRAW: HORSE + RIDER SILHOUETTE
+// ════════════════════════════════════════════
+function _drawHorseSil(x,y,sc,dir,alpha){
+  // dir: 1=右向き, -1=左向き
+  cx.save();
+  cx.globalAlpha=alpha??1;
+  cx.translate(x,y);
+  cx.scale(dir*sc,sc);
+  const C='#1a0800';
+  cx.fillStyle=C; cx.strokeStyle=C; cx.lineCap='round';
+
+  // 胴体
+  cx.beginPath(); cx.ellipse(0,0,34,17,0.08,0,Math.PI*2); cx.fill();
+  // 首
+  cx.beginPath(); cx.moveTo(20,-10); cx.bezierCurveTo(30,-18,32,-30,26,-34);
+  cx.bezierCurveTo(20,-38,14,-28,16,-14); cx.closePath(); cx.fill();
+  // 頭
+  cx.beginPath(); cx.ellipse(27,-38,9,7,-0.5,0,Math.PI*2); cx.fill();
+  // たてがみ
+  cx.beginPath(); cx.moveTo(18,-14); cx.lineTo(22,-34); cx.lineTo(28,-34); cx.lineTo(20,-10); cx.closePath(); cx.fill();
+  // しっぽ
+  cx.lineWidth=5;
+  cx.beginPath(); cx.moveTo(-30,-4); cx.bezierCurveTo(-42,4,-44,16,-38,22); cx.stroke();
+  // 脚（ギャロップ）
+  const lg=Math.sin(G.tick*9)*18;
+  cx.lineWidth=5;
+  cx.beginPath(); cx.moveTo(15,12); cx.lineTo(13+lg*.5,38); cx.stroke();
+  cx.beginPath(); cx.moveTo(8,14);  cx.lineTo(6-lg*.4,38); cx.stroke();
+  cx.beginPath(); cx.moveTo(-16,12);cx.lineTo(-14-lg*.4,38);cx.stroke();
+  cx.beginPath(); cx.moveTo(-22,12);cx.lineTo(-20+lg*.5,38);cx.stroke();
+  // ライダー胴体
+  cx.fillStyle=C;
+  cx.beginPath(); cx.ellipse(4,-28,9,14,0.1,0,Math.PI*2); cx.fill();
+  // 頭
+  cx.beginPath(); cx.arc(4,-44,7,0,Math.PI*2); cx.fill();
+  // カウボーイハット（ブリム＋帽体）
+  cx.beginPath(); cx.ellipse(4,-52,13,4,0,0,Math.PI*2); cx.fill();
+  cx.beginPath(); cx.moveTo(-2,-52); cx.lineTo(10,-52); cx.lineTo(8,-64); cx.lineTo(0,-64); cx.closePath(); cx.fill();
+
+  cx.restore();
+}
+
+const _INTRO_TEXT=[
+  ['GUNMAN !','🔫 火縄銃で一撃！'],
+  ['INDIAN !','🏹 弓矢が唸る！'],
+  ['COWBOY !','🤠 ロープを投げろ！'],
+  ['HUNTER !','🎯 ネットで捕まえろ！'],
+  ['LET\'S GO !','🦋 虫取り網で行け！'],
+];
+
+function drawHorseIntro(){
+  const intro=G._intro; if(!intro) return;
+  // 演出テキスト
+  if(intro.phase==='pause'||intro.phase==='exit'){
+    const txt=_INTRO_TEXT[G.diff]||_INTRO_TEXT[0];
+    const fa=intro.phase==='pause'?1:Math.max(0,1-(intro.x-VW/2)/90);
+    cx.save(); cx.globalAlpha=fa;
+    SH('#FFD93D',24); T(txt[0],VW/2,VH/2-48,'bold 36px Arial Black,Arial','#FFD93D'); NSH();
+    SH('#fff',10); T(txt[1],VW/2,VH/2,'bold 20px Arial','#fff'); NSH();
+    cx.restore();
+  }
+  // 馬のシルエット（右向きで走り込む）
+  _drawHorseSil(intro.x, LY.playerY-38, 1.3, 1, 1);
+  // ほこり
+  if(intro.phase!=='pause'){
+    cx.save(); cx.globalAlpha=0.35; cx.fillStyle='#c8a070';
+    for(let i=0;i<4;i++){
+      const dx=(i-1.5)*22, dy=i%2*8;
+      cx.beginPath(); cx.ellipse(intro.x-40+dx,LY.playerY+2+dy,10+i*4,5,0,0,Math.PI*2); cx.fill();
+    }
+    cx.restore();
+  }
+}
+
 function drawTitle(){
   drawBG();
 
@@ -1220,26 +1482,160 @@ function drawTitle(){
   cx.fillText('⛅',((cloudX+170)%(VW+80))-40,CY.obsA-5);
   cx.globalAlpha=1;
 
-  // Demo balloons floating
-  const dl='ABCabc'; const dc=PAL;
-  for(let i=0;i<6;i++){
-    const bx=50+i*66, by=LY.ballTop+40+Math.sin(G.tick*.8+i)*.11*18;
-    SH(dc[i],8); cx.fillStyle=dc[i];
-    cx.font='bold 18px Arial'; cx.textAlign='center'; cx.textBaseline='middle';
-    cx.fillText(dl[i],bx,by); NSH();
+  // ── 小文字 → 武器 ショーケース（L1〜L5） ──
+  cx.fillStyle='rgba(0,0,0,.32)'; RR(12,82,VW-24,144,14); cx.fill();
+  cx.strokeStyle='rgba(255,180,50,.28)'; cx.lineWidth=1; cx.stroke();
+
+  const _wEmoji=['🔫','🏹','🤠','🎯','🦋'];
+  const _si=Math.floor(G.tick*.22)%26;
+  const _sc=['#FF6B6B','#FFD93D','#F5A030','#C0390A','#6BCB77'];
+  const _sx=[48,144,240,336,432];
+  const _uY=118, _lY=195;
+
+  for(let i=0;i<5;i++){
+    const li=(_si+i)%26;
+    const lc=String.fromCharCode(97+li);
+    const col=_sc[i];
+    const px=_sx[i];
+    const bU=Math.sin(G.tick*1.5+i*1.1)*7;
+    const bL=Math.sin(G.tick*1.2+i*1.3+0.8)*5;
+    // 点線でつなぐ
+    cx.save();
+    cx.globalAlpha=.5; cx.strokeStyle=col; cx.lineWidth=1.5;
+    cx.setLineDash([3,4]);
+    cx.beginPath(); cx.moveTo(px,_uY+bU+23); cx.lineTo(px,_lY+bL-22); cx.stroke();
+    cx.setLineDash([]); cx.restore();
+    // 小文字（上・丸バッジ）
+    cx.save();
+    cx.shadowColor=col; cx.shadowBlur=18;
+    cx.beginPath(); cx.arc(px,_uY+bU,22,0,Math.PI*2);
+    cx.fillStyle=col+'44'; cx.fill();
+    cx.strokeStyle=col; cx.lineWidth=2.5; cx.stroke();
+    cx.font="bold 26px 'Comic Sans MS',cursive";
+    cx.textAlign='center'; cx.textBaseline='middle';
+    cx.fillStyle=col; cx.fillText(lc,px,_uY+bU);
+    cx.restore();
+    // 武器絵文字（下）
+    cx.save();
+    cx.shadowColor=col; cx.shadowBlur=14;
+    cx.font='26px Arial'; cx.textAlign='center'; cx.textBaseline='middle';
+    cx.fillText(_wEmoji[i],px,_lY+bL);
+    cx.restore();
   }
 
+  // タイトルパネル
+  cx.fillStyle='rgba(0,0,0,.45)'; RR(16,230,VW-32,330,16); cx.fill();
+  cx.strokeStyle='rgba(255,180,50,.5)'; cx.lineWidth=2; RR(16,230,VW-32,330,16); cx.stroke();
+  // 装飾ライン
+  cx.strokeStyle='rgba(255,180,50,.3)'; cx.lineWidth=1;
+  cx.beginPath(); cx.moveTo(30,248); cx.lineTo(VW-30,248); cx.stroke();
+  cx.beginPath(); cx.moveTo(30,546); cx.lineTo(VW-30,546); cx.stroke();
   cx.save();
-  SH('#FFD93D',26);
-  T('アルファベット',VW/2,280,'bold 40px Arial','#FFD93D');
-  T('ゲット！',VW/2,334,'bold 56px Arial','#FF6B6B');
+  // 小さいカタカナサブタイトル
+  cx.textAlign='center'; cx.textBaseline='middle';
+  cx.font='13px Arial';
+  cx.fillStyle='rgba(255,220,120,.65)';
+  cx.fillText('アルファベットゲット',VW/2,250);
+  // ALPHABET
+  cx.font='bold 46px Arial Black,Arial';
+  cx.strokeStyle='#7a3800'; cx.lineWidth=6; cx.strokeText('ALPHABET',VW/2,278);
+  cx.fillStyle='#FFD93D';  cx.fillText('ALPHABET',VW/2,278);
+  // GET!
+  cx.font='bold 68px Arial Black,Arial';
+  cx.strokeStyle='#7a0000'; cx.lineWidth=8; cx.strokeText('GET!',VW/2,348);
+  const grd=cx.createLinearGradient(0,314,0,382);
+  grd.addColorStop(0,'#FF6B6B'); grd.addColorStop(1,'#FF3300');
+  cx.fillStyle=grd; cx.fillText('GET!',VW/2,348);
+  // ★ デコ ★
+  cx.font='18px Arial'; cx.fillStyle='rgba(255,200,80,.7)';
+  cx.fillText('★  ─  ─  ─  ─  ─  ─  ─  ─  ★',VW/2,390);
   NSH();
-  T('矢を放って文字バルーンをゲットしよう！',VW/2,372,'14px Arial','rgba(255,255,255,.65)');
-  BTN(VW/2,428,250,56,'▶  ゲームスタート！','#FF6B6B');
-  BTN(VW/2,498,250,46,'📚 ステージ・難易度を選ぶ','#4D96FF');
-  cx.fillStyle='rgba(255,255,255,.35)'; cx.font='13px Arial'; cx.textAlign='center';
-  cx.fillText('記録  S1:'+G.best[0]+'点  /  S2:'+G.best[1]+'点',VW/2,555);
-  cx.fillText('← ▶ 移動  /  🏹発射  /  PC:矢印キー+スペース',VW/2,578);
+  BTN(VW/2,418,250,50,'▶  START!','#FF6B6B');
+  BTN(VW/2,480,250,42,'📚 ステージを選ぶ','#4D96FF');
+  BTN(VW/2,534,250,38,'❓ あそびかた','rgba(255,200,80,.7)');
+  cx.fillStyle='rgba(255,255,255,.35)'; cx.font='12px Arial'; cx.textAlign='center';
+  cx.fillText('記録  S1:'+G.best[0]+'点  /  S2:'+G.best[1]+'点',VW/2,588);
+  cx.restore();
+
+  // ── タイトル下部：馬に乗った人のシルエット ──
+  // 地面ライン
+  cx.save();
+  cx.globalAlpha=0.3; cx.strokeStyle='#8B4510'; cx.lineWidth=2;
+  cx.beginPath(); cx.moveTo(0,VH-52); cx.lineTo(VW,VH-52); cx.stroke();
+  cx.restore();
+  // メイン馬（右側、左向き）
+  _drawHorseSil(VW*0.74, VH-52, 0.92, -1, 0.55);
+  // 遠景の小さい馬（左側、右向き）
+  _drawHorseSil(VW*0.22, VH-44, 0.55, 1, 0.28);
+}
+
+// ════════════════════════════════════════════
+//  SCREEN: RULES
+// ════════════════════════════════════════════
+function drawRules(){
+  drawBG();
+  cx.fillStyle='rgba(0,8,30,.72)'; cx.fillRect(0,0,VW,VH);
+  cx.save();
+  const pw=VW-32;
+
+  // タイトル
+  SH('#FFD93D',22);
+  T('あそびかた',VW/2,38,'bold 28px Arial','#FFD93D');
+  NSH();
+
+  // ── 得点 ──
+  cx.fillStyle='rgba(30,120,50,.75)'; RR(16,58,pw,106,10); cx.fill();
+  cx.strokeStyle='rgba(100,255,120,.6)'; cx.lineWidth=1.5; cx.stroke();
+  SH('#6BCB77',8); T('⭐ 得点',24,76,'bold 15px Arial','#6BCB77','left'); NSH();
+  const ptRows=[
+    ['✅ 正解（1回目）','10点','#6BCB77'],
+    ['⚡ コンボ（5秒以内・連続正解）','10点×コンボ数','#FFD93D'],
+    ['💥 障害物に当たった','－10点','#FF9F43'],
+    ['✗ 間違えた','－10点','#FF6B6B'],
+  ];
+  ptRows.forEach(([label,score,col],i)=>{
+    const y=94+i*19;
+    cx.fillStyle='rgba(0,0,0,.25)'; RR(22,y-12,pw-12,17,4); cx.fill();
+    T(label,30,y,'12px Arial','#fff','left');
+    SH(col,6); T(score,VW-22,y,'bold 12px Arial',col,'right'); NSH();
+  });
+
+  // ── 道具 ──
+  cx.fillStyle='rgba(100,40,0,.75)'; RR(16,174,pw,238,10); cx.fill();
+  cx.strokeStyle='rgba(255,150,50,.6)'; cx.lineWidth=1.5; cx.stroke();
+  SH('#F5A030',8); T('🔫 道具',24,192,'bold 15px Arial','#F5A030','left'); NSH();
+  const winfo=[
+    ['L1','🔫 火縄銃','速い・まっすぐ','#FF6B6B','野うさぎ・鳥'],
+    ['L2','🏹 弓矢','まあまあ速い','#FFD93D','サボテン・砂嵐'],
+    ['L3','🤠 ロープ','カーブ・遅い','#F5A030','タカ・ワシ'],
+    ['L4','🎯 ネット','広範囲・遅い','#C0390A','イノシシ・シカ'],
+    ['L5','🦋 虫取り網','とても遅い','#6BCB77','👾宇宙人！'],
+  ];
+  winfo.forEach(([lv,wp,desc,col,obs],i)=>{
+    const y=206+i*40;
+    cx.fillStyle='rgba(0,0,0,.3)'; RR(20,y-14,pw-8,34,6); cx.fill();
+    cx.strokeStyle=col+'88'; cx.lineWidth=1; cx.stroke();
+    SH(col,8); T(lv,40,y+3,'bold 13px Arial',col,'left'); NSH();
+    T(wp,96,y+3,'bold 13px Arial','#fff','left');
+    T(desc,VW/2+20,y+3,'11px Arial','rgba(255,255,200,.7)','left');
+    T(obs,VW-20,y-6,'9px Arial','rgba(255,255,255,.4)','right');
+  });
+
+  // ── ポイント ──
+  cx.fillStyle='rgba(80,50,0,.75)'; RR(16,422,pw,60,10); cx.fill();
+  cx.strokeStyle='rgba(255,220,80,.5)'; cx.lineWidth=1.5; cx.stroke();
+  T('💡 コンボのコツ',VW/2,440,'bold 13px Arial','#FFD93D');
+  T('5秒以内に続けて正解するとコンボになり得点アップ！',VW/2,458,'12px Arial','rgba(255,255,255,.85)');
+  T('間違えるとコンボがリセットされるので注意！',VW/2,474,'11px Arial','rgba(255,200,100,.7)');
+
+  // ── 復習 ──
+  cx.fillStyle='rgba(0,50,100,.7)'; RR(16,492,pw,36,10); cx.fill();
+  cx.strokeStyle='rgba(100,180,255,.5)'; cx.lineWidth=1.5; cx.stroke();
+  T('📖 ゲーム後に間違えた文字を復習できます',VW/2,510,'12px Arial','rgba(180,220,255,.9)');
+
+  // ── 戻るボタン ──
+  BTN(VW/2,562,200,42,'◀ タイトルへ','rgba(255,255,255,.18)');
+
   cx.restore();
 }
 
@@ -1248,6 +1644,7 @@ function drawTitle(){
 // ════════════════════════════════════════════
 function drawModeSelect(){
   drawBG();
+  cx.fillStyle='rgba(0,20,80,.42)'; cx.fillRect(0,0,VW,VH);
   cx.save();
   SH('#FFD93D',16); T('ステージ・道具を選ぼう',VW/2,32,'bold 22px Arial','#FFD93D'); NSH();
 
@@ -1286,7 +1683,7 @@ function drawModeSelect(){
   }
   // 5 weapons × 44px → bottom at y=470
   BTN(VW/2,498,220,44,'▶ ゲーム開始！','#FFD93D','#000');
-  BTN(VW/2,552,160,36,'← 戻る','rgba(255,255,255,.1)');
+  BTN(VW/2,552,160,36,'◀ 戻る','rgba(255,255,255,.1)');
   cx.restore();
 }
 
@@ -1295,11 +1692,13 @@ function drawModeSelect(){
 // ════════════════════════════════════════════
 function drawResult(){
   drawBG();
+  // 読みやすさ用オーバーレイ
+  cx.fillStyle='rgba(0,20,80,.42)'; cx.fillRect(0,0,VW,VH);
   cx.save();
   cx.globalAlpha=1;
 
   // ── スコアボックス ───────────────────────────────
-  SH('#FFD93D',20); T('ゲーム終了！',VW/2,40,'bold 28px Arial','#FFD93D'); NSH();
+  SH('#FFD93D',20); T('TIME OVER',VW/2,40,'bold 28px Arial','#FFD93D'); NSH();
   cx.fillStyle='rgba(255,255,255,.07)'; RR(20,58,VW-40,118,14); cx.fill();
   T('スコア',VW/2,78,'bold 13px Arial','rgba(255,255,255,.45)');
   SH('#FFD93D',14); T(G.score+'点',VW/2,126,'bold 50px Arial','#FFD93D'); NSH();
@@ -1342,26 +1741,30 @@ function drawResult(){
 
     // 大きく光る現在の文字
     const rowCnt=Math.ceil(wr.length/cols);
-    const reviewY=240+rowCnt*44+12;
+    const reviewY=240+rowCnt*44+55;
     if(G._reviewIdx>=0 && G._reviewIdx<wr.length){
       const cur=wr[G._reviewIdx];
-      const pulse2=Math.abs(Math.sin(G.tick*3.5));
+      const t=G.tick;
+      const pulse2=Math.abs(Math.sin(t*3.5));
       const glow=80+Math.floor(pulse2*60);
+      // 大文字と小文字を並べてダンス（位相ずらしで交互バウンス）
+      const ux=VW/2-90;
+      const lx=VW/2+90;
+      const uy=reviewY+65+Math.sin(t*4)*14;
+      const ly2=reviewY+65+Math.sin(t*4+1.4)*14;
+      const uc=`rgba(255,${180+Math.floor(pulse2*60)},50,${0.7+pulse2*.3})`;
       SH('#FFD93D',glow);
-      T(cur.display,VW/2,reviewY+60,'bold 110px Arial',`rgba(255,${180+Math.floor(pulse2*60)},50,${0.7+pulse2*.3})`);
+      T(cur.display,ux,uy,'bold 90px Arial',uc);
+      T(cur.answer,lx,ly2,"bold 90px 'Comic Sans MS',cursive",uc);
       NSH();
-      T(cur.answer.toLowerCase(),VW/2,reviewY+118,'bold 28px Arial',`rgba(255,211,61,${0.5+pulse2*.4})`);
-      T('♪',VW/2+80,reviewY+60,'20px Arial',`rgba(255,211,61,${pulse2})`);
+      T('♪',VW/2,reviewY+128,'22px Arial',`rgba(255,211,61,${pulse2})`);
     }
 
-    const ry=Math.max(580, 240+rowCnt*44+180);
+    const ry=Math.min(660, Math.max(610, 240+rowCnt*44+250));
     BTN(VW/2,ry,220,50,'▶ もういちど',rc);
     BTN(VW/2,ry+62,220,46,'🏠 スタートにもどる','rgba(100,150,255,.6)');
   } else {
-    // 誤答なし
-    const msg={S:'完璧！すごすぎる！',A:'とても上手！',B:'よくできました！',C:'がんばったね！',D:'もう一度挑戦しよう！'};
-    T('✨ 間違いなし！完璧！',VW/2,260,'bold 22px Arial','#6BCB77');
-    T(msg[r],VW/2,310,'16px Arial','rgba(255,255,255,.75)');
+    // 誤答なし — メッセージなし
     BTN(VW/2,400,220,50,'▶ もういちど',rc);
     BTN(VW/2,462,220,46,'🏠 スタートにもどる','rgba(100,150,255,.6)');
   }
@@ -1371,13 +1774,49 @@ function drawResult(){
 // ════════════════════════════════════════════
 //  MAIN RENDER
 // ════════════════════════════════════════════
+function drawTimeout(){
+  drawBG();
+  drawObstacles(); drawPermObs(); drawBalloons();
+  drawPlayer();
+  // 暗いオーバーレイ
+  cx.fillStyle='rgba(0,0,0,.55)'; cx.fillRect(0,0,VW,VH);
+  const t=G._timeoutFlash;
+  const pulse=Math.abs(Math.sin(G.tick*8));
+  const scale=1+pulse*.06;
+  cx.save();
+  cx.translate(VW/2,VH/2-30);
+  cx.scale(scale,scale);
+  cx.textAlign='center'; cx.textBaseline='middle';
+  // 影レイヤー
+  cx.shadowColor='#FF3300'; cx.shadowBlur=60+pulse*40;
+  cx.fillStyle=`rgba(255,${60+Math.floor(pulse*40)},0,${0.7+pulse*.3})`;
+  cx.font='bold 80px Arial Black,Arial';
+  cx.fillText('TIME',0,-44);
+  cx.fillText('OUT!',0,44);
+  cx.shadowBlur=0;
+  // ハイライト
+  cx.fillStyle=`rgba(255,220,50,${0.6+pulse*.4})`;
+  cx.font='bold 80px Arial Black,Arial';
+  cx.fillText('TIME',0,-44);
+  cx.fillText('OUT!',0,44);
+  cx.restore();
+}
 function render(){
   cx.clearRect(0,0,VW,VH);
   switch(G.screen){
     case 'title':
       drawTitle(); break;
+    case 'rules':
+      drawRules(); break;
     case 'mode':
       drawModeSelect(); break;
+    case 'intro':
+      drawBG();
+      drawObstacles();
+      cx.fillStyle='rgba(0,0,0,0.28)'; cx.fillRect(0,0,VW,VH);
+      drawHorseIntro();
+      drawParts(); drawLabels();
+      break;
     case 'playing':
       drawBG();
       drawObstacles();
@@ -1402,6 +1841,8 @@ function render(){
       drawBossHUD();
       drawParts(); drawLabels(); drawFrozen();
       break;
+    case 'timeout':
+      drawTimeout(); break;
     case 'result':
       drawResult(); break;
   }
@@ -1420,8 +1861,13 @@ function onDown(px,py){
   if(AC && AC.state==='suspended') AC.resume();
 
   if(G.screen==='title'){
-    if(IB(px,py,VW/2,428,250,56)){ G.stage=1; startGame(); return; }
-    if(IB(px,py,VW/2,498,250,46)){ G.screen='mode'; return; }
+    if(IB(px,py,VW/2,418,250,50)){ G.stage=1; startGame(); return; }
+    if(IB(px,py,VW/2,480,250,42)){ G.screen='mode'; return; }
+    if(IB(px,py,VW/2,534,250,38)){ G.screen='rules'; return; }
+    return;
+  }
+  if(G.screen==='rules'){
+    if(IB(px,py,VW/2,562,200,42)){ G.screen='title'; return; }
     return;
   }
   if(G.screen==='mode'){
@@ -1457,7 +1903,7 @@ function onDown(px,py){
       for(let i=0;i<wr.length;i++){
         const bx=startX+(i%cols)*step;
         const by=224+(Math.floor(i/cols)*44);
-        if(Math.hypot(px-bx,py-by)<22){ G._reviewIdx=i; _reviewSpeak(wr[i]); return; }
+        if(Math.hypot(px-bx,py-by)<22){ G._reviewIdx=i; G._reviewSpeakCount=1; G._reviewActive=true; G._reviewTimer=1.0; _reviewSpeak(wr[i]); return; }
       }
     }
     return;
