@@ -4,19 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>はしれ！ごうぴい＆じゅうぴい</title>
-
-
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-MHEXL1X4PM"></script>
-<script>
-window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-
-gtag('config', 'G-MHEXL1X4PM');
-</script>
-
-  
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800;900&display=swap" rel="stylesheet">
@@ -977,10 +964,7 @@ gtag('config', 'G-MHEXL1X4PM');
 
   /* ---------- Question panel ---------- */
   #panel-row {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2578,7 +2562,6 @@ const Sound = (() => {
     activeProblemIndex: -1,
     timerStart: null,
     problemActivatedAt: 0,
-    activatedDistanceToHole: 999,
     correctCooldownUntil: 0,
     pendingProblemIndex: -1,  // problem deferred during post-correct cooldown
 
@@ -2664,32 +2647,32 @@ const Sound = (() => {
   }
 
   function applySizing() {
-    const panelRow = document.getElementById('panel-row');
-    const hudEl  = document.getElementById('hud');
+    // game-wrapの実寸を基準にする（flexレイアウト確定後の値）
+    const wrap    = document.getElementById('game-wrap');
+    const hudEl   = document.getElementById('hud');
+    const wrapH   = wrap   ? wrap.clientHeight   : window.innerHeight;
+    const wrapW   = wrap   ? wrap.clientWidth    : window.innerWidth;
+    const hudH    = hudEl  ? hudEl.offsetHeight  : 50;
 
-    const panelRect = panelRow ? panelRow.getBoundingClientRect() : {top: 0, height: 0};
-    const hudRect   = hudEl   ? hudEl.getBoundingClientRect()    : {bottom: 0, height: 0};
+    // panel-rowの「最大」高さをイニシャルボタン数から推算する
+    // L1: 4ボタン1行、L2-5: 9ボタン2行。最大を想定してレイアウトを固定する
+    // こうすると問題ごとにボタン数が変わっても道路高さが変わらない
+    const panelRowEl = document.getElementById('panel-row');
+    // panel-rowの現在の高さを取得。ただし最小値を保証する
+    const panelH = panelRowEl ? Math.max(panelRowEl.offsetHeight, 100) : 120;
 
-    const panelH  = Math.round(panelRect.height);
-    const hudH    = Math.round(hudRect.height);
-    const panelTop = Math.round(panelRect.top); // viewport基準でのpanel上端
+    // 道路エリアの高さ = wrap高さ - HUD - panel - 余白
+    const availH = Math.max(100, wrapH - hudH - panelH - 8);
 
-    // ブロックが入る実際の高さ = panelの上端 - hudの下端
-    const availH = Math.max(1, panelTop - Math.round(hudRect.bottom));
-    const sceneW = track.clientWidth;
-
-    // block-sizeを決定（常に10段基準）
-    // スマホのアドレスバー・ブラウザUIによる実効高さの減少に対応するため
-    // 0.82をかけて余裕を持たせる
-    let bs = Math.floor(availH / (10 + 1) * 0.82);
-    bs = Math.min(bs, Math.floor(sceneW / 3.5));
+    // bsをroadHeightに合わせて決定
+    let bs = Math.floor(availH / (state.roadHeight + 2));
+    bs = Math.min(bs, Math.floor(wrapW / 4));
+    bs = Math.min(bs, 52);
     bs = Math.max(14, bs);
     document.documentElement.style.setProperty('--block-size', bs + 'px');
 
-    // groundの高さ = (roadHeight+1)*bs、ただしavailHを超えない
-    // bottomに安全マージン8pxを加えてスマホで確実に収まるようにする
-    const groundH = Math.min((state.roadHeight + 1) * bs, availH);
-    ground.style.bottom = (panelH + 8) + 'px';
+    // groundの高さをピクセル固定（走行中・問題切替で絶対変わらない）
+    const groundH = (state.roadHeight + 1) * bs;
     ground.style.height = groundH + 'px';
 
     const cubiePx = Math.round(bs * 0.92 * 1.3);
@@ -2718,9 +2701,9 @@ const Sound = (() => {
     // Level 3: abstract mode — road is visually flat, car always rides at the top
     if (state.mainLevel === 4) return state.roadHeight;
     if (state.mainLevel === 5) {
-      // use the target of the current column so the road height matches the question
-      const col = colAt(Math.floor(state.scrollX));
-      return col ? col.target : state.roadHeight;
+      // L5は常にフラット道路（col.target = roadHeight）
+      // チャレンジでも通常でも常にroadHeightを返す
+      return state.roadHeight;
     }
 
     const i = Math.floor(state.scrollX);
@@ -2989,6 +2972,7 @@ const Sound = (() => {
 
   function startGame() {
     domColStart = 0;  // DOM削除カウンタをリセット
+    state.challengeMode = false;  // チャレンジモードを確実にオフ
     state.roadHeight = (state.mainLevel === 1) ? 5 : 10;
     // level 5: fixed 20 questions (5 per style × 4 styles); roadHeight varies per question
     state.totalQuestions = (state.mainLevel === 5) ? 20 : (QUESTIONS_BY_TIER[state.speedTier] || 10);
@@ -3041,17 +3025,19 @@ const Sound = (() => {
 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        applySizing();      // block-size確定
-        buildTrack();       // block-size確定後に道路生成
-        renderAll();
-        updateHeaderText();
+        requestAnimationFrame(() => {
+          applySizing();      // block-size確定（3フレーム待ってレイアウト安定後）
+          buildTrack();       // block-size確定後に道路生成
+          renderAll();
+          updateHeaderText();
 
-        setTimeout(() => {
-          startDriving();
-          Sound.resume();
-          Sound.setTempo(1.0);
-          Sound.bgmStart();
-        }, 300);
+          setTimeout(() => {
+            startDriving();
+            Sound.resume();
+            Sound.setTempo(1.0);
+            Sound.bgmStart();
+          }, 300);
+        });
       });
     });
   }
@@ -3301,10 +3287,12 @@ const Sound = (() => {
           state.timerStart = null;
         } else {
           const distanceToHole = state.activeProblemIndex - state.scrollX;
-          // activate直後（じゅうぴいがまだ穴に向かって歩き始めていない）に
-          // 誤ってtriggerFallしないよう、activate時点より距離が縮まった場合のみ発火
-          const hasApproached = distanceToHole < state.activatedDistanceToHole - 0.05;
-          if (distanceToHole <= fallLeadCols() && hasApproached) {
+          // L4/L5は道路がフラットなので距離ではなく時間で判定
+          const isAbstract = state.mainLevel === 4 || state.mainLevel === 5;
+          const timeUp = isAbstract
+            ? (performance.now() - state.timerStart > state.timeLimitSec * 1000)
+            : (distanceToHole <= fallLeadCols());
+          if (timeUp) {
             triggerFall(state.activeProblemIndex);
             return;
           }
@@ -3525,10 +3513,11 @@ const Sound = (() => {
   function activateProblem(colIndex) {
     if (state.activeProblemIndex === colIndex && state.timerStart !== null) return;
     state.activeProblemIndex = colIndex;
-    state.timerStart = performance.now();
-    // activate時点の穴までの距離を記録。これより近い距離でのtriggerFallは
-    // 「正解直後に次問がactivateされた瞬間の誤発火」なので無視する。
-    state.activatedDistanceToHole = colIndex - state.scrollX;
+    // timerStartをcooldown終了時刻に合わせる。
+    // こうするとcooldown中の時間はタイマーに含まれず、
+    // cooldown終了直後にfall判定が走っても時間切れにならない。
+    const now = performance.now();
+    state.timerStart = Math.max(now, state.correctCooldownUntil);
     state.locked = true;
     if (state.mistakeColIndex !== colIndex) {
       state.mistakeColIndex = colIndex;
@@ -3540,13 +3529,19 @@ const Sound = (() => {
 
   function updateTimerBar() {
     if (state.activeProblemIndex < 0 || state.timerStart === null) return;
-    // mirror the same distance-based measure used to trigger the fall, so
-    // the bar reaching empty always lines up exactly with the moment
-    // Cubie's foot reaches the hole
-    const distanceToHole = state.activeProblemIndex - state.scrollX;
-    const leadCols = fallLeadCols();
-    const usableDistance = state.warningDistanceCols - leadCols;
-    const remaining = Math.max(0, Math.min(1, (distanceToHole - leadCols) / usableDistance));
+    const isAbstract = state.mainLevel === 4 || state.mainLevel === 5;
+    let remaining;
+    if (isAbstract) {
+      // L4/L5: 時間ベース
+      const elapsed = performance.now() - state.timerStart;
+      remaining = Math.max(0, Math.min(1, 1 - elapsed / (state.timeLimitSec * 1000)));
+    } else {
+      // L1-3: 距離ベース（穴に近づくにつれてバーが減る）
+      const distanceToHole = state.activeProblemIndex - state.scrollX;
+      const leadCols = fallLeadCols();
+      const usableDistance = state.warningDistanceCols - leadCols;
+      remaining = Math.max(0, Math.min(1, (distanceToHole - leadCols) / usableDistance));
+    }
     timerFill.style.width = (remaining * 100) + '%';
     timerFill.classList.toggle('urgent', remaining < 0.3);
   }
@@ -3565,19 +3560,27 @@ const Sound = (() => {
     state.questionHadMistake = true;
 
     if (state.challengeMode) {
-      car.classList.add('fall');
       state.locked = true;
-      state.pendingProblemIndex = -1;   // pending中の次問をクリア
+      state.pendingProblemIndex = -1;
       state.activeProblemIndex = -1;
       state.correctCooldownUntil = performance.now() + 5000;
       document.querySelectorAll('.ans-btn').forEach(b => b.disabled = true);
       showFeedback('ざんねん！💦', false);
       Sound.SFX.fall();
-      setTimeout(() => {
-        car.classList.remove('fall');
-        hideFeedback();
-        challengeGameOver();
-      }, 1300);
+      if (state.mainLevel === 4 || state.mainLevel === 5) {
+        // 抽象モード: 落下アニメーションなし
+        setTimeout(() => {
+          hideFeedback();
+          challengeGameOver();
+        }, 1000);
+      } else {
+        car.classList.add('fall');
+        setTimeout(() => {
+          car.classList.remove('fall');
+          hideFeedback();
+          challengeGameOver();
+        }, 1300);
+      }
       return;
     }
 
@@ -3652,8 +3655,8 @@ const Sound = (() => {
     }
 
     panel.classList.add('show');
-    // timer bar for level 4 and level 5 (no visible hole to gauge distance)
-    if (state.mainLevel === 4 || state.mainLevel === 5) {
+    // timer bar for level 4, level 5, and challenge mode (time-based fall)
+    if (state.mainLevel === 4 || state.mainLevel === 5 || state.challengeMode) {
       timerTrack.classList.add('show');
     } else {
       timerTrack.classList.remove('show');
@@ -3831,10 +3834,8 @@ const Sound = (() => {
   }
 
   function onCorrect(col, colIndex) {
-    // if a fall animation/pose is still active (the player answered right
-    // as — or just after — the timer expired), clear it immediately and
-    // make sure driving is (re)started, so Cubie doesn't stay stuck,
-    // frozen, at the bottom of the hole
+    state.activeProblemIndex = -1;
+    state.timerStart = null;
     car.classList.remove('fall');
     startDriving();
 
@@ -3908,8 +3909,8 @@ const Sound = (() => {
     col.height = col.target;
 
     // fill missing blocks with a quick pop-in — kept almost simultaneous
-    const colEl = roadStrip.children[colIndex];
-    const missingBlocks = colEl.querySelectorAll('.block.missing');
+    const colEl = roadStrip.children[colIndex - domColStart];
+    const missingBlocks = colEl ? colEl.querySelectorAll('.block.missing') : [];
     const STAGGER_TOTAL_MS = 90;
     const stepMs = missingBlocks.length > 1 ? STAGGER_TOTAL_MS / (missingBlocks.length - 1) : 0;
     missingBlocks.forEach((b, i) => {
@@ -3948,15 +3949,28 @@ const Sound = (() => {
         const nextCol = state.cols[nextRelIdx];
         if (nextCol && nextCol.isProblem && !nextCol.solved &&
             nextCol.missing > 0 && nextCol.missing < nextCol.target) {
-          state.correctCooldownUntil = 0;
+          // 正解直後の誤fall防止: activateしてもすぐにfallしないよう
+          // 短時間だけfall判定をブロックする
+          state.correctCooldownUntil = performance.now() + 300;
           activateProblem(nextRelIdx + domColStart);
           return;
         }
       }
     } else {
-      // チャレンジ全レベル: 道路を継ぎ足し、歩いて到達してから次問
+      // チャレンジ全レベル: 道路を継ぎ足し、次の問題を即座にactivate
       challengeExtendRoad();
-      state.correctCooldownUntil = 0;
+      // locked=falseの間にボタンが押せなくなる問題を防ぐため、
+      // 次の問題をすぐに探してactivateする（checkWarningを待たない）
+      const nextChalIdx = state.cols.findIndex(
+        (c, i) => (i + domColStart) > colIndex && c.isProblem && !c.solved
+      );
+      if (nextChalIdx >= 0) {
+        const nextAbsIdx = nextChalIdx + domColStart;
+        state.correctCooldownUntil = performance.now() + 300;
+        activateProblem(nextAbsIdx);
+      } else {
+        state.correctCooldownUntil = 0;
+      }
       return;
     }
 
@@ -4129,11 +4143,7 @@ const Sound = (() => {
     document.getElementById('retry-again-btn').addEventListener('click', () => {
       Sound.resume();
       Sound.SFX.tap();
-      if (state.challengeMode || state.wasChallenge) {
-        startChallengeMode();
-      } else {
-        startGame();
-      }
+      startGame();
     });
 
     overlay.classList.remove('hidden');
@@ -4168,7 +4178,7 @@ const Sound = (() => {
   }
 
   window.addEventListener('resize', () => {
-    if (overlay.classList.contains('hidden')) {
+    if (overlay.classList.contains('hidden') && !state.running) {
       applySizing();
       renderAll();
     }
@@ -4225,30 +4235,16 @@ const Sound = (() => {
     // ゲームオーバー後に呼ばれても何もしない
     if (!state.challengeMode) return;
 
-    // ---- 画面外に去った古い列をDOMとcols配列から削除してメモリを解放 ----
-    // scrollXの絶対値から既削除数(domColStart)を引いた「cols内の相対位置」で判定する。
-    // scrollX・activeProblemIndex等の絶対座標系は変えない。
-    // cols[]へのアクセスはcolAt(absoluteIndex)ヘルパーを使う。
-    const pruneUpTo = Math.floor(state.scrollX) - 5 - domColStart;
-    if (pruneUpTo > 0) {
-      const del = Math.min(pruneUpTo, state.cols.length - 1);
-      if (del > 0) {
-        for (let d = 0; d < del && roadStrip.firstChild; d++) {
-          roadStrip.removeChild(roadStrip.firstChild);
-        }
-        state.cols.splice(0, del);
-        domColStart += del;
-      }
-    }
-
+    // prune無効化: 引継ぎ2と同様に列を削除しない（domColStartは常に0）
     const cycle = CHALLENGE_GAP + 1;
-    const base = state.cols.length + domColStart;
+    const base = state.cols.length;
     let prevMissing = state.cols.filter(c=>c.isProblem).slice(-1)[0]?.missing ?? -1;
     let posInCycle = ((base - 4) % cycle + cycle) % cycle;
 
-    // 必要最低限だけ追加: 画面右端から20列分のバッファを確保
-    const targetLen = Math.ceil(state.scrollX) + 20 - domColStart;
-    const addCount = Math.max(cycle * 2, targetLen - state.cols.length);
+    // 画面右端から十分なバッファを確保（warningDistanceCols + 余裕）
+    const bufferCols = Math.ceil(state.warningDistanceCols) + cycle * 5;
+    const targetLen = Math.ceil(state.scrollX) + bufferCols;
+    const addCount = Math.max(cycle * 4, targetLen - state.cols.length);
     for (let n = 0; n < addCount; n++) {
       const isProb = posInCycle === 0;
       const col = challengeMakeCol(isProb, prevMissing);
@@ -4305,28 +4301,37 @@ const Sound = (() => {
 
     state.cols = [];
     roadStrip.innerHTML = '';
-    applySizing();
-
-    // flat start (4 cols)
-    for (let i = 0; i < 4; i++) {
-      const col = challengeMakeCol(false, -1);
-      state.cols.push(col);
-      roadStrip.appendChild(renderColumn(col));
-    }
-    // first batch of problem+flat cols
-    challengeExtendRoad();
 
     progressLabel.textContent = '0 もん';
     scoreLabel.textContent = '';
     updateSpeedMeter();
     updateHeaderText();
     assignCharacters();
+    // initAnswerButtonsを先に呼んでpanel-rowの高さを確定させる
     initAnswerButtons();
-    renderAll();
-    startDriving();
-    Sound.resume();
-    Sound.setTempo(1.0);
-    Sound.bgmStart();
+
+    // 通常モードと同様に3フレーム待ってレイアウト安定後にapplySizing
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          applySizing();
+
+          // flat start (4 cols)
+          for (let i = 0; i < 4; i++) {
+            const col = challengeMakeCol(false, -1);
+            state.cols.push(col);
+            roadStrip.appendChild(renderColumn(col));
+          }
+          challengeExtendRoad();
+
+          renderAll();
+          startDriving();
+          Sound.resume();
+          Sound.setTempo(1.0);
+          Sound.bgmStart();
+        });
+      });
+    });
   }
 
   function challengeGameOver() {
@@ -4395,4 +4400,3 @@ const Sound = (() => {
 </script>
 </body>
 </html>
-
