@@ -125,30 +125,65 @@ h1{
 
 
 /*=============================
-  更新情報
+  セクションタイトル
 =============================*/
-```css
+.section-title{
+    max-width:1200px;
+    margin:60px auto 25px;
+    padding-bottom:12px;
+    padding-left:14px;
+
+    font-size:32px;
+    font-weight:bold;
+    color:#222;
+
+    border-left:8px solid #4f46e5;
+    border-bottom:3px solid #e5e7eb;
+}
+
+
 /*=============================
   更新情報
 =============================*/
 .news{
-    max-width:1000px;                    /* 横幅 */
-    margin:50px auto;                    /* 上下50px・中央配置 */
-    background:#ffffff;                  /* 背景色 */
-    border-radius:15px;                  /* 角を丸く */
-    padding:20px 25px;                   /* 内側余白 */
-    box-shadow:0 2px 8px rgba(0,0,0,.08);/* 影 */
+    width:100%;
+    max-width:1200px;
+    margin:40px auto 60px;
+    background:#ffffff;
+    border-radius:15px;
+    padding:25px 30px;
+    box-shadow:0 2px 8px rgba(0,0,0,.08);
 }
 
 .news-list{
-    max-height:180px;                    /* この高さを超えたら */
-    overflow-y:auto;                     /* 縦スクロールする */
-    padding-right:8px;                   /* スクロールバーとの余白 */
+    max-height:260px;
+    overflow-y:auto;
+    padding-right:10px;
 }
-```
 
-```
+.news ul{
+    margin:0;
+    padding-left:22px;
+}
 
+.news li{
+    margin-bottom:18px;
+    line-height:1.8;
+}
+
+.news-date{
+    font-weight:bold;
+    color:#2563eb;
+}
+
+.news-detail{
+    margin-top:6px;
+    margin-left:15px;
+}
+
+.news-detail div{
+    margin:4px 0;
+}
 
     
 </style>
@@ -169,7 +204,10 @@ h1{
 
     
 <div class="container">
+    
+<h2 class="section-title">🎮 学習アプリ</h2>
 
+    
     <!-- ===== 第１セクション ===== -->
 
     <section class="game-section">
@@ -261,6 +299,8 @@ h1{
 
 
     <!-- ===== 第４セクション ===== -->
+    
+<h2 class="section-title">🎥 学習ソング・動画</h2>
 
     <section class="game-section">
 
@@ -309,42 +349,55 @@ h1{
 
 
             
-<section class="news">
 
-<h2>📢 更新情報</h2>
+
+<h2 class="section-title">📢 更新情報</h2>
+
+<div class="news">
+
+<div class="news-list">
 
 <ul>
 
-```html
 <li>
-    <span class="news-date">2026.6.25</span>
-    <ul>
-        <li>🔧 「アルファベットゲット」を改定（西部の夕陽版）</li>
-        <li>🔧 「はしれ！ごうぴい＆じゅうぴい」の不具合を大幅に修正</li>
-        <li>🎵 「わだおばチャンネル」へのYouTubeリンクを追加</li>
-        <li>🆕 「アルファベットゲット」を公開</li>
-    </ul>
+<span class="news-date">2026.6.25</span>
+
+<div class="news-detail">
+<div>🔧 「アルファベットゲット」を改定（西部の夕陽版）</div>
+<div>🔧 「はしれ！ごうぴい＆じゅうぴい」の不具合を大幅に修正</div>
+<div>🎵 「わだおばチャンネル」へのYouTubeリンクを追加</div>
+<div>🆕 「アルファベットゲット」を公開</div>
+</div>
+
 </li>
 
 <li>
-    <span class="news-date">2026.6.24</span>
-    <ul>
-        <li>🆕 「ぐらぐらバナナ」を公開</li>
-    </ul>
+
+<span class="news-date">2026.6.24</span>
+
+<div class="news-detail">
+<div>🆕 「ぐらぐらバナナ」を公開</div>
+</div>
+
 </li>
 
 <li>
-    <span class="news-date">2026.6.23</span>
-    <ul>
-        <li>🆕 「かずつなぎ」を公開</li>
-        <li>🆕 「はしれ！ごうぴい＆じゅうぴい」を公開</li>
-        <li>🎉 「わだおばちゃんの学習アプリひろば」を公開</li>
-    </ul>
+
+<span class="news-date">2026.6.23</span>
+
+<div class="news-detail">
+<div>🆕 「かずつなぎ」を公開</div>
+<div>🆕 「はしれ！ごうぴい＆じゅうぴい」を公開</div>
+<div>🎉 「わだおばちゃんの学習アプリひろば」を公開</div>
+</div>
+
 </li>
-```
 
 </ul>
 
+</div>
+
+</div>
 </section>
             
         </div>
