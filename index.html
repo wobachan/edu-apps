@@ -16,88 +16,139 @@ gtag('config', 'G-MHEXL1X4PM');
 </script>
     
 <style>
+```css
+/*=============================
+  セクション（ゲームのまとまり）
+=============================*/
 .game-section{
-    margin-top:60px;
-    padding-top:20px;
-    border-top:3px solid #e5e7eb;
+    margin-top:60px;          /* 上のセクションとの間隔 */
+    padding-top:20px;         /* セクション内の上余白 */
+    border-top:3px solid #e5e7eb;   /* 上に区切り線 */
 }
 
 
-    
+/*=============================
+  ページ全体
+=============================*/
 body{
-    font-family:sans-serif;
-    background:#f5f7fb;
-    margin:0;
-    padding:0;
+    font-family:sans-serif;   /* 文字の種類 */
+    background:#f5f7fb;       /* 背景色 */
+    margin:0;                 /* 外側の余白なし */
+    padding:0;                /* 内側の余白なし */
 }
 
+
+/*=============================
+  タイトル部分（ヘッダー）
+=============================*/
 header{
-    background:#4f46e5;
-    color:white;
-    text-align:center;
-    padding:40px 20px;
+    background:#4f46e5;       /* 背景色 */
+    color:white;              /* 文字色 */
+    text-align:center;        /* 中央揃え */
+    padding:40px 20px;        /* 上下40px 左右20px */
 }
 
+
+/*=============================
+  メインタイトル
+=============================*/
 h1{
-    margin:0;
+    margin:0;                 /* タイトル周囲の余白なし */
 }
 
+
+/*=============================
+  全体の表示範囲
+=============================*/
 .container{
-    max-width:1000px;
-    margin:auto;
-    padding:20px;
+    max-width:1000px;         /* 最大幅 */
+    margin:auto;              /* 中央配置 */
+    padding:20px;             /* 内側余白 */
 }
 
+
+/*=============================
+  ゲームカードの並び方
+=============================*/
 .grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,320px);
-    gap:20px;
-    justify-content:center;
+    display:grid;                             /* グリッド表示 */
+    grid-template-columns:repeat(auto-fit,320px); /* 320px幅で自動配置 */
+    gap:20px;                                /* カード間の間隔 */
+    justify-content:center;                  /* 全体を中央揃え */
 }
 
+
+/*=============================
+  ゲームカード
+=============================*/
 .card{
-    background:white;
-    border-radius:15px;
-    padding:20px;
-    box-shadow:0 2px 8px rgba(0,0,0,0.1);
-    text-decoration:none;
-    color:black;
+    background:white;                        /* 背景色 */
+    border-radius:15px;                      /* 角を丸く */
+    padding:20px;                            /* 内側余白 */
+    box-shadow:0 2px 8px rgba(0,0,0,0.1);    /* 影 */
+    text-decoration:none;                    /* 下線なし */
+    color:black;                             /* 文字色 */
 }
 
+
+/*=============================
+  カードにマウスを乗せた時
+=============================*/
 .card:hover{
-    transform:translateY(-4px);
+    transform:translateY(-4px);              /* 少し浮かせる */
 }
 
+
+/*=============================
+  教科タグ
+=============================*/
 .tag{
-    display:inline-block;
-    background:#eef2ff;
-    padding:4px 10px;
-    border-radius:20px;
-    font-size:12px;
-    margin-bottom:10px;
+    display:inline-block;                    /* 横幅を文字に合わせる */
+    background:#eef2ff;                      /* 背景色 */
+    padding:4px 10px;                        /* 内側余白 */
+    border-radius:20px;                      /* 丸い形 */
+    font-size:12px;                          /* 文字サイズ */
+    margin-bottom:10px;                      /* 下余白 */
 }
 
 
+/*=============================
+  ゲーム画像
+=============================*/
 .game-image{
-    width:100%;
-    height:180px;
-    object-fit:cover;
-    border-radius:12px;
-    margin-bottom:12px;
+    width:100%;                              /* カード幅いっぱい */
+    height:180px;                            /* 高さ固定 */
+    object-fit:cover;                        /* はみ出しをトリミング */
+    border-radius:12px;                      /* 角丸 */
+    margin-bottom:12px;                      /* 下余白 */
 }
 
 
+/*=============================
+  更新情報
+=============================*/
+```css
+/*=============================
+  更新情報
+=============================*/
 .news{
-    max-width:1000px;
-    margin:25px auto;
-    padding:18px 22px;
-    background:#fff9db;
-    border-left:6px solid #facc15;
-    border-radius:12px;
-    font-size:16px;
-    line-height:1.7;
-    box-shadow:0 2px 6px rgba(0,0,0,.08);
+    max-width:1000px;                    /* 横幅 */
+    margin:50px auto;                    /* 上下50px・中央配置 */
+    background:#ffffff;                  /* 背景色 */
+    border-radius:15px;                  /* 角を丸く */
+    padding:20px 25px;                   /* 内側余白 */
+    box-shadow:0 2px 8px rgba(0,0,0,.08);/* 影 */
 }
+
+.news-list{
+    max-height:180px;                    /* この高さを超えたら */
+    overflow-y:auto;                     /* 縦スクロールする */
+    padding-right:8px;                   /* スクロールバーとの余白 */
+}
+```
+
+```
+
 
     
 </style>
