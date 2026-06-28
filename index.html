@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
+    
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>わだおばちゃんの学習アプリひろば</title>
@@ -14,95 +16,212 @@ gtag('js', new Date());
 
 gtag('config', 'G-MHEXL1X4PM');
 </script>
-    
+
 <style>
+
+/*==================================================
+① ゲームセクション（ゲーム・動画などのまとまり）
+==================================================*/
+
 .game-section{
-    margin-top:60px;
-    padding-top:20px;
-    border-top:3px solid #e5e7eb;
+    margin-top:60px;                      /* 上のセクションとの間隔 */
+    padding-top:20px;                     /* セクション内の上余白 */
+    border-top:3px solid #e5e7eb;         /* 区切り線 */
 }
 
 
-    
+/*==================================================
+② ページ全体
+==================================================*/
+
 body{
-    font-family:sans-serif;
-    background:#f5f7fb;
-    margin:0;
-    padding:0;
+    font-family:sans-serif;               /* フォント */
+    background:#f5f7fb;                   /* 背景色 */
+    margin:0;                             /* 外側余白なし */
+    padding:0;                            /* 内側余白なし */
 }
+
+
+/*==================================================
+③ ヘッダー
+==================================================*/
 
 header{
-    background:#4f46e5;
-    color:white;
-    text-align:center;
-    padding:40px 20px;
+    background:#4f46e5;                   /* 背景色 */
+    color:white;                          /* 文字色 */
+    text-align:center;                    /* 中央揃え */
+    padding:40px 20px;                    /* 上下・左右余白 */
 }
 
 h1{
-    margin:0;
+    margin:0;                             /* タイトル周囲の余白を消す */
 }
+
+
+/*==================================================
+④ コンテンツ全体
+==================================================*/
 
 .container{
-    max-width:1000px;
-    margin:auto;
-    padding:20px;
+    max-width:1000px;                     /* 最大幅 */
+    margin:auto;                          /* 中央配置 */
+    padding:20px;                         /* 内側余白 */
 }
+
+
+/*==================================================
+⑤ セクションタイトル
+==================================================*/
+
+.section-title{
+    max-width:1200px;                     /* タイトルの最大幅 */
+    margin:45px auto 20px;                /* 上・左右・下の余白 */
+    padding:0 0 8px 14px;                 /* 左余白・下余白 */
+
+    font-size:30px;                       /* タイトル文字サイズ */
+    font-weight:bold;                     /* 太字 */
+    color:#222;                           /* 文字色 */
+
+    border-left:8px solid #4f46e5;        /* 左の青いライン */
+    border-bottom:3px solid #e5e7eb;      /* 下線 */
+}
+
+
+/*==================================================
+⑥ ゲームカードの並び
+==================================================*/
 
 .grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,320px);
-    gap:20px;
-    justify-content:center;
+    display:grid;                         /* グリッド表示 */
+    grid-template-columns:repeat(auto-fit,320px); /* 横320pxで並べる */
+    gap:20px;                             /* カード間隔 */
+    justify-content:center;               /* 中央配置 */
 }
 
+
+/*==================================================
+⑦ ゲームカード
+==================================================*/
+
 .card{
-    background:white;
-    border-radius:15px;
-    padding:20px;
-    box-shadow:0 2px 8px rgba(0,0,0,0.1);
-    text-decoration:none;
-    color:black;
+    background:#fff;                      /* 背景色 */
+    border-radius:15px;                   /* 角丸 */
+    padding:20px;                         /* 内側余白 */
+    box-shadow:0 2px 8px rgba(0,0,0,.1);  /* 影 */
+    text-decoration:none;                 /* リンク下線なし */
+    color:#222;                           /* 文字色 */
+    transition:.2s;                       /* アニメーション */
 }
 
 .card:hover{
-    transform:translateY(-4px);
+    transform:translateY(-4px);           /* 少し浮き上がる */
 }
 
+
+/*==================================================
+⑧ カード内の表示
+==================================================*/
+
 .tag{
-    display:inline-block;
-    background:#eef2ff;
-    padding:4px 10px;
-    border-radius:20px;
-    font-size:12px;
+    display:inline-block;                 /* 横幅を文字に合わせる */
+    background:#eef2ff;                   /* 背景色 */
+    padding:4px 10px;                     /* 内側余白 */
+    border-radius:20px;                   /* 丸いラベル */
+    font-size:12px;                       /* 文字サイズ */
+    margin-bottom:10px;                   /* 下余白 */
+}
+
+.game-image{
+    width:100%;                           /* 横幅いっぱい */
+    height:180px;                         /* 高さ固定 */
+    object-fit:cover;                     /* トリミング */
+    border-radius:12px;                   /* 角丸 */
+    margin-bottom:12px;                   /* 下余白 */
+}
+
+
+/*==================================================
+⑨ 更新情報
+==================================================*/
+
+.news{
+    width:100%;                           /* 横幅いっぱい */
+    max-width:1400px;                     /* 更新情報を広く表示 */
+    margin:35px auto 60px;                /* 上・左右・下余白 */
+    background:#fff;                      /* 背景色 */
+    border-radius:15px;                   /* 角丸 */
+    padding:25px 35px;                    /* 内側余白 */
+    box-shadow:0 2px 8px rgba(0,0,0,.08); /* 影 */
+}
+
+.news-list{
+    max-height:260px;                     /* 表示高さ */
+    overflow-y:auto;                      /* 縦スクロール */
+    padding-right:12px;                   /* スクロールバーとの余白 */
+}
+
+.news ul{
+    margin:0;                             /* 外側余白 */
+    padding-left:22px;                    /* 箇条書き位置 */
+}
+
+.news li{
+    margin-bottom:18px;                   /* 日付ごとの間隔 */
+    line-height:1.8;                      /* 行間 */
+}
+
+.news-date{
+    font-weight:bold;                     /* 太字 */
+    color:#2563eb;                        /* 日付色 */
+}
+
+.news-detail{
+    margin-top:6px;                       /* 日付との間隔 */
+    margin-left:15px;                     /* 左インデント */
+}
+
+.news-detail div{
+    margin:4px 0;                         /* 各更新項目の間隔 */
+}
+
+/*=========================================
+⑩ フッター
+=========================================*/
+
+.site-footer{
+    margin-top:50px;
+    padding:20px;
+    text-align:center;
+    border-top:1px solid #ddd;
+    color:#666;
+    font-size:0.95rem;
+}
+
+.site-footer nav{
     margin-bottom:10px;
 }
 
-
-.game-image{
-    width:100%;
-    height:180px;
-    object-fit:cover;
-    border-radius:12px;
-    margin-bottom:12px;
+.site-footer a{
+    color:#2c7be5;
+    text-decoration:none;
+    font-weight:bold;
 }
 
-
-.news{
-    max-width:1000px;
-    margin:25px auto;
-    padding:18px 22px;
-    background:#fff9db;
-    border-left:6px solid #facc15;
-    border-radius:12px;
-    font-size:16px;
-    line-height:1.7;
-    box-shadow:0 2px 6px rgba(0,0,0,.08);
+.site-footer a:hover{
+    text-decoration:underline;
 }
 
-    
+/*==================================================
+⑪ 今後追加するスタイル
+==================================================*/
+
+/* youtube-card{}         YouTubeカード */
+/* button{}               ボタン */
+
+/* responsive{}           スマホ対応 */
 </style>
 
-</html>
+
 
 
 
@@ -118,7 +237,10 @@ h1{
 
     
 <div class="container">
+    
+<h2 class="section-title">🎮 学習アプリ</h2>
 
+    
     <!-- ===== 第１セクション ===== -->
 
     <section class="game-section">
@@ -130,7 +252,7 @@ h1{
 
                 <img src="gopijupi.png" class="game-image">
 
-                <div class="tag">算数</div>
+                <div class="tag">さんすう　１年　かず　いくつといくつ</div>
 
                 <h2>はしれ！ごうぴい＆じゅうぴい</h2>
 
@@ -144,7 +266,7 @@ h1{
 
                 <img src="kazutsunagitop.png" class="game-image">
 
-                <div class="tag">算数</div>
+                <div class="tag">さんすう　１年　かず　たしざん</div>
 
                 <h2>かずつなぎ</h2>
 
@@ -158,7 +280,7 @@ h1{
 
                 <img src="guragura-banana.png" class="game-image">
 
-                <div class="tag">算数</div>
+                <div class="tag">さんすう　１年　かず　いくつといくつ</div>
 
                 <h2>ぐらぐらバナナ</h2>
 
@@ -182,11 +304,11 @@ h1{
 
                 <img src="alphabet-get.png" class="game-image">
 
-                <div class="tag">英語</div>
+                <div class="tag">英語　アルファベット</div>
 
                 <h2>アルファベットゲット！</h2>
 
-                <p>大文字と小文字　どのアイテムでとる？</p>
+                <p>大文字・小文字を対応させる　どのアイテムでゲットする？</p>
 
             </a>
 
@@ -210,6 +332,8 @@ h1{
 
 
     <!-- ===== 第４セクション ===== -->
+    
+<h2 class="section-title">🎥 学習ソング・動画</h2>
 
     <section class="game-section">
 
@@ -252,48 +376,82 @@ h1{
                 <h2>歴史時代覚え歌</h2>
 
                 <p>縄文～弥生～古墳…　テクノ調！</p>
-
+     
             </a>
-            
+         
+</div>
+
+    </section>
 
 
             
-<section class="news">
 
-<h2>📢 更新情報</h2>
+
+<h2 class="section-title">📢 更新情報</h2>
+
+<div class="news">
+
+<div class="news-list">
 
 <ul>
 
 <li>
 <span class="news-date">2026.6.25</span>
-「はしれ！ごうぴい＆じゅうぴい」の不具合を大幅に修正
-「わだおばチャンネル」YouTubeリンク添付
-「アルファベットゲット」公開
+
+<div class="news-detail">
+<div>🔧 「アルファベットゲット」を改定（西部の夕陽版）</div>
+<div>🔧 「はしれ！ごうぴい＆じゅうぴい」の不具合を大幅に修正</div>
+<div>🎵 「わだおばチャンネル」へのYouTubeリンクを追加</div>
+<div>🆕 「アルファベットゲット」を公開</div>
+</div>
+
 </li>
 
 <li>
+
 <span class="news-date">2026.6.24</span>
-「ぐらぐらバナナ」公開
+
+<div class="news-detail">
+<div>🆕 「ぐらぐらバナナ」を公開</div>
+</div>
+
 </li>
 
 <li>
+
 <span class="news-date">2026.6.23</span>
-「かずつなぎ」公開
-「はしれ！ごうぴい＆じゅうぴい」公開
-本サイト公開
+
+<div class="news-detail">
+<div>🆕 「かずつなぎ」を公開</div>
+<div>🆕 「はしれ！ごうぴい＆じゅうぴい」を公開</div>
+<div>🎉 「わだおばちゃんの学習アプリひろば」を公開</div>
+</div>
+
 </li>
 
 </ul>
 
-</section>
-            
-        </div>
-
-    </section>
+<footer class="site-footer">
+  <hr>
 
 
-    
+    <!-- =========================================
+         フッター
+    ========================================= -->
+
+    <nav>
+        <a href="about.html">サイトについて</a> |
+        <a href="ict.html">学校・教育委員会・ICT担当者の皆様へ</a>
+    </nav>
+
+    <p>© 2026 わだおばちゃんの学習アプリひろば</p>
+</footer>
+
     
 </div>
 
 </body>
+
+</html>
+    
+  
