@@ -1,0 +1,1917 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>三角定規たんけんたい</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap');
+:root{
+  --forest:#2d5a1b;--gold:#f5c842;--amber:#e8733a;--sky:#4a90d9;
+  --cream:#fff8e7;--leaf:#3d8c50;--ruby:#e04b5a;--purple:#7b5ea7;
+  --wood:#c8934a;--wooddk:#8a5c20;--parch:#f5eecb;--parchdk:#e8d89a;
+  --panel:#1a3a12;--panelborder:#4a7a30;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Nunito',Arial,sans-serif;background:var(--forest);min-height:100vh;overflow:hidden;user-select:none;-webkit-user-select:none;}
+
+/* ═══ TITLE ═══ */
+#titleScreen{
+  position:fixed;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  background:#0a1a28;
+  z-index:100;overflow:hidden;
+}
+/* Animated sky background */
+.title-bg{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 120% 60% at 50% 0%,#1a4a8a 0%,transparent 70%),
+    radial-gradient(ellipse 80% 50% at 20% 80%,#0d3020 0%,transparent 60%),
+    radial-gradient(ellipse 80% 50% at 80% 80%,#0d3020 0%,transparent 60%),
+    linear-gradient(180deg,#0a1a28 0%,#0f2a18 50%,#081408 100%);
+}
+/* Stars */
+.stars{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+.star{position:absolute;background:white;border-radius:50%;animation:twinkle 2s infinite alternate;}
+@keyframes twinkle{from{opacity:.15;transform:scale(1)}to{opacity:1;transform:scale(1.4)}}
+/* Floating particles */
+.particle{
+  position:absolute;border-radius:50%;
+  animation:rise linear infinite;
+  pointer-events:none;
+}
+@keyframes rise{
+  0%{transform:translateY(0) scale(1);opacity:.8;}
+  100%{transform:translateY(-100vh) scale(0);opacity:0;}
+}
+/* Ground strip */
+.title-ground{
+  position:absolute;bottom:0;left:0;right:0;height:80px;
+  background:linear-gradient(180deg,#1a4a10 0%,#0a2808 100%);
+  border-top:3px solid #2a7a18;
+}
+.title-ground::before{
+  content:'';position:absolute;top:-12px;left:0;right:0;height:24px;
+  background:radial-gradient(ellipse 8px 12px at 50% 100%,#2a8a18,transparent) repeat-x;
+  background-size:28px 100%;
+}
+/* Trees */
+.title-trees{
+  position:absolute;bottom:60px;left:0;right:0;
+  display:flex;justify-content:space-between;padding:0 20px;
+  pointer-events:none;
+}
+.tree{display:flex;flex-direction:column;align-items:center;gap:0;}
+.tree-top{
+  width:0;height:0;
+  border-left:20px solid transparent;border-right:20px solid transparent;
+  border-bottom:36px solid #1a6010;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));
+}
+.tree-top2{
+  width:0;height:0;
+  border-left:14px solid transparent;border-right:14px solid transparent;
+  border-bottom:28px solid #228018;
+  margin-top:-16px;
+}
+.tree-trunk{width:8px;height:16px;background:#5a3010;margin-top:-2px;}
+
+/* ── LOGO ── */
+.title-logo-wrap{
+  position:relative;z-index:2;
+  display:flex;flex-direction:column;align-items:center;
+  margin-bottom:4px;
+  animation:logoFloat 4s ease-in-out infinite;
+}
+@keyframes logoFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+
+/* Flag banner above logo */
+.title-flags{display:flex;gap:0;margin-bottom:-2px;}
+.title-flag{
+  width:28px;height:20px;border-radius:2px;
+  animation:flagWave .8s ease-in-out infinite alternate;
+}
+.title-flag:nth-child(odd){animation-delay:.2s;}
+@keyframes flagWave{from{transform:skewX(-5deg)}to{transform:skewX(5deg)}}
+
+/* Main logo plate */
+.title-plate{
+  background:linear-gradient(180deg,#f8e878 0%,#e8c830 40%,#c89808 80%,#a07000 100%);
+  border:5px solid #6a4800;
+  border-radius:20px;
+  padding:14px 36px 10px;
+  box-shadow:
+    0 8px 0 #5a3800,
+    0 12px 24px rgba(0,0,0,.6),
+    inset 0 2px 0 rgba(255,255,255,.4),
+    inset 0 -2px 0 rgba(0,0,0,.2);
+  position:relative;
+}
+.title-plate::before{
+  content:'';position:absolute;inset:6px;border-radius:12px;
+  border:2px solid rgba(255,240,100,.4);pointer-events:none;
+}
+/* Decorative screws */
+.title-plate::after{
+  content:'⬡ ⬡';position:absolute;
+  top:8px;left:0;right:0;text-align:center;
+  font-size:8px;color:rgba(100,60,0,.5);letter-spacing:280px;
+}
+.title-kanji{
+  font-size:clamp(28px,5vw,54px);font-weight:900;
+  color:#3a1800;
+  text-shadow:2px 2px 0 rgba(255,255,255,.3),0 1px 0 rgba(0,0,0,.2);
+  line-height:1;text-align:center;letter-spacing:2px;
+}
+.title-ruby{
+  display:block;font-size:clamp(10px,1.5vw,14px);font-weight:800;
+  color:#6a3000;letter-spacing:8px;text-align:center;margin-top:2px;
+  text-shadow:none;
+}
+.title-en{
+  font-size:clamp(11px,1.5vw,14px);font-weight:900;
+  color:rgba(80,40,0,.6);letter-spacing:3px;text-align:center;
+  margin-top:4px;
+}
+
+/* Subtitle ribbon */
+.title-ribbon{
+  background:linear-gradient(90deg,transparent,#e04b5a 15%,#e04b5a 85%,transparent);
+  color:white;font-size:clamp(11px,1.8vw,15px);font-weight:900;
+  padding:5px 40px;margin-top:8px;letter-spacing:2px;
+  text-shadow:1px 1px 0 rgba(0,0,0,.3);
+  position:relative;
+}
+.title-ribbon::before,.title-ribbon::after{
+  content:'';position:absolute;top:0;bottom:0;width:20px;
+  background:inherit;
+}
+.title-ribbon::before{left:-10px;clip-path:polygon(100% 0,100% 100%,0 50%);}
+.title-ribbon::after{right:-10px;clip-path:polygon(0 0,0 100%,100% 50%);}
+
+/* ── Two triangle ruler characters ── */
+.title-chars{
+  display:flex;gap:48px;align-items:flex-end;
+  margin:16px 0 20px;position:relative;z-index:2;
+}
+/* Orange 45-45-90 ruler character */
+.ruler-char{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.ruler-svg-wrap{
+  filter:drop-shadow(4px 6px 8px rgba(0,0,0,.5));
+  animation:charFloat1 3.2s ease-in-out infinite;
+}
+.ruler-svg-wrap.char2{animation:charFloat2 2.8s ease-in-out infinite;}
+@keyframes charFloat1{0%,100%{transform:rotate(-4deg) translateY(0)}50%{transform:rotate(4deg) translateY(-12px)}}
+@keyframes charFloat2{0%,100%{transform:rotate(3deg) translateY(-4px)}50%{transform:rotate(-3deg) translateY(-14px)}}
+.char-label{
+  color:rgba(255,255,255,.7);font-size:11px;font-weight:900;
+  background:rgba(0,0,0,.3);padding:3px 10px;border-radius:8px;
+  letter-spacing:1px;
+}
+
+/* ── Stage buttons ── */
+.stage-select{
+  display:flex;gap:12px;flex-wrap:wrap;justify-content:center;
+  position:relative;z-index:2;
+}
+.stage-btn{
+  border:none;border-radius:18px;padding:14px 22px;
+  font-size:clamp(13px,2vw,17px);font-weight:900;
+  cursor:pointer;line-height:1.4;font-family:inherit;
+  transition:transform .1s,box-shadow .1s;
+  position:relative;overflow:hidden;
+}
+.stage-btn::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(255,255,255,.25) 0%,transparent 50%);
+  border-radius:inherit;pointer-events:none;
+}
+.stage-btn:nth-child(1){
+  background:linear-gradient(180deg,#ffdd44,#e8a800,#c07800);
+  color:#3a1800;
+  box-shadow:0 6px 0 #8a5000,0 8px 16px rgba(0,0,0,.4);
+  text-shadow:1px 1px 0 rgba(255,255,255,.3);
+}
+.stage-btn:nth-child(2){
+  background:linear-gradient(180deg,#44bbff,#1a80d0,#0a4898);
+  color:white;
+  box-shadow:0 6px 0 #083870,0 8px 16px rgba(0,0,0,.4);
+  text-shadow:1px 1px 0 rgba(0,0,0,.3);
+}
+.stage-btn:nth-child(3){
+  background:linear-gradient(180deg,#cc88ff,#8840d0,#5820a0);
+  color:white;
+  box-shadow:0 6px 0 #380870,0 8px 16px rgba(0,0,0,.4);
+  text-shadow:1px 1px 0 rgba(0,0,0,.3);
+}
+.stage-btn:hover{transform:translateY(-3px);}
+.stage-btn:active{transform:translateY(4px);box-shadow:0 2px 0 #8a5000;}
+.stage-btn:nth-child(2):active{box-shadow:0 2px 0 #083870;}
+.stage-btn:nth-child(3):active{box-shadow:0 2px 0 #380870;}
+.stage-btn-icon{font-size:1.6em;display:block;margin-bottom:2px;}
+.stage-btn-name{display:block;font-size:.65em;opacity:.85;font-weight:700;}
+
+/* ═══ GAME AREA ═══ */
+#gameArea{position:fixed;inset:0;flex-direction:column;display:none;background:linear-gradient(180deg,#2a6018 0%,#1a4010 100%);}
+
+/* Top header bar — wood texture */
+.game-header{
+  display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;
+  padding:6px 12px;flex-shrink:0;
+  background:linear-gradient(180deg,#c8884a 0%,#a06428 100%);
+  border-bottom:4px solid #7a4010;
+  box-shadow:0 4px 12px rgba(0,0,0,.4);
+}
+.back-btn{background:rgba(0,0,0,.25);color:var(--cream);border:2px solid rgba(255,255,255,.25);border-radius:9px;padding:5px 13px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:900;}
+.back-btn:hover{background:rgba(0,0,0,.4);}
+/* centre scroll banner */
+.header-center{display:flex;flex-direction:column;align-items:center;gap:1px;}
+.header-scroll{background:linear-gradient(180deg,#f5eecb,#e8d89a);border:2px solid #c8a050;border-radius:10px;padding:4px 20px;text-align:center;box-shadow:inset 0 2px 4px rgba(0,0,0,.1);}
+.header-stage{font-size:11px;font-weight:900;color:#6a3808;letter-spacing:1px;}
+.header-title{font-size:clamp(13px,2.2vw,18px);font-weight:900;color:#3a1800;}
+/* right score + rank */
+.header-right{display:flex;gap:8px;align-items:center;}
+.score-gem{background:rgba(0,0,0,.25);border:2px solid rgba(255,255,255,.3);border-radius:10px;padding:4px 12px;color:var(--cream);font-size:clamp(12px,2vw,16px);font-weight:900;display:flex;align-items:center;gap:5px;}
+.rank-badge{background:linear-gradient(180deg,#3a6030,#1e4018);border:3px solid var(--gold);border-radius:10px;padding:4px 10px;color:var(--gold);font-weight:900;text-align:center;font-size:11px;line-height:1.2;}
+.rank-badge span{display:block;font-size:18px;}
+
+/* stage content area */
+.stage-canvas{flex:1;display:flex;align-items:stretch;justify-content:center;overflow:hidden;padding:8px;}
+
+/* ═══ STAGE 1 LAYOUT ═══ */
+#puzzleStage{
+  width:100%;display:none;
+  flex-direction:column;gap:6px;
+}
+/* puzzle header scroll */
+.pz-header{
+  background:linear-gradient(180deg,#f5eecb,#e8d89a);
+  border:3px solid #c8a050;border-radius:12px;
+  padding:8px 20px;text-align:center;
+  box-shadow:0 3px 0 #a07020,0 4px 10px rgba(0,0,0,.3);
+  flex-shrink:0;
+}
+.pz-name{font-size:clamp(15px,2.5vw,22px);font-weight:900;color:#3a1800;}
+.pz-sub{font-size:clamp(11px,1.8vw,15px);font-weight:800;color:#7a4010;}
+/* three-column main area */
+.pz-main{flex:1;display:grid;grid-template-columns:1fr 180px;gap:8px;min-height:0;}
+/* left: mondai panel */
+.pz-mondai{
+  background:linear-gradient(180deg,#eef8ee,#d0ecd0);
+  border:3px solid #4a8a3a;border-radius:14px;
+  padding:10px;display:flex;flex-direction:column;gap:8px;
+}
+.mondai-label{background:#3a7030;color:white;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:900;text-align:center;}
+.mondai-text{font-size:clamp(11px,1.6vw,14px);font-weight:800;color:#1a3010;line-height:1.5;flex:1;}
+.hint-box{background:white;border:2px solid #e04b5a;border-radius:10px;padding:8px;}
+.hint-label{color:#e04b5a;font-size:11px;font-weight:900;margin-bottom:4px;}
+.hint-text{font-size:clamp(10px,1.4vw,13px);font-weight:700;color:#333;line-height:1.4;}
+/* centre: canvas */
+.pz-canvas-wrap{
+  background:linear-gradient(180deg,#f8f4e8,#ede8d0);
+  border:4px solid #c8a050;border-radius:16px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:inset 0 2px 8px rgba(0,0,0,.1),0 4px 12px rgba(0,0,0,.3);
+  overflow:hidden;
+}
+/* right: tray */
+.pz-tray{
+  background:linear-gradient(180deg,#f0f8ff,#d8eeff);
+  border:3px solid #4a80c0;border-radius:14px;
+  padding:10px;display:flex;flex-direction:column;gap:8px;
+}
+.tray-label{color:#1a4880;font-size:11px;font-weight:900;text-align:center;letter-spacing:1px;}
+.tray-hint{color:rgba(30,80,160,.6);font-size:10px;font-weight:700;text-align:center;}
+/* bottom bar */
+.pz-bottom{display:flex;align-items:center;justify-content:center;gap:12px;flex-shrink:0;padding:4px 0;}
+.next-btn{background:linear-gradient(180deg,#f8d858,#d4a020);color:#3a2000;border:none;border-radius:14px;padding:10px 32px;font-size:clamp(14px,2.2vw,18px);font-weight:900;cursor:pointer;font-family:inherit;box-shadow:0 5px 0 #a07010;transition:all .1s;}
+.next-btn:active{transform:translateY(3px);box-shadow:0 2px 0 #a07010;}
+
+/* ═══ STAGE 2 LAYOUT ═══ */
+#comboStage{width:100%;display:none;flex-direction:column;gap:8px;}
+.combo-header{background:linear-gradient(180deg,#f5eecb,#e8d89a);border:3px solid #c8a050;border-radius:12px;padding:8px 20px;text-align:center;box-shadow:0 3px 0 #a07020;}
+.combo-target-wrap{text-align:center;}
+.combo-target{color:var(--gold);font-size:clamp(32px,6vw,58px);font-weight:900;text-shadow:3px 3px 0 #8a5000,0 0 30px rgba(245,200,66,.5);}
+.combo-sub{color:rgba(255,220,100,.7);font-size:13px;font-weight:800;}
+.combo-main{flex:1;display:grid;grid-template-columns:1fr 200px;gap:10px;min-height:0;}
+.combo-board-wrap{background:linear-gradient(180deg,#f8f4e8,#ede8d0);border:4px solid #c8a050;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;box-shadow:inset 0 2px 8px rgba(0,0,0,.1);}
+.angle-display{font-size:clamp(22px,4vw,36px);font-weight:900;color:#333;min-height:44px;display:flex;align-items:center;justify-content:center;}
+.angle-display.correct-color{color:#3d8c50;}
+.combo-side{display:flex;flex-direction:column;gap:10px;}
+.combo-tray{background:linear-gradient(180deg,#f0f8ff,#d8eeff);border:3px solid #4a80c0;border-radius:14px;padding:10px;flex:1;display:flex;flex-direction:column;gap:6px;}
+.combo-hint-box{background:rgba(0,0,0,.3);border:2px solid rgba(255,255,255,.15);border-radius:12px;padding:10px;color:rgba(255,255,255,.75);font-size:12px;font-weight:700;line-height:1.5;}
+.combo-next-btn{background:linear-gradient(180deg,#60b0f0,#2a70c0);color:white;border:none;border-radius:14px;padding:10px 24px;font-size:clamp(13px,2vw,17px);font-weight:900;cursor:pointer;font-family:inherit;box-shadow:0 4px 0 #1a4890;display:none;flex-shrink:0;}
+.combo-next-btn:active{transform:translateY(3px);}
+.progress-dots{display:flex;gap:6px;justify-content:center;}
+.dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.2);}
+.dot.done{background:var(--gold);}
+.dot.current{background:var(--amber);box-shadow:0 0 6px var(--amber);}
+
+/* ═══ STAGE 3 LAYOUT ═══ */
+#thinkStage{width:100%;display:none;flex-direction:column;gap:8px;}
+.think-header{background:linear-gradient(180deg,#f5eecb,#e8d89a);border:3px solid #c8a050;border-radius:12px;padding:8px 20px;text-align:center;box-shadow:0 3px 0 #a07020;}
+.think-main{flex:1;display:grid;grid-template-columns:1fr 200px;gap:10px;min-height:0;}
+.think-scene{background:linear-gradient(180deg,#f8f4e8,#ede8d0);border:4px solid #c8a050;border-radius:16px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:10px;box-shadow:inset 0 2px 8px rgba(0,0,0,.1);}
+.think-question{font-size:clamp(13px,2vw,18px);font-weight:900;color:#3a1800;text-align:center;}
+.think-input-row{display:flex;align-items:center;gap:10px;}
+.think-input{background:white;border:3px solid #c8a050;border-radius:12px;color:#333;font-size:clamp(20px,3.5vw,30px);font-weight:900;font-family:inherit;text-align:center;width:110px;padding:8px;outline:none;box-shadow:inset 0 2px 4px rgba(0,0,0,.1);}
+.think-input:focus{border-color:var(--amber);}
+.think-submit{background:linear-gradient(180deg,#a080d0,#6040a0);color:white;border:none;border-radius:12px;padding:10px 20px;font-size:clamp(14px,2vw,18px);font-weight:900;cursor:pointer;font-family:inherit;box-shadow:0 4px 0 #3a2070;}
+.think-submit:active{transform:translateY(2px);}
+.think-feedback{font-size:clamp(13px,2.2vw,18px);font-weight:900;min-height:26px;text-align:center;color:#333;}
+.think-side{display:flex;flex-direction:column;gap:10px;}
+.think-type-label{background:#6040a0;color:white;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:900;letter-spacing:1px;text-align:center;}
+.owl-box{background:linear-gradient(180deg,#1a3a2a,#0d2018);border:3px solid var(--gold);border-radius:14px;padding:12px;flex:1;display:flex;flex-direction:column;gap:8px;align-items:center;}
+.owl-text{color:var(--cream);font-size:clamp(11px,1.5vw,13px);font-weight:800;line-height:1.5;text-align:center;}
+.think-next-btn{background:linear-gradient(180deg,#a080d0,#6040a0);color:white;border:none;border-radius:14px;padding:10px 24px;font-size:clamp(13px,2vw,17px);font-weight:900;cursor:pointer;font-family:inherit;box-shadow:0 4px 0 #3a2070;display:none;flex-shrink:0;}
+.think-next-btn:active{transform:translateY(3px);}
+
+/* ═══ EFFECTS ═══ */
+.cel-msg{font-size:clamp(36px,7vw,72px);font-weight:900;color:var(--gold);text-shadow:4px 4px 0 var(--amber),0 0 40px rgba(245,200,66,.8);animation:bigpop .6s cubic-bezier(.17,.67,.58,1.5) forwards;opacity:0;pointer-events:none;}
+@keyframes bigpop{0%{opacity:0;transform:scale(.3) rotate(-10deg)}70%{opacity:1;transform:scale(1.1) rotate(3deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+.confetti-piece{position:fixed;border-radius:2px;animation:confettiFall linear forwards;pointer-events:none;}
+@keyframes confettiFall{0%{transform:translateY(-20px) rotate(0);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+.feedback-msg{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.88);color:white;padding:16px 32px;border-radius:16px;font-size:clamp(14px,2.5vw,20px);font-weight:900;z-index:150;text-align:center;pointer-events:none;animation:popIn .3s ease forwards;border:3px solid var(--gold);}
+@keyframes popIn{from{opacity:0;transform:translate(-50%,-50%) scale(.8)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.snap-word{position:fixed;font-size:30px;font-weight:900;color:white;pointer-events:none;z-index:300;animation:bigpop .5s forwards;}
+</style>
+</head>
+<body>
+
+<!-- TITLE -->
+<div id="titleScreen">
+  <div class="title-bg"></div>
+  <div class="stars" id="starsContainer"></div>
+  <div id="particleContainer" style="position:absolute;inset:0;pointer-events:none;overflow:hidden;"></div>
+
+  <!-- Trees -->
+  <div class="title-trees">
+    <div class="tree"><div class="tree-top2"></div><div class="tree-top"></div><div class="tree-trunk"></div></div>
+    <div class="tree" style="transform:scale(.7);transform-origin:bottom"><div class="tree-top2"></div><div class="tree-top"></div><div class="tree-trunk"></div></div>
+    <div class="tree" style="transform:scale(1.3);transform-origin:bottom"><div class="tree-top2"></div><div class="tree-top"></div><div class="tree-trunk"></div></div>
+    <div class="tree" style="transform:scale(.85);transform-origin:bottom"><div class="tree-top2"></div><div class="tree-top"></div><div class="tree-trunk"></div></div>
+    <div class="tree"><div class="tree-top2"></div><div class="tree-top"></div><div class="tree-trunk"></div></div>
+    <div class="tree" style="transform:scale(1.1);transform-origin:bottom"><div class="tree-top2"></div><div class="tree-top"></div><div class="tree-trunk"></div></div>
+    <div class="tree" style="transform:scale(.75);transform-origin:bottom"><div class="tree-top2"></div><div class="tree-top"></div><div class="tree-trunk"></div></div>
+  </div>
+  <div class="title-ground"></div>
+
+  <!-- Logo -->
+  <div class="title-logo-wrap">
+    <div class="title-flags">
+      <div class="title-flag" style="background:#e04b5a"></div>
+      <div class="title-flag" style="background:#f5c842"></div>
+      <div class="title-flag" style="background:#4a90d9"></div>
+      <div class="title-flag" style="background:#3d8c50"></div>
+      <div class="title-flag" style="background:#e8733a"></div>
+      <div class="title-flag" style="background:#7b5ea7"></div>
+      <div class="title-flag" style="background:#e04b5a"></div>
+      <div class="title-flag" style="background:#f5c842"></div>
+    </div>
+    <div class="title-plate">
+      <div class="title-kanji">三角定規<span class="title-ruby">さんかくじょうぎ</span></div>
+      <div class="title-kanji" style="font-size:clamp(22px,4vw,44px);margin-top:4px;">たんけんたい</div>
+      <div class="title-en">TRIANGLE RULER EXPEDITION</div>
+    </div>
+    <div class="title-ribbon">🗺️ 図形の ひみつを さがせ！ 🗺️</div>
+  </div>
+
+  <!-- SVG ruler characters -->
+  <div class="title-chars">
+    <div class="ruler-char">
+      <div class="ruler-svg-wrap">
+        <svg width="110" height="110" viewBox="0 0 110 110" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="og1" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#ffcc66"/><stop offset="50%" stop-color="#e8733a"/><stop offset="100%" stop-color="#b04010"/>
+            </linearGradient>
+            <filter id="sh1"><feDropShadow dx="3" dy="5" stdDeviation="4" flood-color="rgba(0,0,0,.5)"/></filter>
+          </defs>
+          <polygon points="10,95 95,95 10,10" fill="url(#og1)" stroke="#6a2800" stroke-width="3" filter="url(#sh1)"/>
+          <polygon points="10,10 60,10 10,60" fill="rgba(255,255,255,0.22)"/>
+          <g stroke="rgba(255,255,255,0.35)" stroke-width="1.5">
+            <line x1="70" y1="30" x2="62" y2="38"/><line x1="55" y1="55" x2="47" y2="63"/><line x1="40" y1="75" x2="32" y2="83"/>
+          </g>
+          <text x="20" y="86" font-family="Nunito,sans-serif" font-weight="900" font-size="10" fill="white" text-anchor="middle" opacity=".9">90°</text>
+          <text x="84" y="90" font-family="Nunito,sans-serif" font-weight="900" font-size="10" fill="white" text-anchor="middle" opacity=".9">45°</text>
+          <text x="15" y="32" font-family="Nunito,sans-serif" font-weight="900" font-size="10" fill="white" text-anchor="middle" opacity=".9">45°</text>
+          <ellipse cx="38" cy="72" rx="6" ry="7" fill="white"/>
+          <ellipse cx="52" cy="60" rx="6" ry="7" fill="white"/>
+          <circle cx="39" cy="72" r="3" fill="#222"/><circle cx="53" cy="60" r="3" fill="#222"/>
+          <circle cx="40" cy="70" r="1.2" fill="white"/><circle cx="54" cy="58" r="1.2" fill="white"/>
+          <path d="M38,82 Q45,88 52,82" fill="none" stroke="#6a2800" stroke-width="2" stroke-linecap="round"/>
+          <ellipse cx="33" cy="80" rx="4" ry="2.5" fill="rgba(255,100,80,.35)"/>
+          <ellipse cx="55" cy="70" rx="4" ry="2.5" fill="rgba(255,100,80,.35)"/>
+        </svg>
+      </div>
+      <div class="char-label">45°・45°・90°</div>
+    </div>
+    <div class="ruler-char">
+      <div class="ruler-svg-wrap char2">
+        <svg width="100" height="120" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="bg1" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#88ddff"/><stop offset="50%" stop-color="#4a90d9"/><stop offset="100%" stop-color="#0a3890"/>
+            </linearGradient>
+            <filter id="sh2"><feDropShadow dx="3" dy="5" stdDeviation="4" flood-color="rgba(0,0,0,.5)"/></filter>
+          </defs>
+          <polygon points="10,105 80,105 10,10" fill="url(#bg1)" stroke="#082060" stroke-width="3" filter="url(#sh2)"/>
+          <polygon points="10,10 55,10 10,60" fill="rgba(255,255,255,0.2)"/>
+          <g stroke="rgba(255,255,255,0.35)" stroke-width="1.5">
+            <line x1="46" y1="34" x2="40" y2="42"/><line x1="34" y1="60" x2="28" y2="68"/><line x1="22" y1="84" x2="16" y2="92"/>
+          </g>
+          <text x="20" y="96" font-family="Nunito,sans-serif" font-weight="900" font-size="9.5" fill="white" text-anchor="middle" opacity=".9">90°</text>
+          <text x="72" y="102" font-family="Nunito,sans-serif" font-weight="900" font-size="9.5" fill="white" text-anchor="middle" opacity=".9">30°</text>
+          <text x="14" y="24" font-family="Nunito,sans-serif" font-weight="900" font-size="9.5" fill="white" text-anchor="middle" opacity=".9">60°</text>
+          <ellipse cx="28" cy="75" rx="6" ry="7" fill="white"/>
+          <ellipse cx="40" cy="58" rx="6" ry="7" fill="white"/>
+          <circle cx="29" cy="75" r="3" fill="#082060"/><circle cx="41" cy="58" r="3" fill="#082060"/>
+          <circle cx="30" cy="73" r="1.2" fill="white"/><circle cx="42" cy="56" r="1.2" fill="white"/>
+          <path d="M26,86 Q33,93 40,86" fill="none" stroke="#082060" stroke-width="2" stroke-linecap="round"/>
+          <ellipse cx="22" cy="83" rx="4" ry="2.5" fill="rgba(100,180,255,.4)"/>
+          <ellipse cx="44" cy="67" rx="4" ry="2.5" fill="rgba(100,180,255,.4)"/>
+        </svg>
+      </div>
+      <div class="char-label">30°・60°・90°</div>
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <div class="stage-select">
+    <button class="stage-btn" id="btn1">
+      <span class="stage-btn-icon">🧩</span>ステージ１<span class="stage-btn-name">ぴたっとパズル</span>
+    </button>
+    <button class="stage-btn" id="btn2">
+      <span class="stage-btn-icon">📐</span>ステージ２<span class="stage-btn-name">くみあわせパズル</span>
+    </button>
+    <button class="stage-btn" id="btn3">
+      <span class="stage-btn-icon">🧠</span>ステージ３<span class="stage-btn-name">かんがえよう</span>
+    </button>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="gameArea">
+  <!-- Header bar -->
+  <div class="game-header">
+    <button class="back-btn" id="backBtn">← もどる</button>
+    <div class="header-center">
+      <div class="header-scroll">
+        <div class="header-stage" id="hudStageLabel">ステージ１</div>
+        <div class="header-title" id="hudTitle">三角定規たんけんたい</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="score-gem">💎 <span id="scoreVal">0</span></div>
+      <div class="rank-badge">探検ランク<span id="rankVal">1</span></div>
+    </div>
+  </div>
+
+  <div class="stage-canvas">
+
+    <!-- S1: PUZZLE -->
+    <div id="puzzleStage">
+      <!-- top scroll -->
+      <div class="pz-header">
+        <div class="pz-name" id="puzzleName">🧩 ぴたっとパズル</div>
+        <div class="pz-sub" id="puzzleInstruction">角Ａの 大きさは　なんどかな？　三角定規を　あてよう！</div>
+      </div>
+      <!-- three columns -->
+      <div class="pz-main">
+        <!-- centre: main canvas -->
+        <div class="pz-canvas-wrap">
+          <canvas id="puzzleCanvas" width="340" height="300"></canvas>
+        </div>
+        <!-- right: tray -->
+        <div class="pz-tray">
+          <div class="tray-label">🔺 つかえる かたち</div>
+          <canvas id="trayCanvas" width="160" height="260"></canvas>
+          <div class="tray-hint">ドラッグして　つかおう！</div>
+        </div>
+      </div>
+      <!-- bottom -->
+      <div class="pz-bottom">
+        <button class="next-btn" id="puzzleNextBtn" style="display:none">つぎの もんだい ▶</button>
+      </div>
+    </div>
+
+    <!-- S2: COMBO -->
+    <div id="comboStage">
+      <div class="combo-header">
+        <div class="pz-name">📐 くみあわせパズル</div>
+        <div class="pz-sub">２まいの 三角定規を　くっつけて　この 角度を　つくろう！</div>
+      </div>
+      <div class="combo-target-wrap">
+        <div class="combo-target" id="comboTarget">105°</div>
+        <div class="combo-sub">の 角度を　つくろう！</div>
+      </div>
+      <div class="combo-main">
+        <div class="combo-board-wrap">
+          <canvas id="comboCanvas" width="420" height="260"></canvas>
+          <div class="angle-display" id="angleDisplay">－</div>
+        </div>
+        <div class="combo-side">
+          <div class="combo-tray">
+            <div class="tray-label">🔺 つかえる かたち</div>
+            <canvas id="comboTrayCanvas" width="160" height="160"></canvas>
+            <div class="tray-hint">ドラッグして　うごかそう！<br>右クリックで　回転！</div>
+          </div>
+          <div class="combo-hint-box">💡 角と角を　くっつけると　角度が　たされるよ！</div>
+          <div class="progress-dots" id="comboDots"></div>
+          <button class="combo-next-btn" id="comboNextBtn">つぎ ▶</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- S3: THINK -->
+    <div id="thinkStage">
+      <div class="think-header">
+        <div class="pz-name">🧠 かんがえよう</div>
+        <div class="pz-sub" id="thinkHeaderSub">－</div>
+      </div>
+      <div class="think-main">
+        <div class="think-scene">
+          <canvas id="thinkCanvas" width="380" height="220" style="border-radius:10px;display:block;"></canvas>
+          <div class="think-question" id="thinkQuestion">？°は　なんどでしょう？</div>
+          <div class="think-input-row">
+            <input class="think-input" id="thinkInput" type="number" min="1" max="360" placeholder="°">
+            <button class="think-submit" id="thinkSubmit">こたえる</button>
+          </div>
+          <div class="think-feedback" id="thinkFeedback"></div>
+        </div>
+        <div class="think-side">
+          <div class="think-type-label" id="thinkTypeLabel">ひきざん もんだい</div>
+          <div class="progress-dots" id="thinkDots"></div>
+          <div class="owl-box">
+            <div style="font-size:36px">🦉</div>
+            <div class="owl-text" id="owlText">三角定規の 角どうしを くらべて かんがえよう！</div>
+          </div>
+          <button class="think-next-btn" id="thinkNextBtn">つぎの もんだい ▶</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<canvas id="dragOverlay" style="position:fixed;inset:0;pointer-events:none;z-index:50;"></canvas>
+
+<script>
+// ═══════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════
+let score=0;
+function $(id){return document.getElementById(id);}
+function showEl(id,d='flex'){$(id).style.display=d;}
+function hideEl(id){$(id).style.display='none';}
+// (addScore defined in navigation section above)
+
+// Stars
+(function(){
+  const c=$('starsContainer');
+  for(let i=0;i<70;i++){
+    const s=document.createElement('div');s.className='star';
+    const sz=Math.random()*3+1;
+    s.style.cssText=`width:${sz}px;height:${sz}px;top:${Math.random()*85}%;left:${Math.random()*100}%;animation-delay:${Math.random()*3}s;animation-duration:${1.5+Math.random()*2.5}s`;
+    c.appendChild(s);
+  }
+})();
+
+// Floating particles on title
+(function(){
+  const pc=$('particleContainer');if(!pc)return;
+  const cols=['#f5c842','#e8733a','#4a90d9','#3d8c50','#e04b5a','#7b5ea7','#fff'];
+  function spawnParticle(){
+    const p=document.createElement('div');p.className='particle';
+    const sz=4+Math.random()*8;
+    p.style.cssText=`
+      width:${sz}px;height:${sz}px;
+      left:${Math.random()*100}%;
+      bottom:${Math.random()*30}%;
+      background:${cols[Math.floor(Math.random()*cols.length)]};
+      opacity:${0.4+Math.random()*0.5};
+      animation-duration:${4+Math.random()*6}s;
+      animation-delay:${Math.random()*2}s;
+    `;
+    pc.appendChild(p);
+    p.addEventListener('animationend',()=>p.remove());
+  }
+  for(let i=0;i<20;i++)spawnParticle();
+  setInterval(()=>{if($('titleScreen').style.display!=='none')spawnParticle();},600);
+})();
+
+function fireConfetti(){
+  const cols=['#f5c842','#e8733a','#4a90d9','#3d8c50','#e04b5a','#7b5ea7'];
+  for(let i=0;i<55;i++){
+    const p=document.createElement('div');p.className='confetti-piece';
+    const sz=6+Math.random()*9;
+    p.style.cssText=`left:${Math.random()*100}vw;top:-10px;background:${cols[Math.floor(Math.random()*cols.length)]};width:${sz}px;height:${sz}px;border-radius:${Math.random()>.5?'50%':'2px'};animation-duration:${1.5+Math.random()*2}s;animation-delay:${Math.random()*0.4}s;`;
+    document.body.appendChild(p);setTimeout(()=>p.remove(),4000);
+  }
+  const msgs=['やったね！🎉','すごい！⭐','かんぺき！🏆','ブラボー！🎊'];
+  const wrap=document.createElement('div');
+  wrap.style.cssText='position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:200;';
+  const m=document.createElement('div');m.className='cel-msg';
+  m.textContent=msgs[Math.floor(Math.random()*msgs.length)];
+  wrap.appendChild(m);document.body.appendChild(wrap);setTimeout(()=>wrap.remove(),2200);
+}
+
+function showFeedback(msg,ok){
+  const el=document.createElement('div');el.className='feedback-msg';
+  el.style.borderColor=ok?'#3d8c50':'#e04b5a';el.textContent=msg;
+  document.body.appendChild(el);setTimeout(()=>el.remove(),2000);
+}
+
+function makeDots(containerId,total,current){
+  const c=$(containerId);c.innerHTML='';
+  for(let i=0;i<total;i++){
+    const d=document.createElement('div');
+    d.className='dot'+(i<current?' done':i===current?' current':'');
+    c.appendChild(d);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════
+$('btn1').addEventListener('click',()=>startStage(1));
+$('btn2').addEventListener('click',()=>startStage(2));
+$('btn3').addEventListener('click',()=>startStage(3));
+$('backBtn').addEventListener('click',goTitle);
+
+function addScore(n){
+  score+=n;$('scoreVal').textContent=score;
+  // update rank
+  const rank=Math.floor(score/30)+1;
+  if($('rankVal'))$('rankVal').textContent=rank;
+}
+
+function startStage(n){
+  score=0;$('scoreVal').textContent=0;if($('rankVal'))$('rankVal').textContent=1;
+  hideEl('titleScreen');showEl('gameArea','flex');
+  hideEl('puzzleStage');hideEl('comboStage');hideEl('thinkStage');
+  if(n===1){
+    $('hudStageLabel').textContent='ステージ１';
+    $('hudTitle').textContent='三角定規たんけんたい';
+    showEl('puzzleStage','flex');initPuzzle();
+  } else if(n===2){
+    $('hudStageLabel').textContent='ステージ２';
+    $('hudTitle').textContent='三角定規たんけんたい';
+    showEl('comboStage','flex');initCombo();
+  } else {
+    $('hudStageLabel').textContent='ステージ３';
+    $('hudTitle').textContent='三角定規たんけんたい';
+    showEl('thinkStage','flex');initThink();
+  }
+}
+function goTitle(){
+  hideEl('gameArea');showEl('titleScreen','flex');
+  pzDrag=null;cbDrag=null;renderDragOverlay();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STAGE 1 ── ぴたっとパズル
+// ═══════════════════════════════════════════════════════════════
+
+// Each puzzle: draw full illustration on canvas, with a fan-shaped hole at a specific spot.
+// Player drags a triangle ruler and places its matching angle corner into the hole.
+// holeAngle: the angle of the fan hole in degrees
+// holeX/Y: centre of the fan hole in canvas coords (320×300)
+// holeDir: direction the fan "opens" toward (radians from positive-x)
+// validTypes: which ruler type(s) are accepted ('45','30', or 'both')
+// validCorner: which corner of the ruler to match ('90','45a','45b','30','60')
+
+const PZ_PUZZLES = [
+  { name:'直角二等辺三角形', emoji:'📐', holeAngle:45, holeX:60, holeY:240, holeDir:-Math.PI/2,
+    valid:['45'], desc:'直角二等辺三角形の　45°の かどを　はめよう！',
+    imagePath:'assets/isosceles.png', draw:drawIso },
+  { name:'正方形', emoji:'🟦', holeAngle:90, holeX:55, holeY:55, holeDir:0,
+    valid:['45','30'], desc:'正方形の　かどの　90°を　はめよう！',
+    imagePath:'assets/square.png', draw:drawSquare },
+  { name:'長方形', emoji:'▬', holeAngle:90, holeX:55, holeY:65, holeDir:0,
+    valid:['45','30'], desc:'長方形の　かどの　90°を　はめよう！',
+    imagePath:'assets/rectangle.png', draw:drawRectangle },
+  { name:'正三角形', emoji:'🔺', holeAngle:60, holeX:60, holeY:250, holeDir:-Math.PI*2/3,
+    valid:['30'], desc:'正三角形の　60°の かどを　はめよう！',
+    imagePath:'assets/equilateral.png', draw:drawEquilateral },
+  { name:'犬の耳', emoji:'🐶', holeAngle:45, holeX:100, holeY:80, holeDir:-Math.PI/4,
+    valid:['45'], desc:'犬の　耳の　45°を　はめよう！',
+    imagePath:'assets/dog.png', draw:drawDog },
+  { name:'猫の耳', emoji:'🐱', holeAngle:60, holeX:202, holeY:63, holeDir:Math.atan2(43,-25),
+    valid:['30'], desc:'ネコの　耳の　60°を　はめよう！',
+    imagePath:'assets/cat.png', draw:drawCat },
+  { name:'怪獣の牙', emoji:'👾', holeAngle:30, holeX:155, holeY:210, holeDir:-Math.PI/2-Math.PI/12,
+    valid:['30'], desc:'かいじゅうの　きばの　30°を　はめよう！',
+    imagePath:'assets/monster.png', draw:drawMonster },
+  { name:'ひよこのくちばし', emoji:'🐣', holeAngle:30, holeX:210, holeY:155, holeDir:0,
+    valid:['30'], desc:'ひよこの　くちばしの　30°を　はめよう！',
+    imagePath:'assets/chick.png', draw:drawChick },
+  { name:'トリケラトプスの角', emoji:'🦕', holeAngle:60, holeX:62, holeY:148, holeDir:-Math.PI+Math.PI/6,
+    valid:['30'], desc:'トリケラトプスの　つのの　60°を　はめよう！',
+    imagePath:'assets/triceratops.png', draw:drawTriceratops },
+  { name:'ステゴサウルスの突起', emoji:'🦴', holeAngle:60, holeX:165, holeY:130, holeDir:Math.PI/2-Math.PI/6,
+    valid:['30'], desc:'ステゴサウルスの　せなかの　60°を　はめよう！',
+    imagePath:'assets/stego.png', draw:drawStego },
+  { name:'角刈り', emoji:'💈', holeAngle:90, holeX:100, holeY:110, holeDir:0,
+    valid:['45','30'], desc:'角刈りの　90°を　はめよう！',
+    imagePath:'assets/crewcut.png', draw:drawCrewcut },
+  { name:'急な坂道', emoji:'⛰️', holeAngle:45, holeX:55, holeY:240, holeDir:-Math.PI/4,
+    valid:['45'], desc:'急な坂道の　45°を　はめよう！',
+    imagePath:'assets/slope.png', draw:drawSlope },
+  { name:'扇子の開き具合', emoji:'🪭', holeAngle:45, holeX:160, holeY:230, holeDir:-Math.PI/2-22.5*Math.PI/180,
+    valid:['45'], desc:'扇子の　45°を　はめよう！',
+    imagePath:'assets/fan.png', draw:drawFan },
+  { name:'野球バットの傾き', emoji:'⚾', holeAngle:45, holeX:118, holeY:210, holeDir:-Math.PI/4,
+    valid:['45'], desc:'バットの　45°の　かたむきを　はめよう！',
+    imagePath:'assets/batter.png', draw:drawBatter },
+  { name:'ゴルフドライバーの角度', emoji:'⛳', holeAngle:30, holeX:80, holeY:220, holeDir:-Math.PI/2-Math.PI/6,
+    valid:['30'], desc:'ゴルフクラブの　30°を　はめよう！',
+    imagePath:'assets/golfer.png', draw:drawGolfer },
+  { name:'上体起こしの膝', emoji:'🏃', holeAngle:90, holeX:200, holeY:240, holeDir:Math.PI/2,
+    valid:['45','30'], desc:'ひざの　90°を　はめよう！',
+    imagePath:'assets/situp.png', draw:drawSitup },
+  { name:'♯の斜め線の傾き', emoji:'🎵', holeAngle:60, holeX:110, holeY:170, holeDir:-Math.PI/3,
+    valid:['30'], desc:'♯の　ならびの　60°を　はめよう！',
+    imagePath:'assets/sharp.png', draw:drawSharp },
+];
+
+// ── Image preloader ──
+const PZ_IMAGES = {}; // imagePath → HTMLImageElement (null if not loaded)
+let imagesPreloaded = false;
+
+function preloadPuzzleImages(){
+  let pending = PZ_PUZZLES.length;
+  PZ_PUZZLES.forEach(p=>{
+    const img = new Image();
+    PZ_IMAGES[p.imagePath] = null; // placeholder
+    img.onload  = ()=>{ PZ_IMAGES[p.imagePath]=img; pending--; if(pending<=0)imagesPreloaded=true; };
+    img.onerror = ()=>{ PZ_IMAGES[p.imagePath]='error'; pending--; if(pending<=0)imagesPreloaded=true; };
+    img.src = p.imagePath;
+  });
+}
+preloadPuzzleImages();
+
+// ── Drawing helpers ──
+function bg(ctx,W,H){
+  // Parchment-style warm background for image puzzles
+  const grad = ctx.createLinearGradient(0,0,W,H);
+  grad.addColorStop(0,'#f8f2e0');
+  grad.addColorStop(1,'#ede0c0');
+  ctx.fillStyle=grad;
+  ctx.beginPath();ctx.roundRect(0,0,W,H,12);ctx.fill();
+  // subtle dot grid
+  ctx.fillStyle='rgba(180,150,100,.15)';
+  for(let x=20;x<W;x+=26)for(let y=20;y<H;y+=26){ctx.beginPath();ctx.arc(x,y,1.3,0,Math.PI*2);ctx.fill();}
+}
+
+// Draw image (or fallback) then overlay angle marker
+function drawWithImage(ctx, W, H, puzzle, solved, fallbackFn){
+  const img = PZ_IMAGES[puzzle.imagePath];
+  if(img && img!=='error'){
+    bg(ctx,W,H);
+    // Draw image centred, fitting within canvas with padding
+    const pad=18;
+    const scale=Math.min((W-pad*2)/img.naturalWidth,(H-pad*2)/img.naturalHeight,1);
+    const dw=img.naturalWidth*scale, dh=img.naturalHeight*scale;
+    const dx=(W-dw)/2, dy=(H-dh)/2;
+    ctx.drawImage(img,dx,dy,dw,dh);
+    drawFanHole(ctx,puzzle.holeX,puzzle.holeY,puzzle.holeAngle,puzzle.holeDir,solved);
+  } else {
+    // fallback to canvas drawing
+    fallbackFn(ctx,W,H,solved);
+  }
+}
+
+// Draw arrow+A label pointing to vertex, plus two short edge lines showing the interior angle
+function drawFanHole(ctx,x,y,angleDeg,dir,solved){
+  const rad=angleDeg*Math.PI/180;
+  const mid=dir+rad/2; // bisector direction (the angle opens from dir to dir+rad)
+
+  const edgeLen=44; // length of the two short edge lines
+  // Two edge directions (the sides of the angle)
+  const edge1x=x+edgeLen*Math.cos(dir);
+  const edge1y=y+edgeLen*Math.sin(dir);
+  const edge2x=x+edgeLen*Math.cos(dir+rad);
+  const edge2y=y+edgeLen*Math.sin(dir+rad);
+
+  if(solved){
+    // Green vertex dot
+    ctx.save();
+    ctx.shadowColor='#5bbd6e';ctx.shadowBlur=20;
+    ctx.fillStyle='#5bbd6e';
+    ctx.beginPath();ctx.arc(x,y,7,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+    // Green edge lines
+    ctx.save();
+    ctx.strokeStyle='#5bbd6e';ctx.lineWidth=3;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(edge1x,edge1y);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(edge2x,edge2y);ctx.stroke();
+    // Small arc showing the angle
+    ctx.beginPath();ctx.arc(x,y,18,dir,dir+rad);ctx.strokeStyle='#5bbd6e';ctx.lineWidth=2;ctx.stroke();
+    ctx.restore();
+    // "できた！" label along bisector
+    ctx.save();
+    ctx.font='bold 13px Nunito,sans-serif';ctx.fillStyle='#5bbd6e';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('✅ できた！',x+62*Math.cos(mid),y+62*Math.sin(mid));
+    ctx.restore();
+    return;
+  }
+
+  // ── Vertex dot ──
+  ctx.save();
+  ctx.shadowColor='#f5c842';ctx.shadowBlur=14;
+  ctx.fillStyle='#f5c842';
+  ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+
+  // ── Two short edge lines showing interior angle ──
+  ctx.save();
+  ctx.strokeStyle='rgba(245,200,66,0.75)';ctx.lineWidth=2.5;ctx.lineCap='round';
+  ctx.setLineDash([]);
+  ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(edge1x,edge1y);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(edge2x,edge2y);ctx.stroke();
+  // Small arc between edges
+  ctx.beginPath();ctx.arc(x,y,16,dir,dir+rad);
+  ctx.strokeStyle='rgba(245,200,66,0.9)';ctx.lineWidth=2;ctx.stroke();
+  ctx.restore();
+
+  // ── Arrow from outside pointing TO vertex ──
+  const arrowDist=62;
+  const ax=x+arrowDist*Math.cos(mid);
+  const ay=y+arrowDist*Math.sin(mid);
+  ctx.save();
+  ctx.strokeStyle='#f5c842';ctx.lineWidth=2;ctx.lineCap='round';
+  ctx.shadowColor='#f5c842';ctx.shadowBlur=6;
+  ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(x,y);ctx.stroke();
+  // Arrowhead
+  const ha=Math.atan2(y-ay,x-ax);
+  const hs=8;
+  ctx.fillStyle='#f5c842';
+  ctx.beginPath();
+  ctx.moveTo(x,y);
+  ctx.lineTo(x-hs*Math.cos(ha-0.38),y-hs*Math.sin(ha-0.38));
+  ctx.lineTo(x-hs*Math.cos(ha+0.38),y-hs*Math.sin(ha+0.38));
+  ctx.closePath();ctx.fill();
+  ctx.restore();
+
+  // ── "Ａ" label at tail of arrow ──
+  ctx.save();
+  const lx=ax+15*Math.cos(mid);
+  const ly=ay+15*Math.sin(mid);
+  ctx.font='bold 16px Nunito,sans-serif';
+  ctx.fillStyle='#f5c842';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.shadowColor='rgba(0,0,0,0.7)';ctx.shadowBlur=4;
+  ctx.fillText('Ａ',lx,ly);
+  ctx.restore();
+}
+
+// ── Illustration draw functions (340×300 canvas) ──
+// Each calls drawWithImage first; the old canvas code becomes the fallback.
+function drawIso(ctx,W,H,solved){
+  drawWithImage(ctx,W,H,PZ_PUZZLES[0],solved,_drawIsoFallback);
+}
+function _drawIsoFallback(ctx,W,H,solved){
+  bg(ctx,W,H);
+  const ox=60,oy=240,s=200;
+  ctx.save();
+  ctx.fillStyle='rgba(74,144,217,.35)';ctx.strokeStyle='#4a90d9';ctx.lineWidth=4;
+  ctx.beginPath();ctx.moveTo(ox,oy);ctx.lineTo(ox+s,oy);ctx.lineTo(ox,oy-s);ctx.closePath();
+  ctx.fill();ctx.stroke();
+  ctx.font='bold 14px Nunito,sans-serif';ctx.fillStyle='rgba(0,0,0,.7)';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('45°',ox+s*.55,oy+18);ctx.fillText('45°',ox-22,oy-s*.55);ctx.fillText('90°',ox+22,oy-18);
+  ctx.restore();
+  drawFanHole(ctx,ox,oy,45,-Math.PI/2,solved);
+}
+
+function drawSquare(ctx,W,H,solved){
+  drawWithImage(ctx,W,H,PZ_PUZZLES[1],solved,_drawSquareFallback);
+}
+function _drawSquareFallback(ctx,W,H,solved){
+  bg(ctx,W,H);
+  const ox=55,oy=55,s=190;
+  ctx.fillStyle='rgba(232,115,58,.25)';ctx.strokeStyle='#e8733a';ctx.lineWidth=4;
+  ctx.beginPath();ctx.rect(ox,oy,s,s);ctx.fill();ctx.stroke();
+  ctx.font='bold 20px Nunito,sans-serif';ctx.fillStyle='rgba(0,0,0,.5)';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('正方形',ox+s/2,oy+s/2);
+  drawFanHole(ctx,ox,oy,90,0,solved);
+}
+
+function drawRectangle(ctx,W,H,solved){
+  drawWithImage(ctx,W,H,PZ_PUZZLES[2],solved,_drawRectFallback);
+}
+function _drawRectFallback(ctx,W,H,solved){
+  bg(ctx,W,H);
+  const ox=55,oy=65,sw=230,sh=175;
+  ctx.fillStyle='rgba(123,94,167,.25)';ctx.strokeStyle='#7b5ea7';ctx.lineWidth=4;
+  ctx.beginPath();ctx.rect(ox,oy,sw,sh);ctx.fill();ctx.stroke();
+  ctx.font='bold 20px Nunito,sans-serif';ctx.fillStyle='rgba(0,0,0,.5)';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('長方形',ox+sw/2,oy+sh/2);
+  drawFanHole(ctx,ox,oy,90,0,solved);
+}
+
+function drawEquilateral(ctx,W,H,solved){
+  drawWithImage(ctx,W,H,PZ_PUZZLES[3],solved,_drawEquiFallback);
+}
+function _drawEquiFallback(ctx,W,H,solved){
+  bg(ctx,W,H);
+  const cx=160,base=240,oy=255,ox=cx-base/2,h=base*Math.sqrt(3)/2;
+  ctx.fillStyle='rgba(61,140,80,.3)';ctx.strokeStyle='#3d8c50';ctx.lineWidth=4;
+  ctx.beginPath();ctx.moveTo(ox,oy);ctx.lineTo(ox+base,oy);ctx.lineTo(cx,oy-h);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.font='bold 13px Nunito,sans-serif';ctx.fillStyle='rgba(0,0,0,.6)';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('60°',ox+30,oy-18);ctx.fillText('60°',ox+base-28,oy-18);ctx.fillText('60°',cx,oy-h+22);
+  drawFanHole(ctx,ox,oy,60,-Math.PI*2/3,solved);
+}
+
+function drawDog(ctx,W,H,solved){
+  drawWithImage(ctx,W,H,PZ_PUZZLES[4],solved,_drawDogFallback);
+}
+function _drawDogFallback(ctx,W,H,solved){
+  bg(ctx,W,H);
+  ctx.fillStyle='#c8a878';ctx.strokeStyle='#8a6040';ctx.lineWidth=3;
+  ctx.beginPath();ctx.ellipse(160,200,100,70,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.arc(160,120,60,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#b09060';
+  ctx.beginPath();ctx.moveTo(100,80);ctx.lineTo(100,30);ctx.lineTo(145,80);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.moveTo(220,80);ctx.lineTo(250,40);ctx.lineTo(255,90);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle='#111';ctx.beginPath();ctx.arc(143,112,7,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(177,112,7,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#222';ctx.beginPath();ctx.ellipse(160,130,12,8,0,0,Math.PI*2);ctx.fill();
+  drawFanHole(ctx,100,80,45,-Math.PI/4,solved);
+}
+
+function drawCat(ctx,W,H,solved){
+  drawWithImage(ctx,W,H,PZ_PUZZLES[5],solved,_drawCatFallback);
+}
+function _drawCatFallback(ctx,W,H,solved){
+  bg(ctx,W,H);
+  const CAT='#e8952a',CATSTROKE='#b06010',INNER='#ffb0b0';
+  ctx.lineWidth=3;
+  ctx.fillStyle=CAT;ctx.strokeStyle=CATSTROKE;
+  ctx.beginPath();ctx.ellipse(160,218,82,60,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.arc(160,138,62,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.fillStyle=CAT;ctx.strokeStyle=CATSTROKE;
+  ctx.beginPath();ctx.moveTo(104,105);ctx.lineTo(132,105);ctx.lineTo(118,68);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle=INNER;ctx.beginPath();ctx.moveTo(110,103);ctx.lineTo(128,103);ctx.lineTo(118,74);ctx.closePath();ctx.fill();
+  const ex=202,ey=63,eL=50;
+  const ebL=[ex-eL*Math.sin(Math.PI/6),ey+eL*Math.cos(Math.PI/6)];
+  const ebR=[ex+eL*Math.sin(Math.PI/6),ey+eL*Math.cos(Math.PI/6)];
+  ctx.fillStyle=CAT;ctx.strokeStyle=CATSTROKE;
+  ctx.beginPath();ctx.moveTo(ebL[0],ebL[1]);ctx.lineTo(ebR[0],ebR[1]);ctx.lineTo(ex,ey);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle=INNER;ctx.beginPath();ctx.moveTo(ebL[0]+4,ebL[1]-2);ctx.lineTo(ebR[0]-4,ebR[1]-2);ctx.lineTo(ex,ey+8);ctx.closePath();ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.55)';ctx.lineWidth=1.5;ctx.lineCap='round';
+  [[98,132,138,129],[98,139,138,138],[98,146,138,145]].forEach(([x1,y1,x2,y2])=>{ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();});
+  [[182,129,222,132],[182,138,222,139],[182,145,222,146]].forEach(([x1,y1,x2,y2])=>{ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();});
+  ctx.fillStyle='#222';ctx.beginPath();ctx.ellipse(142,130,7,8,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(178,130,7,8,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.5)';ctx.beginPath();ctx.arc(145,127,3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(181,127,3,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#e06080';ctx.beginPath();ctx.moveTo(160,148);ctx.lineTo(155,143);ctx.lineTo(165,143);ctx.closePath();ctx.fill();
+  ctx.strokeStyle='#b04060';ctx.lineWidth=2;ctx.beginPath();ctx.arc(155,151,5,0.2,Math.PI-0.2);ctx.stroke();ctx.beginPath();ctx.arc(165,151,5,0.2,Math.PI-0.2);ctx.stroke();
+  const dirLeft=Math.atan2(ebL[1]-ey,ebL[0]-ex);
+  drawFanHole(ctx,ex,ey,60,dirLeft,solved);
+}
+
+function drawMonster(ctx,W,H,solved){
+  drawWithImage(ctx,W,H,PZ_PUZZLES[6],solved,_drawMonsterFallback);
+}
+function _drawMonsterFallback(ctx,W,H,solved){
+  bg(ctx,W,H);
+  ctx.fillStyle='#5a2a8a';ctx.strokeStyle='#3a1060';ctx.lineWidth=3;
+  ctx.beginPath();ctx.ellipse(160,170,110,90,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.arc(160,95,65,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#7b3aaa';
+  ctx.beginPath();ctx.moveTo(120,48);ctx.lineTo(108,8);ctx.lineTo(140,45);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.moveTo(200,48);ctx.lineTo(212,8);ctx.lineTo(180,45);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle='#ff0';ctx.beginPath();ctx.arc(140,88,12,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(180,88,12,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#111';ctx.beginPath();ctx.arc(140,88,6,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(180,88,6,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='white';ctx.strokeStyle='#aaa';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(143,122);ctx.lineTo(155,165);ctx.lineTo(168,122);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.moveTo(168,122);ctx.lineTo(178,158);ctx.lineTo(192,122);ctx.closePath();ctx.fill();ctx.stroke();
+  drawFanHole(ctx,155,165,30,-Math.PI/2-Math.PI/12,solved);
+}
+
+function drawChick(ctx,W,H,solved){
+  drawWithImage(ctx,W,H,PZ_PUZZLES[7],solved,_drawChickFallback);
+}
+function _drawChickFallback(ctx,W,H,solved){
+  bg(ctx,W,H);
+  ctx.fillStyle='#f5d020';ctx.strokeStyle='#c09000';ctx.lineWidth=3;
+  ctx.beginPath();ctx.ellipse(155,195,80,70,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.arc(155,115,52,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#e8b800';ctx.beginPath();ctx.ellipse(100,210,40,28,-.3,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#111';ctx.beginPath();ctx.arc(165,108,7,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='white';ctx.beginPath();ctx.arc(167,106,3,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#e07000';ctx.lineWidth=4;ctx.lineCap='round';
+  const bx=210,by=155,blen=38,rad30=30*Math.PI/180;
+  ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(bx+blen,by-8);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(bx+blen*Math.cos(-rad30),by+blen*Math.sin(-rad30)+4);ctx.stroke();
+  drawFanHole(ctx,bx,by,30,0,solved);
+}
+
+function drawTriceratops(ctx,W,H,solved){
+  drawWithImage(ctx,W,H,PZ_PUZZLES[8],solved,_drawTriceFallback);
+}
+function _drawTriceFallback(ctx,W,H,solved){
+  bg(ctx,W,H);
+  ctx.fillStyle='#2a7a3a';ctx.strokeStyle='#1a5028';ctx.lineWidth=3;
+  ctx.beginPath();ctx.ellipse(175,135,115,95,-.1,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#4a9a5a';ctx.beginPath();ctx.ellipse(155,175,90,60,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#8a6a30';
+  ctx.beginPath();ctx.moveTo(75,170);ctx.lineTo(40,145);ctx.lineTo(78,200);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.moveTo(62,148);ctx.lineTo(30,100);ctx.lineTo(92,142);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle='#111';ctx.beginPath();ctx.arc(112,162,8,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='white';ctx.beginPath();ctx.arc(114,160,3,0,Math.PI*2);ctx.fill();
+  drawFanHole(ctx,62,148,60,-Math.PI+Math.PI/6,solved);
+}
+
+function drawStego(ctx,W,H,solved){
+  drawWithImage(ctx,W,H,PZ_PUZZLES[9],solved,_drawStegoFallback);
+}
+function _drawStegoFallback(ctx,W,H,solved){
+  bg(ctx,W,H);
+  const ox=30,oy=210;
+  ctx.fillStyle='#6a9a3a';ctx.strokeStyle='#3a5a18';ctx.lineWidth=2.5;
+  ctx.beginPath();ctx.moveTo(ox+230,oy-20);ctx.lineTo(ox+290,oy-50);ctx.lineTo(ox+280,oy+10);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(ox+145,oy,105,52,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.moveTo(ox+55,oy-30);ctx.lineTo(ox+30,oy-85);ctx.lineTo(ox+15,oy-80);ctx.lineTo(ox+40,oy+5);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.ellipse(ox+20,oy-92,22,13,-0.3,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#111';ctx.beginPath();ctx.arc(ox+10,oy-97,4,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='white';ctx.beginPath();ctx.arc(ox+9,oy-98,2,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#3a5a18';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(ox+2,oy-87);ctx.lineTo(ox-5,oy-87);ctx.stroke();
+  ctx.fillStyle='#5a8a2a';ctx.strokeStyle='#3a5a18';ctx.lineWidth=2;
+  for(const lx of[ox+75,ox+110,ox+155,ox+190]){
+    ctx.beginPath();ctx.roundRect(lx-9,oy+44,18,28,4);ctx.fill();ctx.stroke();
+    ctx.beginPath();ctx.ellipse(lx,oy+72,12,6,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+  }
+  const plateData=[{x:ox+75,y:oy-52,w:16,h:48},{x:ox+105,y:oy-72,w:20,h:65},{x:ox+135,y:oy-80,w:22,h:72},{x:ox+165,y:oy-70,w:20,h:62},{x:ox+195,y:oy-52,w:16,h:46}];
+  ctx.fillStyle='#a05a20';ctx.strokeStyle='#6a3008';ctx.lineWidth=2;
+  plateData.forEach(p=>{ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+p.w,p.y+p.h*0.5);ctx.lineTo(p.x,p.y+p.h);ctx.lineTo(p.x-p.w,p.y+p.h*0.5);ctx.closePath();ctx.fill();ctx.stroke();});
+  const pp=plateData[2];drawFanHole(ctx,pp.x,pp.y,60,Math.PI/2-Math.PI/6,solved);
+}
+
+function drawCrewcut(ctx,W,H,solved){
+  drawWithImage(ctx,W,H,PZ_PUZZLES[10],solved,_drawCrewcutFallback);
+}
+function _drawCrewcutFallback(ctx,W,H,solved){
+  bg(ctx,W,H);
+  ctx.fillStyle='#c8a878';ctx.strokeStyle='#8a6040';ctx.lineWidth=3;
+  ctx.beginPath();ctx.ellipse(160,185,80,90,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#3a2010';ctx.beginPath();ctx.rect(82,100,156,55);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.rect(82,100,22,75);ctx.fill();ctx.beginPath();ctx.rect(216,100,22,75);ctx.fill();
+  ctx.fillStyle='#c8a878';ctx.beginPath();ctx.moveTo(216,100);ctx.lineTo(238,100);ctx.lineTo(238,140);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#111';ctx.beginPath();ctx.arc(138,180,8,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(182,180,8,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#8a5030';ctx.lineWidth=3;ctx.beginPath();ctx.arc(160,210,20,0.1,Math.PI-.1);ctx.stroke();
+  drawFanHole(ctx,100,110,90,0,solved);
+}
+
+function drawSlope(ctx,W,H,solved){
+  drawWithImage(ctx,W,H,PZ_PUZZLES[11],solved,_drawSlopeFallback);
+}
+function _drawSlopeFallback(ctx,W,H,solved){
+  bg(ctx,W,H);
+  ctx.fillStyle='#1a4a7a';ctx.fillRect(0,0,340,210);
+  ctx.fillStyle='#5a8a3a';ctx.strokeStyle='#3a6020';ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(30,240);ctx.lineTo(280,240);ctx.lineTo(280,60);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,.4)';ctx.lineWidth=2;ctx.setLineDash([12,8]);
+  ctx.beginPath();ctx.moveTo(55,240);ctx.lineTo(280,80);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#f5d020';ctx.beginPath();ctx.arc(60,55,28,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='white';ctx.strokeStyle='#c00';ctx.lineWidth=3;
+  ctx.beginPath();ctx.rect(200,90,50,34);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#c00';ctx.font='bold 11px Nunito,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('急勾配',225,107);
+  drawFanHole(ctx,55,240,45,-Math.PI/4,solved);
+}
+
+function drawFan(ctx,W,H,solved){
+  drawWithImage(ctx,W,H,PZ_PUZZLES[12],solved,_drawFanFallback);
+}
+function _drawFanFallback(ctx,W,H,solved){
+  bg(ctx,W,H);
+  const fx=160,fy=230,fr=160,fstart=-Math.PI/2-22.5*Math.PI/180,fend=-Math.PI/2+22.5*Math.PI/180;
+  const nRibs=7;
+  for(let i=0;i<nRibs;i++){
+    const a=fstart+(fend-fstart)*i/nRibs,na=fstart+(fend-fstart)*(i+1)/nRibs;
+    ctx.fillStyle=i%2===0?'#c87018':'#e8a030';ctx.strokeStyle='#a05010';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(fx,fy);ctx.arc(fx,fy,fr,a,na);ctx.closePath();ctx.fill();ctx.stroke();
+  }
+  ctx.strokeStyle='#7a3808';ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(fx,fy);ctx.lineTo(fx+fr*Math.cos(fstart),fy+fr*Math.sin(fstart));ctx.stroke();
+  ctx.beginPath();ctx.moveTo(fx,fy);ctx.lineTo(fx+fr*Math.cos(fend),fy+fr*Math.sin(fend));ctx.stroke();
+  ctx.fillStyle='#f5c842';ctx.beginPath();ctx.arc(fx,fy,10,0,Math.PI*2);ctx.fill();
+  drawFanHole(ctx,fx,fy,45,fstart,solved);
+}
+
+function drawBatter(ctx,W,H,solved){
+  drawWithImage(ctx,W,H,PZ_PUZZLES[13],solved,_drawBatterFallback);
+}
+function _drawBatterFallback(ctx,W,H,solved){
+  bg(ctx,W,H);
+  ctx.strokeStyle='rgba(0,0,0,0.1)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(20,265);ctx.lineTo(W-20,265);ctx.stroke();
+  ctx.strokeStyle='#224488';ctx.lineWidth=14;ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.beginPath();ctx.moveTo(165,265);ctx.lineTo(158,230);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(135,265);ctx.lineTo(145,230);ctx.stroke();
+  ctx.fillStyle='#111';ctx.beginPath();ctx.ellipse(135,266,14,6,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(165,266,14,6,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#cc2222';ctx.strokeStyle='#881111';ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(150,210,28,36,0.1,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.strokeStyle='white';ctx.lineWidth=2;for(let sy=188;sy<238;sy+=10){ctx.beginPath();ctx.moveTo(128,sy);ctx.lineTo(172,sy+2);ctx.stroke();}
+  ctx.strokeStyle='#c8a070';ctx.lineWidth=10;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(162,200);ctx.lineTo(175,222);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(138,198);ctx.lineTo(118,210);ctx.stroke();
+  ctx.fillStyle='#c8a070';ctx.beginPath();ctx.arc(118,210,8,0,Math.PI*2);ctx.fill();
+  const bx=118,by=210,blen=155,bang=-45*Math.PI/180;
+  ctx.strokeStyle='#8B4513';ctx.lineWidth=5;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(bx+blen*0.55*Math.cos(bang),by+blen*0.55*Math.sin(bang));ctx.stroke();
+  ctx.lineWidth=14;ctx.beginPath();ctx.moveTo(bx+blen*0.55*Math.cos(bang),by+blen*0.55*Math.sin(bang));ctx.lineTo(bx+blen*Math.cos(bang),by+blen*Math.sin(bang));ctx.stroke();
+  ctx.fillStyle='#5a2a08';ctx.beginPath();ctx.arc(bx,by,7,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#1a1a1a';ctx.strokeStyle='#000';ctx.lineWidth=2;ctx.beginPath();ctx.arc(150,185,22,Math.PI,0);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.ellipse(133,185,10,5,-0.2,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#c8a070';ctx.strokeStyle='#8a6040';ctx.lineWidth=2;ctx.beginPath();ctx.arc(150,185,18,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#111';ctx.beginPath();ctx.arc(141,182,4,0,Math.PI*2);ctx.fill();
+  ctx.font='bold 18px Nunito,sans-serif';ctx.fillStyle='white';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('3',150,210);
+  drawFanHole(ctx,bx,by,45,-Math.PI/4,solved);
+}
+
+function drawGolfer(ctx,W,H,solved){
+  drawWithImage(ctx,W,H,PZ_PUZZLES[14],solved,_drawGolferFallback);
+}
+function _drawGolferFallback(ctx,W,H,solved){
+  bg(ctx,W,H);
+  ctx.fillStyle='#3a7a30';ctx.beginPath();ctx.rect(0,240,340,60);ctx.fill();
+  ctx.fillStyle='#2a5a20';ctx.beginPath();ctx.ellipse(160,242,80,8,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='white';ctx.strokeStyle='#ccc';ctx.lineWidth=2;ctx.beginPath();ctx.arc(160,237,7,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#336699';ctx.strokeStyle='#224466';ctx.lineWidth=3;
+  ctx.beginPath();ctx.rect(138,200,22,45);ctx.fill();ctx.stroke();ctx.beginPath();ctx.rect(162,200,22,45);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#cc8822';ctx.beginPath();ctx.roundRect(128,135,65,70,8);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#c8a878';ctx.strokeStyle='#8a6040';ctx.beginPath();ctx.arc(160,115,25,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#222';ctx.beginPath();ctx.arc(160,108,25,Math.PI,0);ctx.fill();ctx.beginPath();ctx.rect(133,108,54,8);ctx.fill();
+  ctx.strokeStyle='#888';ctx.lineWidth=5;ctx.lineCap='round';
+  const gx=80,gy=220,glen=165,gang=-Math.PI/2+30*Math.PI/180;
+  ctx.beginPath();ctx.moveTo(gx,gy);ctx.lineTo(gx+glen*Math.cos(gang),gy+glen*Math.sin(gang));ctx.stroke();
+  ctx.fillStyle='#aaa';ctx.beginPath();ctx.ellipse(gx,gy,14,8,.3,0,Math.PI*2);ctx.fill();
+  drawFanHole(ctx,gx,gy,30,-Math.PI/2-Math.PI/6,solved);
+}
+
+function drawSitup(ctx,W,H,solved){
+  drawWithImage(ctx,W,H,PZ_PUZZLES[15],solved,_drawSitupFallback);
+}
+function _drawSitupFallback(ctx,W,H,solved){
+  bg(ctx,W,H);
+  ctx.fillStyle='#3a6a9a';ctx.beginPath();ctx.rect(0,240,340,60);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.1)';ctx.beginPath();ctx.rect(0,240,340,4);ctx.fill();
+  ctx.strokeStyle='#c8a878';ctx.lineWidth=18;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(80,240);ctx.lineTo(200,240);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(200,240);ctx.lineTo(200,160);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(200,160);ctx.lineTo(270,100);ctx.stroke();
+  ctx.fillStyle='#c8a878';ctx.strokeStyle='#8a6040';ctx.lineWidth=3;ctx.beginPath();ctx.arc(270,85,22,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.strokeStyle='#c8a878';ctx.lineWidth=14;ctx.beginPath();ctx.moveTo(245,120);ctx.lineTo(215,145);ctx.stroke();ctx.beginPath();ctx.moveTo(215,145);ctx.lineTo(200,140);ctx.stroke();
+  ctx.strokeStyle='rgba(0,0,0,.2)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(180,240);ctx.lineTo(180,220);ctx.lineTo(200,220);ctx.stroke();
+  drawFanHole(ctx,200,240,90,Math.PI/2,solved);
+}
+
+function drawSharp(ctx,W,H,solved){
+  drawWithImage(ctx,W,H,PZ_PUZZLES[16],solved,_drawSharpFallback);
+}
+function _drawSharpFallback(ctx,W,H,solved){
+  bg(ctx,W,H);
+  ctx.strokeStyle='#3a2a10';ctx.lineWidth=8;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(125,60);ctx.lineTo(125,240);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(185,60);ctx.lineTo(185,240);ctx.stroke();
+  const tilt=30*Math.PI/180,bw=100,bx2=105;
+  for(const by of[135,175]){
+    const dx=bw*Math.cos(tilt),dy=-bw*Math.sin(tilt);
+    ctx.lineWidth=10;ctx.beginPath();ctx.moveTo(bx2,by);ctx.lineTo(bx2+dx,by+dy);ctx.stroke();
+  }
+  drawFanHole(ctx,110,170,60,-Math.PI/3,solved);
+}
+
+// ── Ruler drawing — キャラクター風リッチ版 ──
+function drawRuler45(ctx,x,y,angle,alpha,glow){
+  const s=88;
+  const pts=[[0,0],[s,0],[0,s]];
+  const cx=(pts[0][0]+pts[1][0]+pts[2][0])/3, cy=(pts[0][1]+pts[1][1]+pts[2][1])/3;
+  ctx.save();
+  ctx.globalAlpha=alpha;
+  ctx.translate(x,y);ctx.rotate(angle);ctx.translate(-cx,-cy);
+
+  // Shadow
+  ctx.shadowColor='rgba(0,0,0,0.35)';ctx.shadowBlur=glow?20:8;ctx.shadowOffsetX=3;ctx.shadowOffsetY=3;
+
+  // Body gradient (warm orange)
+  const grad=ctx.createLinearGradient(0,0,s,s);
+  grad.addColorStop(0,'#ffb060');
+  grad.addColorStop(0.5,'#e8733a');
+  grad.addColorStop(1,'#c04a10');
+  ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);ctx.lineTo(pts[1][0],pts[1][1]);ctx.lineTo(pts[2][0],pts[2][1]);ctx.closePath();
+  ctx.fillStyle=grad;ctx.fill();
+
+  // Border
+  ctx.shadowColor='transparent';
+  if(glow){ctx.strokeStyle='#fff';ctx.lineWidth=3;}
+  else{ctx.strokeStyle='#8a3000';ctx.lineWidth=2;}
+  ctx.stroke();
+
+  // Shine highlight
+  ctx.save();
+  ctx.clip();
+  const shine=ctx.createLinearGradient(0,0,s*.6,s*.3);
+  shine.addColorStop(0,'rgba(255,255,255,0.4)');
+  shine.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=shine;ctx.fillRect(0,0,s,s);
+  ctx.restore();
+
+  // Ruler tick marks along hypotenuse
+  ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=1;
+  for(let t=0.15;t<0.9;t+=0.12){
+    const tx=s*(1-t),ty=s*t;
+    const nx=0.707,ny=0.707;
+    ctx.beginPath();ctx.moveTo(tx-nx*4,ty-ny*4);ctx.lineTo(tx+nx*4,ty+ny*4);ctx.stroke();
+  }
+
+  // Angle labels
+  const off=16;
+  function lp(vx,vy){const dx=cx-vx,dy=cy-vy,d=Math.hypot(dx,dy)||1;return[vx+dx/d*off,vy+dy/d*off];}
+  ctx.font='bold 11px Nunito,sans-serif';ctx.fillStyle='white';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.shadowColor='rgba(0,0,0,0.5)';ctx.shadowBlur=3;ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;
+  const l0=lp(0,0),l1=lp(s,0),l2=lp(0,s);
+  ctx.fillText('90°',l0[0],l0[1]);ctx.fillText('45°',l1[0],l1[1]);ctx.fillText('45°',l2[0],l2[1]);
+
+  // Face on the body (near centroid)
+  ctx.shadowColor='transparent';
+  const fx=cx-4,fy=cy+4;
+  // eyes
+  ctx.fillStyle='white';
+  ctx.beginPath();ctx.arc(fx-7,fy-4,5,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(fx+5,fy-7,5,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#222';
+  ctx.beginPath();ctx.arc(fx-6,fy-4,2.5,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(fx+6,fy-7,2.5,0,Math.PI*2);ctx.fill();
+  // eye shine
+  ctx.fillStyle='white';
+  ctx.beginPath();ctx.arc(fx-5,fy-5,1,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(fx+7,fy-8,1,0,Math.PI*2);ctx.fill();
+  // mouth
+  ctx.strokeStyle='#8a3000';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.arc(fx,fy+2,5,0.2,Math.PI-0.2);ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawRuler30(ctx,x,y,angle,alpha,glow){
+  const s=80,h=s*Math.tan(Math.PI/3);
+  const pts=[[0,0],[s,0],[0,h]];
+  const cx=(pts[0][0]+pts[1][0]+pts[2][0])/3, cy=(pts[0][1]+pts[1][1]+pts[2][1])/3;
+  ctx.save();
+  ctx.globalAlpha=alpha;
+  ctx.translate(x,y);ctx.rotate(angle);ctx.translate(-cx,-cy);
+
+  // Shadow
+  ctx.shadowColor='rgba(0,0,0,0.35)';ctx.shadowBlur=glow?20:8;ctx.shadowOffsetX=3;ctx.shadowOffsetY=3;
+
+  // Body gradient (cool blue)
+  const grad=ctx.createLinearGradient(0,0,s,h);
+  grad.addColorStop(0,'#80c8ff');
+  grad.addColorStop(0.5,'#4a90d9');
+  grad.addColorStop(1,'#1a4890');
+  ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);ctx.lineTo(pts[1][0],pts[1][1]);ctx.lineTo(pts[2][0],pts[2][1]);ctx.closePath();
+  ctx.fillStyle=grad;ctx.fill();
+
+  // Border
+  ctx.shadowColor='transparent';
+  if(glow){ctx.strokeStyle='#fff';ctx.lineWidth=3;}
+  else{ctx.strokeStyle='#0a2860';ctx.lineWidth=2;}
+  ctx.stroke();
+
+  // Shine
+  ctx.save();ctx.clip();
+  const shine=ctx.createLinearGradient(0,0,s*.5,h*.3);
+  shine.addColorStop(0,'rgba(255,255,255,0.4)');
+  shine.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=shine;ctx.fillRect(0,0,s,h);
+  ctx.restore();
+
+  // Tick marks along hypotenuse
+  ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=1;
+  const hypLen=Math.hypot(s,h);const hx=s/hypLen,hy=-h/hypLen;
+  for(let t=0.1;t<0.9;t+=0.1){
+    const tx=s*(1-t),ty=h*t;
+    ctx.beginPath();ctx.moveTo(tx-hy*4,ty-hx*4);ctx.lineTo(tx+hy*4,ty+hx*4);ctx.stroke();
+  }
+
+  // Angle labels
+  const off=16;
+  function lp(vx,vy){const dx=cx-vx,dy=cy-vy,d=Math.hypot(dx,dy)||1;return[vx+dx/d*off,vy+dy/d*off];}
+  ctx.font='bold 11px Nunito,sans-serif';ctx.fillStyle='white';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.shadowColor='rgba(0,0,0,0.5)';ctx.shadowBlur=3;ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;
+  const l0=lp(0,0),l1=lp(s,0),l2=lp(0,h);
+  ctx.fillText('90°',l0[0],l0[1]);ctx.fillText('30°',l1[0],l1[1]);ctx.fillText('60°',l2[0],l2[1]);
+
+  // Face
+  ctx.shadowColor='transparent';
+  const fx=cx-2,fy=cy+6;
+  ctx.fillStyle='white';
+  ctx.beginPath();ctx.arc(fx-8,fy-6,5,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(fx+4,fy-10,5,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#1a3060';
+  ctx.beginPath();ctx.arc(fx-7,fy-6,2.5,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(fx+5,fy-10,2.5,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='white';
+  ctx.beginPath();ctx.arc(fx-6,fy-7,1,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(fx+6,fy-11,1,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#0a2860';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.arc(fx-2,fy,5,0.2,Math.PI-0.2);ctx.stroke();
+
+  ctx.restore();
+}
+
+// ── Ruler corner offsets from centroid ──
+// Given type and angle, returns the world-offset of each corner from centroid
+function rulerCornerOffsets(type, angle){
+  const s = type==='45'?88:80;
+  const h = type==='45'?s:s*Math.tan(Math.PI/3);
+  const pts = [[0,0],[s,0],[0,h]]; // local coords
+  const cx=(pts[0][0]+pts[1][0]+pts[2][0])/3, cy=(pts[0][1]+pts[1][1]+pts[2][1])/3;
+  return pts.map(([px,py])=>{
+    const rx=px-cx, ry=py-cy;
+    return {
+      x: rx*Math.cos(angle)-ry*Math.sin(angle),
+      y: rx*Math.sin(angle)+ry*Math.cos(angle),
+    };
+  });
+  // index 0=90°, 1=30°or45°(short), 2=60°or45°(tall)
+}
+
+// For each puzzle: which corner index of which ruler type matches the hole angle
+// 45-45-90: corner 0=90°, 1=45°(right), 2=45°(bottom)
+// 30-60-90: corner 0=90°, 1=30°, 2=60°
+const CORNER_FOR_ANGLE = {
+  '45': { '45':1, '90':0 },   // ruler45: 45°→corner1or2, 90°→corner0
+  '30': { '30':1, '60':2, '90':0 },
+};
+
+// Given puzzle, returns {cornerIdx, snapAngle} where snapAngle orients the ruler
+// so that the correct corner points toward holeDir bisector
+function getPuzzleSnapInfo(puzzle){
+  const type = puzzle.valid[0]; // primary ruler
+  const deg  = puzzle.holeAngle;
+  const dir  = puzzle.holeDir;
+  const rad  = deg*Math.PI/180;
+  const mid  = dir + rad/2; // bisector of the angle hole (angle A faces this direction)
+
+  // Which corner of the ruler has this angle?
+  let cornerIdx=0;
+  if(type==='45'){
+    cornerIdx = (deg===90)?0:1; // both 45° corners behave the same
+  } else {
+    if(deg===90) cornerIdx=0;
+    else if(deg===30) cornerIdx=1;
+    else cornerIdx=2; // 60°
+  }
+
+  // The corner must point TOWARD mid (away from the figure)
+  // In local coords, the corner-to-centroid direction is the "inward" direction.
+  // We need the corner's outward direction = opposite of inward = toward mid.
+  // Local corner positions (before rotation):
+  const s = type==='45'?88:80;
+  const h = type==='45'?s:s*Math.tan(Math.PI/3);
+  const pts=[[0,0],[s,0],[0,h]];
+  const cx=(pts[0][0]+pts[1][0]+pts[2][0])/3, cy=(pts[0][1]+pts[1][1]+pts[2][1])/3;
+  const [pvx,pvy]=pts[cornerIdx];
+  // Local outward direction of this corner:
+  const localOutAngle=Math.atan2(pvy-cy, pvx-cx);
+  // We want localOutAngle + snapAngle = mid (pointing away from figure center)
+  // But actually we want the TWO EDGES from this corner to straddle the hole's angle.
+  // The bisector of the corner in local space (for 45° corner of 45-45-90):
+  // corner 0 (90°): bisector points toward (-1,-1) normalized = 225° = -3π/4 from +x
+  // corner 1 (45°): bisector toward (1,-1) normalized
+  // corner 2 (45°): bisector toward (-1,1) normalized
+  // For 30-60-90:
+  // corner 0 (90°): toward (-1,-1) ~ -3π/4
+  // corner 1 (30°): toward (1,-1) ~ atan2(-tan30/2,1)
+  // corner 2 (60°): toward (-1, something)
+  const bisectorLocal = Math.atan2(pvy-cy, pvx-cx); // outward from centroid
+  // snapAngle such that bisectorLocal + snapAngle = mid + π (corner points away from shape center toward outside)
+  // Actually the corner should point INTO the angle-A vertex, so the corner tip = holeX/Y.
+  // The corner outward local direction should equal "mid + π" (pointing FROM the figure TOWARD outside)
+  // meaning the corner bisector world direction = mid (away from shape, toward the label "A")
+  const snapAngle = mid - bisectorLocal;
+
+  return {cornerIdx, snapAngle, type};
+}
+
+// ── Puzzle state ──
+let pzPuzzle=null,pzSolved=false,pzDrag=null,pzPlaced=false;
+let pzOrder=[],pzIndex=0;
+// Current drag rotation (free rotation with right-click)
+let pzDragAngle=0;
+
+function shufflePz(){
+  pzOrder=[...Array(PZ_PUZZLES.length).keys()];
+  for(let i=pzOrder.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pzOrder[i],pzOrder[j]]=[pzOrder[j],pzOrder[i]];}
+}
+
+function initPuzzle(){shufflePz();pzIndex=0;$('puzzleNextBtn').addEventListener('click',nextPuzzle);loadPuzzle();}
+
+// Puzzle hint texts per puzzle
+const PZ_HINTS = {
+  '直角二等辺三角形':'45-45-90の 三角定規の かどが ぴったりだよ！',
+  '正方形':'正方形の かどは みんな 90°だよ！　どちらの 定規でも OK！',
+  '長方形':'長方形の かども みんな 90°だよ！',
+  '正三角形':'正三角形の 3つの かどは ぜんぶ 60°だよ！',
+  '犬の耳':'犬の 耳は 45°の かたちを しているよ！',
+  '猫の耳':'ネコの 耳は とがった 60°の さんかっけいだよ！',
+  '怪獣の牙':'きばの さきは とがった 30°だよ！',
+  'ひよこのくちばし':'ひよこの くちばしは 30°の かどだよ！',
+  'トリケラトプスの角':'つのの さきは 60°の かたちだよ！',
+  'ステゴサウルスの突起':'せなかの とっきは 60°の かたちだよ！',
+  '角刈り':'かみの かり込みは ちょうど 90°だよ！',
+  '急な坂道':'かなり きゅうな 坂は 45°の かたむきだよ！',
+  '扇子の開き具合':'扇子を ひらいた かどは 45°だよ！',
+  '野球バットの傾き':'バットの かたむきは 45°だよ！',
+  'ゴルフドライバーの角度':'ゴルフクラブの かたむきは 30°だよ！',
+  '上体起こしの膝':'ひざを まげる かくど 90°だよ！',
+  '♯の斜め線の傾き':'♯の ならびの かたむきは 60°だよ！',
+};
+
+function loadPuzzle(){
+  pzSolved=false;pzPlaced=false;pzDrag=null;
+  const idx=pzOrder[pzIndex%pzOrder.length];
+  pzPuzzle=PZ_PUZZLES[idx];
+  // Compute snap info and store
+  pzPuzzle._snap=getPuzzleSnapInfo(pzPuzzle);
+  pzDragAngle=pzPuzzle._snap.snapAngle; // start rotated correctly as hint
+  if($('puzzleName')) $('puzzleName').textContent=`${pzPuzzle.emoji}「${pzPuzzle.name}」`;
+  if($('puzzleInstruction')) $('puzzleInstruction').textContent='角Ａの 大きさは　なんどかな？　三角定規を　あてよう！';
+  if($('mondaiText')) $('mondaiText').textContent=`この ${pzPuzzle.name}の\n角Ａの 大きさは\nなんどかな？`;
+  if($('hintText')) $('hintText').textContent=PZ_HINTS[pzPuzzle.name]||'三角定規の かどを Ａに あわせてみよう！';
+  hideEl('puzzleNextBtn');
+  renderPuzzle();renderTray();
+}
+
+function renderPuzzle(){
+  const cv=$('puzzleCanvas'),ctx=cv.getContext('2d');
+  pzPuzzle.draw(ctx,cv.width,cv.height,pzSolved);
+}
+
+function renderTray(){
+  const cv=$('trayCanvas'),ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  const rulers=pzPuzzle.valid;
+  const has45=rulers.includes('45');
+  const has30=rulers.includes('30');
+  const n=(has45&&has30)?2:1;
+  const slotH=H/n;
+  let slot=0;
+  if(has45){
+    const cy=slotH*slot+slotH/2;
+    const isDragging=pzDrag&&pzDrag.rulerType==='45';
+    ctx.fillStyle='rgba(255,255,255,.07)';ctx.beginPath();ctx.roundRect(6,slotH*slot+5,W-12,slotH-10,9);ctx.fill();
+    drawRuler45(ctx,W/2,cy,0,isDragging?0.28:1,false);
+    slot++;
+  }
+  if(has30){
+    const cy=slotH*slot+slotH/2;
+    const isDragging=pzDrag&&pzDrag.rulerType==='30';
+    ctx.fillStyle='rgba(255,255,255,.07)';ctx.beginPath();ctx.roundRect(6,slotH*slot+5,W-12,slotH-10,9);ctx.fill();
+    drawRuler30(ctx,W/2,cy,0,isDragging?0.28:1,false);
+  }
+  if(pzSolved){
+    ctx.fillStyle='rgba(0,0,0,0.45)';ctx.fillRect(0,0,W,H);
+    ctx.font='bold 14px Nunito,sans-serif';ctx.fillStyle='#5bbd6e';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('✅ OK！',W/2,H/2);
+  }
+}
+
+// Draw ruler so that its target corner sits at screen pos (sx,sy)
+function drawRulerAtCorner(ctx, type, cornerIdx, sx, sy, angle, alpha, glow){
+  const offsets = rulerCornerOffsets(type, angle);
+  const co = offsets[cornerIdx];
+  // centroid screen position = (sx,sy) - corner offset
+  const cx = sx - co.x;
+  const cy = sy - co.y;
+  if(type==='45') drawRuler45(ctx, cx, cy, angle, alpha, glow);
+  else            drawRuler30(ctx, cx, cy, angle, alpha, glow);
+}
+
+function renderDragOverlay(){
+  const cv=$('dragOverlay');cv.width=window.innerWidth;cv.height=window.innerHeight;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);
+  if(!pzDrag&&!cbDrag)return;
+  if(pzDrag){
+    const snap=pzPuzzle._snap;
+    if(pzDrag.snapping){
+      // Draw ruler with correct corner exactly on holeX/Y (in screen coords)
+      const pc=$('puzzleCanvas'),r=pc.getBoundingClientRect();
+      const scaleX=r.width/pc.width, scaleY=r.height/pc.height;
+      const hsx=r.left+pzPuzzle.holeX*scaleX;
+      const hsy=r.top +pzPuzzle.holeY*scaleY;
+      drawRulerAtCorner(ctx, snap.type, snap.cornerIdx, hsx, hsy, snap.snapAngle, 0.92, true);
+    }else{
+      // Draw ruler with target corner following mouse
+      drawRulerAtCorner(ctx, pzDrag.rulerType, snap.cornerIdx, pzDrag.sx, pzDrag.sy, pzDragAngle, 0.82, false);
+    }
+  }
+  if(cbDrag){
+    if(cbDrag.type==='45')drawRuler45(ctx,cbDrag.sx,cbDrag.sy,cbDrag.angle,.85,cbDrag.glow);
+    else drawRuler30(ctx,cbDrag.sx,cbDrag.sy,cbDrag.angle,.85,cbDrag.glow);
+  }
+}
+
+function getPtr(e){
+  if(e.touches&&e.touches.length)return{x:e.touches[0].clientX,y:e.touches[0].clientY};
+  if(e.changedTouches&&e.changedTouches.length)return{x:e.changedTouches[0].clientX,y:e.changedTouches[0].clientY};
+  return{x:e.clientX,y:e.clientY};
+}
+
+// ── Puzzle pointer handlers ──
+function onPzDown(e){
+  if($('puzzleStage').style.display==='none'||pzSolved)return;
+  const ptr=getPtr(e);
+  const tc=$('trayCanvas'),tr=tc.getBoundingClientRect();
+  if(ptr.x>=tr.left&&ptr.x<=tr.right&&ptr.y>=tr.top&&ptr.y<=tr.bottom){
+    const rulers=pzPuzzle.valid;
+    const n=rulers.includes('45')&&rulers.includes('30')?2:1;
+    const slotH=(tr.bottom-tr.top)/n;
+    const rawIdx=Math.max(0,Math.min(n-1,Math.floor((ptr.y-tr.top)/slotH)));
+    let rtype=n===1?rulers[0]:rawIdx===0?'45':'30';
+    pzDragAngle=pzPuzzle._snap.snapAngle; // pre-rotated to correct angle
+    pzDrag={rulerType:rtype,sx:ptr.x,sy:ptr.y,snapping:false};
+    renderTray();renderDragOverlay();e.preventDefault();
+  }
+  // Right-click on drag overlay rotates
+  else if(e.button===2&&pzDrag){
+    pzDragAngle+=Math.PI/12;renderDragOverlay();e.preventDefault();
+  }
+}
+function onPzMove(e){
+  if(!pzDrag)return;e.preventDefault();
+  const ptr=getPtr(e);pzDrag.sx=ptr.x;pzDrag.sy=ptr.y;
+  // Check snap: target corner must be near holeX/Y
+  const pc=$('puzzleCanvas'),pr=pc.getBoundingClientRect();
+  const scaleX=pc.width/pr.width, scaleY=pc.height/pr.height;
+  // Convert mouse to canvas coords
+  const mx=(ptr.x-pr.left)*scaleX;
+  const my=(ptr.y-pr.top)*scaleY;
+  const dx=mx-pzPuzzle.holeX, dy=my-pzPuzzle.holeY;
+  const dist=Math.sqrt(dx*dx+dy*dy);
+  // Angle tolerance: snap only when rotation is within 20° of correct
+  const angleDiff=Math.abs(((pzDragAngle-pzPuzzle._snap.snapAngle)%(Math.PI*2)+Math.PI*3)%(Math.PI*2)-Math.PI);
+  const typeOk=pzPuzzle.valid.includes(pzDrag.rulerType);
+  pzDrag.snapping=dist<55&&typeOk&&angleDiff<0.35;
+  renderDragOverlay();
+}
+function onPzUp(e){
+  if(!pzDrag)return;
+  if(pzDrag.snapping){
+    pzSolved=true;pzPlaced=true;
+    const ptr=getPtr(e);
+    showSnapWord(ptr.x,ptr.y);
+    pzDrag=null;renderPuzzle();renderTray();renderDragOverlay();
+    setTimeout(()=>{
+      fireConfetti();addScore(10);showEl('puzzleNextBtn','inline-block');
+      if($('puzzleName')) $('puzzleName').textContent=`${pzPuzzle.emoji}「${pzPuzzle.name}」`;
+      if($('puzzleInstruction')) $('puzzleInstruction').innerHTML=`角Ａ＝<span style="color:#e8733a;font-size:1.2em">${pzPuzzle.holeAngle}°</span>　ぴったり！✨`;
+    },300);
+  }else{pzDrag=null;renderTray();renderDragOverlay();}
+}
+function showSnapWord(sx,sy){
+  const el=document.createElement('div');el.className='snap-word';
+  el.style.cssText=`left:${sx-28}px;top:${sy-38}px;`;el.textContent='ぴた！';
+  document.body.appendChild(el);setTimeout(()=>el.remove(),700);
+}
+function nextPuzzle(){pzIndex++;if(pzIndex>=pzOrder.length){shufflePz();pzIndex=0;}loadPuzzle();}
+
+// ═══════════════════════════════════════════════════════════════
+// STAGE 2 ── くみあわせパズル
+// ═══════════════════════════════════════════════════════════════
+const CB_TARGETS=[
+  {deg:75, label:'30°＋45°＝75°', hint:'30°と 45°を　くっつけよう'},
+  {deg:105,label:'45°＋60°＝105°',hint:'45°と 60°を　くっつけよう'},
+  {deg:120,label:'30°＋90°＝120°',hint:'30°と 90°を　くっつけよう'},
+  {deg:135,label:'45°＋90°＝135°',hint:'45°と 90°を　くっつけよう'},
+  {deg:150,label:'60°＋90°＝150°',hint:'60°と 90°を　くっつけよう'},
+  {deg:180,label:'90°＋90°＝180°',hint:'90°と 90°を　くっつけて　まっすぐに！'},
+];
+
+// Two free rulers on the combo canvas (400×280)
+// Each ruler: {type:'45'|'30', x, y, angle}
+let cbRulers=[
+  {type:'45',x:120,y:140,angle:0},
+  {type:'30',x:280,y:140,angle:0},
+];
+let cbDrag=null;
+let cbTargetIdx=0,cbTargetOrder=[],cbSolved=false;
+
+function shuffleCB(){
+  cbTargetOrder=[...Array(CB_TARGETS.length).keys()];
+  for(let i=cbTargetOrder.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[cbTargetOrder[i],cbTargetOrder[j]]=[cbTargetOrder[j],cbTargetOrder[i]];}
+}
+
+function initCombo(){
+  shuffleCB();cbTargetIdx=0;cbSolved=false;
+  $('comboNextBtn').addEventListener('click',nextCombo);
+  loadCombo();
+}
+
+function loadCombo(){
+  cbSolved=false;
+  cbRulers=[{type:'45',x:140,y:130,angle:0},{type:'30',x:280,y:130,angle:0}];
+  hideEl('comboNextBtn');
+  const tgt=CB_TARGETS[cbTargetOrder[cbTargetIdx%cbTargetOrder.length]];
+  $('comboTarget').textContent=tgt.deg+'°';
+  $('angleDisplay').textContent='－';
+  $('angleDisplay').className='angle-display';
+  makeDots('comboDots',CB_TARGETS.length,cbTargetIdx);
+  renderCombo();renderComboTray();
+}
+
+function renderComboTray(){
+  const cv=$('comboTrayCanvas');if(!cv)return;
+  const ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  drawRuler45(ctx,W/2,H*0.3,0,1,false);
+  drawRuler30(ctx,W/2,H*0.75,0,1,false);
+}
+
+function renderCombo(){
+  const cv=$('comboCanvas'),ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#0d2018';ctx.beginPath();ctx.roundRect(0,0,W,H,12);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.04)';
+  for(let x=20;x<W;x+=26)for(let y=20;y<H;y+=26){ctx.beginPath();ctx.arc(x,y,1.2,0,Math.PI*2);ctx.fill();}
+  // draw rulers (not dragged ones are drawn here; dragged one is on overlay)
+  cbRulers.forEach((r,i)=>{
+    if(cbDrag&&cbDrag.idx===i)return;
+    if(r.type==='45')drawRuler45(ctx,r.x,r.y,r.angle,1,false);
+    else drawRuler30(ctx,r.x,r.y,r.angle,1,false);
+  });
+  // measure angle between rulers
+  updateAngleDisplay();
+}
+
+function updateAngleDisplay(){
+  const [a,b]=cbRulers;
+  // Find corners of each ruler, check if any corners are very close
+  const corners45=getRulerCorners45(a);
+  const corners30=getRulerCorners30(b);
+  let minDist=999,bestA=null,bestB=null;
+  corners45.forEach(ca=>{
+    corners30.forEach(cb=>{
+      const d=Math.sqrt((ca.x-cb.x)**2+(ca.y-cb.y)**2);
+      if(d<minDist){minDist=d;bestA=ca;bestB=cb;}
+    });
+  });
+  if(minDist<30){
+    // Compute angle between the two edges meeting at junction
+    const angA=bestA.ang,angB=bestB.ang;
+    let diff=Math.abs(angA-angB)*180/Math.PI;
+    if(diff>180)diff=360-diff;
+    const rounded=Math.round(diff);
+    const tgt=CB_TARGETS[cbTargetOrder[cbTargetIdx%cbTargetOrder.length]];
+    const el=$('angleDisplay');
+    el.textContent=rounded+'°';
+    if(Math.abs(rounded-tgt.deg)<=3&&!cbSolved){
+      el.className='angle-display correct-color';
+      cbSolved=true;
+      setTimeout(()=>{fireConfetti();addScore(10);showEl('comboNextBtn','inline-block');},400);
+    }else{
+      el.className='angle-display';
+    }
+  }else{
+    $('angleDisplay').textContent='－';$('angleDisplay').className='angle-display';
+  }
+}
+
+function getRulerCorners45(r){
+  // 45-45-90: corners at 90°, 45°, 45°; edges from 90° corner
+  const s=88;
+  const pts=[[0,0],[s,0],[0,s]];
+  const cx=(pts[0][0]+pts[1][0]+pts[2][0])/3,cy=(pts[0][1]+pts[1][1]+pts[2][1])/3;
+  return pts.map((p,i)=>{
+    const rx=p[0]-cx,ry=p[1]-cy;
+    const nx=rx*Math.cos(r.angle)-ry*Math.sin(r.angle)+r.x;
+    const ny=rx*Math.sin(r.angle)+ry*Math.cos(r.angle)+r.y;
+    // angle of bisector at each corner
+    const angs=[r.angle+Math.PI*3/4, r.angle-Math.PI/4, r.angle+Math.PI*5/4];
+    return{x:nx,y:ny,ang:angs[i],deg:[90,45,45][i]};
+  });
+}
+function getRulerCorners30(r){
+  const s=80,h=s*Math.tan(Math.PI/3);
+  const pts=[[0,0],[s,0],[0,h]];
+  const cx=(pts[0][0]+pts[1][0]+pts[2][0])/3,cy=(pts[0][1]+pts[1][1]+pts[2][1])/3;
+  return pts.map((p,i)=>{
+    const rx=p[0]-cx,ry=p[1]-cy;
+    const nx=rx*Math.cos(r.angle)-ry*Math.sin(r.angle)+r.x;
+    const ny=rx*Math.sin(r.angle)+ry*Math.cos(r.angle)+r.y;
+    const angs=[r.angle+Math.PI*2/3+Math.PI/2, r.angle-Math.PI/6+Math.PI/2, r.angle+Math.PI+Math.PI/3];
+    return{x:nx,y:ny,ang:angs[i],deg:[90,30,60][i]};
+  });
+}
+
+function nextCombo(){cbTargetIdx++;if(cbTargetIdx>=cbTargetOrder.length){shuffleCB();cbTargetIdx=0;}loadCombo();}
+
+// Combo drag
+function onCbDown(e){
+  if($('comboStage').style.display==='none')return;
+  const ptr=getPtr(e);
+  const cv=$('comboCanvas'),r=cv.getBoundingClientRect();
+  const lx=(ptr.x-r.left)*(cv.width/r.width),ly=(ptr.y-r.top)*(cv.height/r.height);
+  // pick closest ruler centroid
+  let best=-1,bestD=999;
+  cbRulers.forEach((rl,i)=>{const d=Math.sqrt((lx-rl.x)**2+(ly-rl.y)**2);if(d<bestD){bestD=d;best=i;}});
+  if(best>=0&&bestD<90){
+    const rl=cbRulers[best];
+    cbDrag={idx:best,type:rl.type,sx:ptr.x,sy:ptr.y,ox:rl.x,oy:rl.y,angle:rl.angle,glow:false,
+            startMX:ptr.x,startMY:ptr.y,rotating:false};
+    e.preventDefault();
+  }
+}
+function onCbMove(e){
+  if(!cbDrag)return;e.preventDefault();
+  const ptr=getPtr(e);
+  // right-click drag or long-press = rotate (detected by button===2 stored on down)
+  if(cbDrag.rotating){
+    const da=(ptr.x-cbDrag.startMX)*0.02;
+    cbDrag.angle=cbDrag.origAngle+da;
+    cbRulers[cbDrag.idx].angle=cbDrag.angle;
+  }else{
+    const dx=ptr.x-cbDrag.startMX,dy=ptr.y-cbDrag.startMY;
+    cbDrag.sx=ptr.x;cbDrag.sy=ptr.y;
+    const cv=$('comboCanvas'),r=cv.getBoundingClientRect();
+    const newX=cbDrag.ox+dx*(cv.width/r.width),newY=cbDrag.oy+dy*(cv.height/r.height);
+    cbRulers[cbDrag.idx].x=newX;cbRulers[cbDrag.idx].y=newY;
+  }
+  renderCombo();renderDragOverlay();
+}
+function onCbUp(e){if(!cbDrag)return;cbDrag=null;renderCombo();renderDragOverlay();}
+
+// Right-click on puzzle canvas to rotate ruler while dragging
+document.addEventListener('contextmenu',e=>{
+  if(pzDrag){pzDragAngle+=Math.PI/12;renderDragOverlay();e.preventDefault();}
+  else if($('comboStage').style.display!=='none'){
+    const ptr={x:e.clientX,y:e.clientY};
+    const cv=$('comboCanvas'),r=cv.getBoundingClientRect();
+    const lx=(ptr.x-r.left)*(cv.width/r.width),ly=(ptr.y-r.top)*(cv.height/r.height);
+    let best=-1,bestD=999;
+    cbRulers.forEach((rl,i)=>{const d=Math.sqrt((lx-rl.x)**2+(ly-rl.y)**2);if(d<bestD){bestD=d;best=i;}});
+    if(best>=0&&bestD<90){cbRulers[best].angle+=Math.PI/12;renderCombo();}
+    e.preventDefault();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// STAGE 3 ── かんがえよう
+// ═══════════════════════════════════════════════════════════════
+// Two types: 'subtract' (引き算) and 'estimate' (見当)
+const TH_QUESTIONS=[
+  // ── 引き算問題 ──
+  {type:'subtract',q:'２まいの 三角定規を　かさねたよ。\nはみだした　部分（？）は　なんどかな？',
+   answer:15, tolerance:2,
+   draw:(ctx,W,H)=>drawSub(ctx,W,H,45,30)},
+  {type:'subtract',q:'大きい かどから　小さい かどを　ひくと？',
+   answer:30, tolerance:2,
+   draw:(ctx,W,H)=>drawSub(ctx,W,H,60,30)},
+  {type:'subtract',q:'90°から　45°を　ひいた　かどは？',
+   answer:45, tolerance:2,
+   draw:(ctx,W,H)=>drawSub(ctx,W,H,90,45)},
+  {type:'subtract',q:'60°の　外に　のこった　かどは？',
+   answer:30, tolerance:2,
+   draw:(ctx,W,H)=>drawSub(ctx,W,H,90,60)},
+  // ── 見当問題 ──
+  {type:'estimate',q:'この かどは　だいたい　なんどかな？',
+   answer:75, tolerance:10,
+   draw:(ctx,W,H)=>drawEstimate(ctx,W,H,75,'やや鋭い角')},
+  {type:'estimate',q:'この かどは　だいたい　なんどかな？',
+   answer:120, tolerance:10,
+   draw:(ctx,W,H)=>drawEstimate(ctx,W,H,120,'鈍角')},
+  {type:'estimate',q:'この かどは　だいたい　なんどかな？',
+   answer:150, tolerance:10,
+   draw:(ctx,W,H)=>drawEstimate(ctx,W,H,150,'かなり広い角')},
+  {type:'estimate',q:'この かどは　だいたい　なんどかな？',
+   answer:105, tolerance:10,
+   draw:(ctx,W,H)=>drawEstimate(ctx,W,H,105,'少し鈍角')},
+  {type:'estimate',q:'この かどは　だいたい　なんどかな？',
+   answer:135, tolerance:10,
+   draw:(ctx,W,H)=>drawEstimate(ctx,W,H,135,'鈍角')},
+  {type:'estimate',q:'この かどは　だいたい　なんどかな？',
+   answer:30, tolerance:8,
+   draw:(ctx,W,H)=>drawEstimate(ctx,W,H,30,'鋭い角')},
+];
+
+function drawSub(ctx,W,H,bigDeg,smallDeg){
+  ctx.fillStyle='#0d2018';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(255,255,255,.04)';
+  for(let x=20;x<W;x+=26)for(let y=20;y<H;y+=26){ctx.beginPath();ctx.arc(x,y,1.2,0,Math.PI*2);ctx.fill();}
+  const ox=W*.18,oy=H*.82,r1=130,r2=120;
+  // big fan (bottom ruler angle)
+  ctx.save();
+  ctx.beginPath();ctx.moveTo(ox,oy);ctx.arc(ox,oy,r1,-Math.PI/2,-Math.PI/2+bigDeg*Math.PI/180);ctx.closePath();
+  ctx.fillStyle='rgba(74,144,217,.3)';ctx.fill();ctx.strokeStyle='#4a90d9';ctx.lineWidth=3;ctx.stroke();
+  ctx.restore();
+  // small fan (overlapping)
+  ctx.save();
+  ctx.beginPath();ctx.moveTo(ox,oy);ctx.arc(ox,oy,r2,-Math.PI/2,-Math.PI/2+smallDeg*Math.PI/180);ctx.closePath();
+  ctx.fillStyle='rgba(232,115,58,.4)';ctx.fill();ctx.strokeStyle='#e8733a';ctx.lineWidth=3;ctx.stroke();
+  ctx.restore();
+  // labels
+  ctx.font='bold 14px Nunito,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  const a1=-Math.PI/2+smallDeg*Math.PI/180/2;
+  ctx.fillStyle='#e8733a';ctx.fillText(smallDeg+'°',ox+60*Math.cos(a1),oy+60*Math.sin(a1));
+  const a2=-Math.PI/2+(smallDeg+(bigDeg-smallDeg)/2)*Math.PI/180;
+  ctx.fillStyle='#f5c842';ctx.font='bold 16px Nunito,sans-serif';
+  ctx.fillText('？°',ox+90*Math.cos(a2),oy+90*Math.sin(a2));
+  // big angle label
+  const a3=-Math.PI/2+bigDeg*Math.PI/180+0.25;
+  ctx.fillStyle='#4a90d9';ctx.font='bold 13px Nunito,sans-serif';
+  ctx.fillText(bigDeg+'°',ox+110*Math.cos(-Math.PI/2+bigDeg*Math.PI/180/2),oy+110*Math.sin(-Math.PI/2+bigDeg*Math.PI/180/2));
+  // hint: triangle ruler icon tiny
+  ctx.fillStyle='rgba(255,255,255,.3)';ctx.font='20px serif';ctx.fillText('📐',ox+r1*.6*Math.cos(-Math.PI/2+bigDeg*Math.PI/180+.15),oy+r1*.6*Math.sin(-Math.PI/2+bigDeg*Math.PI/180+.15));
+}
+
+function drawEstimate(ctx,W,H,deg,label){
+  ctx.fillStyle='#0d2018';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(255,255,255,.04)';
+  for(let x=20;x<W;x+=26)for(let y=20;y<H;y+=26){ctx.beginPath();ctx.arc(x,y,1.2,0,Math.PI*2);ctx.fill();}
+  const ox=W*.2,oy=H*.78,r=120;
+  const radDeg=deg*Math.PI/180;
+  // Fan
+  ctx.save();
+  ctx.beginPath();ctx.moveTo(ox,oy);ctx.arc(ox,oy,r,-Math.PI/2,-Math.PI/2+radDeg);ctx.closePath();
+  ctx.fillStyle='rgba(123,94,167,.25)';ctx.fill();
+  // Two arms
+  ctx.strokeStyle='white';ctx.lineWidth=4;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(ox,oy);ctx.lineTo(ox,oy-r);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(ox,oy);ctx.lineTo(ox+r*Math.cos(-Math.PI/2+radDeg),oy+r*Math.sin(-Math.PI/2+radDeg));ctx.stroke();
+  // arc
+  ctx.beginPath();ctx.arc(ox,oy,45,-Math.PI/2,-Math.PI/2+radDeg);ctx.strokeStyle='#f5c842';ctx.lineWidth=3;ctx.stroke();
+  ctx.restore();
+  // question mark at mid
+  const mid=-Math.PI/2+radDeg/2;
+  ctx.font='bold 20px Nunito,sans-serif';ctx.fillStyle='#f5c842';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('？',ox+68*Math.cos(mid),oy+68*Math.sin(mid));
+  // hint label
+  ctx.font='12px Nunito,sans-serif';ctx.fillStyle='rgba(255,255,255,.4)';
+  ctx.fillText('（'+label+'）',W*.65,H*.3);
+}
+
+let thOrder=[],thIndex=0;
+const TH_TOTAL=8;
+
+function shuffleTH(){
+  thOrder=[...Array(TH_QUESTIONS.length).keys()];
+  for(let i=thOrder.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[thOrder[i],thOrder[j]]=[thOrder[j],thOrder[i]];}
+}
+
+function initThink(){shuffleTH();thIndex=0;loadThink();
+  $('thinkSubmit').addEventListener('click',submitThink);
+  $('thinkInput').addEventListener('keydown',e=>{if(e.key==='Enter')submitThink();});
+  $('thinkNextBtn').addEventListener('click',nextThink);
+}
+
+function loadThink(){
+  if(thIndex>=TH_TOTAL){thIndex=0;shuffleTH();}
+  makeDots('thinkDots',TH_TOTAL,thIndex);
+  const q=TH_QUESTIONS[thOrder[thIndex%thOrder.length]];
+  if($('thinkTypeLabel'))$('thinkTypeLabel').textContent=q.type==='subtract'?'ひきざん もんだい':'みとう もんだい';
+  if($('thinkHeaderSub'))$('thinkHeaderSub').textContent=q.type==='subtract'?'かさねた 三角定規の　はみだした 部分は　なんどかな？':'この かどは　だいたい　なんどかな？';
+  if($('owlText'))$('owlText').textContent=q.type==='subtract'?'大きい かどから 小さい かどを ひいて みよう！':'三角定規の かどと くらべて かんがえよう！';
+  $('thinkQuestion').textContent=q.q;
+  $('thinkFeedback').textContent='';
+  $('thinkInput').value='';
+  hideEl('thinkNextBtn');
+  $('thinkSubmit').disabled=false;
+  const cv=$('thinkCanvas'),ctx=cv.getContext('2d');
+  q.draw(ctx,cv.width,cv.height);
+}
+
+function submitThink(){
+  const q=TH_QUESTIONS[thOrder[thIndex%thOrder.length]];
+  const val=parseInt($('thinkInput').value);
+  if(isNaN(val)){$('thinkFeedback').textContent='すうじを　いれてね！';return;}
+  $('thinkSubmit').disabled=true;
+  const ok=Math.abs(val-q.answer)<=q.tolerance;
+  if(ok){
+    $('thinkFeedback').textContent=`⭐ せいかい！ こたえは ${q.answer}° だよ！`;
+    $('thinkFeedback').style.color='#5bbd6e';
+    fireConfetti();addScore(10);
+  }else{
+    $('thinkFeedback').textContent=`ざんねん… こたえは ${q.answer}° だったよ！`;
+    $('thinkFeedback').style.color='#e04b5a';
+  }
+  showEl('thinkNextBtn','inline-block');
+}
+function nextThink(){thIndex++;loadThink();}
+
+// ═══════════════════════════════════════════════
+// GLOBAL POINTER EVENTS
+// ═══════════════════════════════════════════════
+document.addEventListener('mousedown',e=>{onPzDown(e);onCbDown(e);});
+document.addEventListener('mousemove',e=>{onPzMove(e);onCbMove(e);});
+document.addEventListener('mouseup',e=>{onPzUp(e);onCbUp(e);});
+document.addEventListener('touchstart',e=>{onPzDown(e);onCbDown(e);},{passive:false});
+document.addEventListener('touchmove',e=>{onPzMove(e);onCbMove(e);},{passive:false});
+document.addEventListener('touchend',e=>{onPzUp(e);onCbUp(e);});
+window.addEventListener('resize',()=>{renderDragOverlay();});
+</script>
+</body>
+</html>
