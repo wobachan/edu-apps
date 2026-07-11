@@ -942,7 +942,37 @@ function goto_effects(dt){
 //  DRAW HELPERS
 // ════════════════════════════════════════════
 function RR(x,y,w,h,r=8){ cx.beginPath(); cx.roundRect(x,y,w,h,r); }
+function _fontSizePx(font){
+  const m=String(font).match(/(\d+(?:\.\d+)?)px/);
+  return m ? Number(m[1]) : 24;
+}
+function _drawSingleStoreyA(x,y,font,col,align='center',base='middle'){
+  const size=_fontSizePx(font);
+  const oldLineWidth=cx.lineWidth, oldLineCap=cx.lineCap, oldLineJoin=cx.lineJoin;
+  const oldStrokeStyle=cx.strokeStyle;
+  let dx=0, dy=0;
+  if(align==='left') dx=size*.32;
+  else if(align==='right') dx=-size*.32;
+  if(base==='top') dy=size*.5;
+  else if(base==='bottom'||base==='alphabetic') dy=-size*.28;
+  cx.save();
+  cx.translate(x+dx,y+dy);
+  cx.strokeStyle=col;
+  cx.lineWidth=Math.max(2,size*.12);
+  cx.lineCap='round';
+  cx.lineJoin='round';
+  cx.beginPath();
+  cx.ellipse(-size*.07,0,size*.27,size*.31,-0.18,0,Math.PI*2);
+  cx.stroke();
+  cx.beginPath();
+  cx.moveTo(size*.17,-size*.18);
+  cx.quadraticCurveTo(size*.34,-size*.02,size*.22,size*.33);
+  cx.stroke();
+  cx.restore();
+  cx.lineWidth=oldLineWidth; cx.lineCap=oldLineCap; cx.lineJoin=oldLineJoin; cx.strokeStyle=oldStrokeStyle;
+}
 function T(s,x,y,font,col,align='center',base='middle'){
+  if(s==='a'||s==='ɑ'){ _drawSingleStoreyA(x,y,font,col,align,base); return; }
   cx.font=font; cx.fillStyle=col; cx.textAlign=align; cx.textBaseline=base; cx.fillText(s,x,y);
 }
 function SH(col,blur){ cx.shadowColor=col; cx.shadowBlur=blur; }
