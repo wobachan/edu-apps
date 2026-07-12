@@ -947,29 +947,30 @@ function _fontSizePx(font){
   return m ? Number(m[1]) : 24;
 }
 function _drawSingleStoreyA(x,y,font,col,align='center',base='middle'){
-  const size=_fontSizePx(font);
-  const oldLineWidth=cx.lineWidth, oldLineCap=cx.lineCap, oldLineJoin=cx.lineJoin;
-  const oldStrokeStyle=cx.strokeStyle;
+  const fontSize=_fontSizePx(font);
+  const size=fontSize*.7;
   let dx=0, dy=0;
-  if(align==='left') dx=size*.32;
-  else if(align==='right') dx=-size*.32;
-  if(base==='top') dy=size*.5;
-  else if(base==='bottom'||base==='alphabetic') dy=-size*.28;
+  if(align==='left') dx=fontSize*.38;
+  else if(align==='right') dx=-fontSize*.38;
+  if(base==='top') dy=fontSize*.5;
+  else if(base==='bottom'||base==='alphabetic') dy=-fontSize*.28;
+
   cx.save();
   cx.translate(x+dx,y+dy);
-  cx.strokeStyle=col;
-  cx.lineWidth=Math.max(2,size*.12);
-  cx.lineCap='round';
-  cx.lineJoin='round';
+  cx.fillStyle=col;
+
+  const outerW=size*.74, outerH=size*.88;
+  const innerW=size*.44, innerH=size*.60;
+  const stemW=size*.14, stemH=size*.86;
+  const stemX=size*.22, stemY=-stemH/2;
+
   cx.beginPath();
-  cx.ellipse(-size*.07,0,size*.27,size*.31,-0.18,0,Math.PI*2);
-  cx.stroke();
-  cx.beginPath();
-  cx.moveTo(size*.17,-size*.18);
-  cx.quadraticCurveTo(size*.34,-size*.02,size*.22,size*.33);
-  cx.stroke();
+  cx.ellipse(-size*.10,0,outerW/2,outerH/2,-0.06,0,Math.PI*2);
+  cx.roundRect(stemX,stemY,stemW,stemH,stemW*.45);
+  cx.ellipse(-size*.10,size*.03,innerW/2,innerH/2,-0.06,0,Math.PI*2);
+  cx.fill('evenodd');
+
   cx.restore();
-  cx.lineWidth=oldLineWidth; cx.lineCap=oldLineCap; cx.lineJoin=oldLineJoin; cx.strokeStyle=oldStrokeStyle;
 }
 function T(s,x,y,font,col,align='center',base='middle'){
   if(s==='a'||s==='ɑ'){ _drawSingleStoreyA(x,y,font,col,align,base); return; }
