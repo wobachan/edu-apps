@@ -1,0 +1,1691 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>マジマジ！ローマ字マシーン</title>
+<style>
+  :root{ --ink:#1a1a1a; --navy:#1b3a5b; --brown:#5b4636; --line:#d8d2c7; --paper:#fff; --glass:#f7f9fb;
+    --hot:#a4542a;   /* 特別につかう文字（h・n）*/
+    /* 国語教科書に近い UD書体 */
+    --ud:"UD デジタル 教科書体 NK-R","UD Digi Kyokasho NK-R","BIZ UDPGothic","BIZ UDGothic",
+         "Yu Gothic UI","Hiragino Kaku Gothic ProN",sans-serif; }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{background:var(--paper);color:var(--ink);display:flex;justify-content:center;font-family:var(--ud)}
+  #app{width:100%;max-width:1100px;height:100vh;display:flex;flex-direction:column;padding:0 12px 10px}
+  /* 横向き（Landscape）を標準に。たて画面では 案内を出す */
+  #rotate{position:fixed;inset:0;z-index:300;background:#fff;display:none;
+    flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;
+    color:var(--navy);font-weight:800;line-height:1.6}
+  #rotate .ic{font-size:64px;animation:tilt 1.6s ease-in-out infinite}
+  #rotate .tx{font-size:24px}#rotate .sub{font-size:13px;color:var(--brown);font-weight:600}
+  @keyframes tilt{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(78deg)}}
+  @media (orientation:portrait){ #rotate{display:flex} #app{display:none} }
+  .mono{font-family:var(--ud)}
+  button{font-family:inherit;cursor:pointer}
+  .hidden{display:none!important}
+
+  #title{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:4px}
+  #title .titleAnim{width:100%;max-width:760px;margin-bottom:10px}
+  #title .titleAnim svg{width:100%;height:auto;display:block}
+  #title .logo{font-size:30px;font-weight:800;line-height:1.35}
+  #title .logo .b{color:var(--navy)}
+  #title .copy{font-size:14px;color:var(--brown);margin-top:6px;line-height:1.9}
+  #title .ref{font-size:12px;color:#8a8478;margin-top:18px}
+  #title .ref .devMsg{color:#2e9e5b;font-weight:800}
+  #devUnlock{cursor:default;user-select:none}
+  #title .ref a{color:var(--navy);text-decoration:underline}
+  #title .lead{font-size:13px;color:#6b6459;margin-top:14px;line-height:1.9;max-width:500px}
+  .start{margin-top:18px;border:2px solid var(--navy);background:#fff;color:var(--navy);
+    font-size:18px;font-weight:800;padding:12px 30px;border-radius:10px}
+  .start:active{background:var(--navy);color:#fff}
+  #factories{display:flex;flex-wrap:wrap;gap:26px;justify-content:center;margin-top:26px}
+  .gear{display:flex;flex-direction:column;align-items:center;gap:8px;border:none;background:transparent;padding:0;cursor:pointer;width:150px}
+  .gear .cogwrap{position:relative;width:120px;height:120px}
+  .gear svg{display:block;width:100%;height:100%;filter:drop-shadow(0 2px 3px rgba(0,0,0,.18))}
+  .gear .cog{fill:#fff;stroke:var(--navy);stroke-width:3;transition:transform .5s ease;transform-origin:70px 70px}
+  .gear:hover .cog{transform:rotate(30deg)}
+  .gear .fx{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-family:var(--ud);font-size:26px;font-weight:800;color:var(--navy);letter-spacing:1px;pointer-events:none}
+  .gear .fn{font-size:15px;font-weight:800;color:var(--navy);line-height:1.3;text-align:center}
+  .gear .fs{font-size:11px;color:var(--brown)}
+  .gear:active .cog{fill:#eef2f6}
+  .gear .flock{display:none;font-size:10px;font-weight:800;color:#b23b3b;margin-top:4px;line-height:1.3}
+  .gear.locked .flock{display:block}
+  .gear.locked{opacity:.6;cursor:not-allowed}
+  .gear.locked .cog{fill:#f0eee9;stroke:#b0b6bd}
+  .gear.locked:hover .cog{transform:none}
+
+  #chapters .head{display:flex;align-items:center;justify-content:space-between;padding:14px 2px 8px;border-bottom:2px solid var(--ink)}
+  #chapters .headL{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  #chapters .factoryLabel{font-size:22px;font-weight:800;color:#fff;background:var(--navy);padding:5px 14px;border-radius:10px;letter-spacing:.02em}
+  #chapters .head .ttl{font-size:16px;font-weight:800;color:var(--brown)}
+  #chapters .head .ttl rt{font-size:9px;font-weight:600;color:var(--brown)}
+  .chap{border:1px solid var(--line);border-radius:10px;margin-top:10px;overflow:hidden}
+  .chap .bar{display:flex;align-items:center;gap:10px;padding:11px 13px;background:#fbfaf7}
+  .chap .no{font-family:var(--ud);font-weight:800;color:var(--navy);font-size:13px;min-width:42px}
+  .chap .name{font-weight:800;font-size:15px}
+  .chap .learn{font-size:11px;color:var(--brown)}
+  .chap .mach{font-size:11px;color:var(--navy);margin-top:2px}
+  .chap .lock{margin-left:auto;font-size:11px;color:#a99}
+  .chap.locked{opacity:.45}
+  .series{display:flex;flex-wrap:wrap;gap:7px;padding:9px 13px 13px;border-top:1px dashed var(--line)}
+  .sbtn{display:flex;align-items:center;gap:6px;border:1px solid var(--navy);background:#fff;
+    border-radius:8px;padding:6px 10px;font-size:13px;font-weight:700}
+  .sbtn .st{font-family:var(--ud);font-size:11px;color:var(--brown)}
+  .sbtn:active{background:#eef2f6}
+  .backbtn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 11px;font-size:12px}
+
+  #play{flex:1;display:flex;flex-direction:column;gap:5px}
+  .topbar{display:flex;align-items:center;gap:9px;font-size:12px;padding:8px 2px;border-bottom:1px solid var(--line)}
+  .topbar .c1{font-weight:800;color:var(--navy)}
+  .topbar .c2{color:var(--brown)}
+  .topbar .lives{font-size:13px;letter-spacing:1px}
+  .topbar .sc{margin-left:auto;font-weight:800}
+  .iconbtn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:5px 9px;font-size:12px}
+
+  .machine{position:relative;border:1px solid var(--line);border-radius:12px;background:var(--glass);
+    overflow:hidden;flex:1 1 auto;min-height:0}
+  .machine svg{display:block;width:100%;height:100%}
+
+  .qcard{text-align:center;flex:0 0 auto}
+  .qcard .sname{font-size:11px;color:var(--brown)}
+  .qcard .kana{font-size:clamp(22px,4.2vh,32px);font-weight:800;letter-spacing:.06em;line-height:1.15}
+  .answer{display:flex;flex-direction:column;align-items:center;gap:2px;flex:0 0 auto}
+  #inp{font-family:var(--ud);font-size:clamp(16px,3vh,21px);font-weight:700;letter-spacing:4px;text-align:center;
+    width:min(94%,420px);padding:1px;border:0;border-bottom:3px solid var(--navy);color:var(--navy);
+    background:transparent;outline:none;caret-color:transparent}
+  #inp.bad{border-bottom-color:#b23b3b;color:#b23b3b;animation:shake .3s}
+  #inp.good{border-bottom-color:#2e7d4f;color:#2e7d4f}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  .msg{height:18px;font-size:13px;font-weight:700}
+  .msg.ok{color:#2e7d4f}.msg.ng{color:#b23b3b}
+  .hint{height:16px;font-size:12px;color:var(--brown)}
+
+  .kb{flex:0 0 auto}
+  .kb .row{display:flex;justify-content:center;gap:4px;margin-bottom:4px;flex-wrap:wrap}
+  .key{width:clamp(34px,5.6vh,44px);height:clamp(28px,4.6vh,34px);border:1px solid var(--line);
+    background:#fff;border-radius:7px;font-family:var(--ud);font-size:clamp(14px,2.6vh,17px);font-weight:700}
+  .key.vw{border-color:var(--navy);color:var(--navy)}
+  .key.cn{border-color:var(--brown);color:var(--brown)}
+  .key.sp{border-color:var(--hot);color:var(--hot);border-width:2px}   /* h・n は特別 */
+  .key.duo{width:clamp(50px,8vh,64px);border-color:var(--hot);color:var(--hot);border-width:2px}
+  .key:active{background:#eef2f6}
+  .key.wide{width:clamp(78px,13vh,100px);font-size:clamp(11px,2.2vh,13px);font-weight:800}
+  .key.go{border-color:var(--navy);color:var(--navy)}
+  .key.del{border-color:var(--brown);color:var(--brown)}
+  .key.shift{border-color:var(--hot);color:var(--hot);border-width:2px}
+  .key.shift.on{background:var(--hot);color:#fff}
+
+
+  #done{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:9px}
+  #done .big{font-size:22px;font-weight:800;color:var(--navy)}
+  #done .newm{font-size:15px;font-weight:800;color:var(--brown)}
+  #done .row2{display:flex;gap:10px;margin-top:6px}
+
+  #gameover{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:10px}
+  #gameover .goicon{font-size:44px;animation:shake .5s}
+  #gameover .big{font-size:26px;font-weight:800}
+  #gameover .gosub{font-size:14px;color:var(--brown)}
+  #gameover .row2{display:flex;gap:10px;margin-top:10px}
+
+  .zbtn{margin-top:16px;border:2px solid var(--brown);background:#fff;color:var(--brown);
+    font-size:16px;font-weight:800;padding:10px 22px;border-radius:10px;cursor:pointer}
+  .zbtn span{font-size:11px;font-weight:600;color:#8a8478}
+  .zbtn:active{background:#f3efe7}
+  #zukan{flex:1;display:flex;flex-direction:column;min-height:0}
+  #zukan .head{display:flex;align-items:flex-start;justify-content:space-between;padding:12px 2px 8px;border-bottom:2px solid var(--ink)}
+  #zukan .ttl{font-size:19px;font-weight:800}
+  #zukan .zsub{font-size:11px;color:var(--brown);margin-top:3px;max-width:640px;line-height:1.6}
+  #zukan .zcount{font-size:13px;font-weight:800;color:#fff;background:var(--brown);padding:3px 10px;border-radius:20px;vertical-align:middle;margin-left:6px}
+  .zempty{grid-column:1/-1;text-align:center;color:var(--brown);font-size:15px;font-weight:700;line-height:2;padding:48px 16px}
+  .zbtn.nbtn{border-color:#2e9e5b;color:#217a45}
+  .zbtn.nbtn span{color:#2e9e5b}
+  .zbtn.nbtn:active{background:#eef7f0}
+  #nobishiro{flex:1;display:flex;flex-direction:column;min-height:0}
+  #nobishiro .head{display:flex;align-items:flex-start;justify-content:space-between;padding:12px 2px 8px;border-bottom:2px solid var(--ink)}
+  #nobishiro .ttl{font-size:19px;font-weight:800}
+  #nobiList{overflow-y:auto;padding:14px 2px 24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));grid-auto-rows:max-content;align-content:start;gap:12px}
+  .nobiEmpty{grid-column:1/-1;text-align:center;color:var(--brown);font-size:15px;font-weight:700;line-height:2;padding:48px 16px}
+  .nobiCard{border:2px solid var(--line);border-radius:12px;background:#fff;padding:12px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:7px;transition:box-shadow .15s}
+  .nobiCard:active{background:#f7f9fb}
+  .nobiCard.glow{border-color:#e6b800;box-shadow:0 0 0 4px #fff3bf, 0 0 14px #ffe680;background:#fffdf2}
+  .nobiCard .nobiKana{font-size:17px;font-weight:800;color:var(--ink)}
+  .nobiCard .nobiBlocks{display:flex;flex-wrap:wrap;gap:3px;justify-content:center}
+  .nobiCard .nobiBlk{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;font-family:var(--ud);font-size:14px;font-weight:800;color:var(--navy);background:#edf1f6;border:1.5px solid var(--navy);border-radius:3px}
+  .nobiCard.glow .nobiBlk{background:#fff3bf;border-color:#e6b800}
+  .nobiCard .nobiFac{font-size:10px;color:var(--brown)}
+  #zukanList{overflow-y:auto;padding:12px 2px 24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));grid-auto-rows:max-content;align-content:start;gap:14px}
+  .zcard{border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden;display:flex;flex-direction:column}
+  .zcard .zhead{background:#1b3a5b;color:#fff;padding:8px 12px}
+  .zcard .zformal{font-size:15px;font-weight:800;line-height:1.3}
+  .zcard .zshort{font-size:10px;color:#bcd0e4;margin-top:2px}
+  .zcard .zbody{display:flex;gap:10px;padding:11px 12px}
+  .zcard .zdiag{flex:0 0 132px;width:132px;height:168px;border:1px solid var(--line);border-radius:8px;background:var(--glass)}
+  .zcard .zdiag svg{display:block;width:100%;height:100%}
+  .zcard .zright{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+  .zcard .zlabel{font-size:10px;font-weight:800;color:var(--brown);letter-spacing:.04em}
+  .zcard .zuses{display:flex;flex-wrap:wrap;gap:8px}
+  .zcard .zuse{display:flex;flex-direction:column;align-items:center;font-size:9px;color:var(--ink);width:42px;text-align:center;line-height:1.2}
+  .zcard .zuse .em{font-size:22px}
+  .zcard .zrole{font-size:12px;color:var(--ink);line-height:1.55;background:#faf7f1;border-left:3px solid var(--brown);padding:6px 8px;border-radius:0 6px 6px 0}
+  .zcard .zrole b{color:var(--navy)}
+</style>
+
+<div id="errbar" style="display:none;position:fixed;left:0;right:0;top:0;z-index:99;background:#b23b3b;color:#fff;
+  font:13px/1.5 monospace;padding:8px 12px;white-space:pre-wrap"></div>
+<script>
+  window.onerror=function(m,s,l){var b=document.getElementById('errbar');
+    if(b){b.style.display='block';b.textContent='エラー: '+m+'  ('+l+'行目 付近)';}};
+</script>
+
+<div id="rotate">
+  <div class="ic">📱↻</div>
+  <div class="tx">よこむきに してね</div>
+  <div class="sub">この工場は よこながで あそぶよ</div>
+</div>
+
+<div id="app">
+
+  <section id="title">
+    <div id="titleAnim" class="titleAnim"><svg viewBox="0 0 760 150" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"><g id="titleAnimG"></g></svg></div>
+    <div class="logo">マジマジ！<br><span class="b">ローマ字マシーン</span></div>
+    <div class="copy">巨大からくり工場へ ようこそ。<br>令和７年に 新しくなった ローマ字のつづり方を 学ぶよ。<br>工場を えらぼう。</div>
+    <div id="factories"></div>
+    <button class="zbtn" id="btnZukan">🔧 マシーン図鑑 <span>〜 動く仕組みを マジマジ観察 〜</span></button>
+    <button class="zbtn nbtn" id="btnNobishiro">🌱 まちがいは宝物！のびしろリスト <span id="titleNobiCount"></span></button>
+    <div class="ref"><span id="devUnlock">参考</span>：<a href="https://www.bunka.go.jp/kokugo_nihongo/sisaku/joho/joho/kijun/naikaku/roma/index2.html" target="_blank" rel="noopener">文化庁「ローマ字のつづり方」（令和７年内閣告示第４号）</a><span id="devMsg" class="devMsg"></span></div>
+  </section>
+
+  <section id="chapters" class="hidden">
+    <div class="head"><div class="headL"><span class="factoryLabel" id="chapFactory"></span><span class="ttl"><ruby>章<rt>しょう</rt></ruby>を えらぶ</span></div><button class="backbtn" id="btnTitle">タイトル</button></div>
+    <div id="chapList"></div>
+  </section>
+
+  <section id="play" class="hidden">
+    <div class="topbar">
+      <span class="c1" id="pChap"></span><span class="c2" id="pStage"></span>
+      <span class="c2" id="pQn"></span><span class="lives" id="pLives"></span>
+      <button class="iconbtn" id="btnSound">🔊</button>
+      <button class="backbtn" id="btnQuit">やめる</button>
+    </div>
+
+    <div class="machine">
+      <svg id="mc" viewBox="0 0 960 390" aria-label="ローマ字工場">
+        <defs>
+          <linearGradient id="gGlass" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#fff" stop-opacity=".95"/>
+            <stop offset="1" stop-color="#eef2f6" stop-opacity=".5"/>
+          </linearGradient>
+        </defs>
+        <rect x="4" y="4" width="852" height="588" rx="14" fill="url(#gGlass)" stroke="#b9c4d0" stroke-width="2"/>
+
+        <g id="vowels"></g>
+        <g id="rail"></g>
+        <g id="specials"></g>
+        <g id="consonants"></g>
+        <g id="blocks"></g>
+      </svg>
+    </div>
+
+    <div class="qcard">
+      <div class="sname" id="qSeries"></div>
+      <div class="kana" id="qKana"></div>
+    </div>
+
+    <div class="answer">
+      <input id="inp" class="mono" readonly inputmode="none" autocomplete="off" spellcheck="false" placeholder="…">
+      <div class="msg" id="msg"></div>
+      <div class="hint" id="hint"></div>
+    </div>
+
+    <div class="kb" id="kb"></div>
+  </section>
+
+  <section id="gameover" class="hidden">
+    <div class="goicon">💥🔧💥</div>
+    <div class="big" id="goBig">マシーンが こわれた</div>
+    <div class="gosub">ライフ（❤×3）が なくなった…</div>
+    <div class="row2">
+      <button class="sbtn" id="goRetry">もういちど</button>
+      <button class="backbtn" id="goChapters">章をえらぶ</button>
+    </div>
+  </section>
+
+  <section id="done" class="hidden">
+    <div class="big" id="doneBig">こうじょうが 大きくなった！</div>
+    <div class="newm" id="doneNew"></div>
+    <div id="doneScore"></div>
+    <div class="row2">
+      <button class="sbtn" id="nextBtn">つぎへ</button>
+      <button class="backbtn" id="btnToChapters">章をえらぶ</button>
+    </div>
+  </section>
+
+  <section id="zukan" class="hidden">
+    <div class="head">
+      <div><div class="ttl">🔧 マシーン図鑑 <span id="zukanCount" class="zcount"></span></div><div class="zsub">ゲームの きかいは、ぜんぶ 本物の しくみが モデルだよ。工場で 出会うと ふえていくよ。動く しくみを マジマジ 観察しよう！</div></div>
+      <button class="backbtn" id="btnZukanBack">タイトル</button>
+    </div>
+    <div id="zukanList"></div>
+  </section>
+
+  <section id="nobishiro" class="hidden">
+    <div class="head">
+      <div><div class="ttl">🌱 まちがいは宝物！のびしろリスト <span id="nobiCount" class="zcount"></span></div></div>
+      <button class="backbtn" id="btnNobiBack">タイトル</button>
+    </div>
+    <div id="nobiList"></div>
+  </section>
+</div>
+
+<script>
+/* ============================================================
+   マジマジ！ローマ字マシーン  Ver.2.0「巨大からくり工場」
+   令和7年内閣告示「ローマ字のつづり方」準拠
+   ・母音＝精密な脱進機（1個だけ取り出す・歯車を見せない）
+   ・子音＝大型搬送機械（地面から 高いレールまで 運び上げる）
+   ・待機中は 止まっている。押した装置だけが 動く
+   ============================================================ */
+
+/* RAW:BEGIN  ← ここから下は「出題データ_マジでローマ字.xlsx」から自動生成されます。
+   直接書きかえず、Excelを直してから「Excelからゲームを更新.py」を実行してください。 */
+const RAW = [
+  { title:"ローマ字デビュー", learn:"せいおん・だくおん（あ行〜ぱ行）", mach:"ホッパー・ストッパー・ベルト・搬送きかい",
+    allow:{choon:false,hatsuon:true,youon:false,sokuon:false,apos:false},
+    series:[
+      {em:"🌊", name:"あおい世界", q:["あいうえお", "あ", "うえ", "あおい", "いえ", "あおい", "えい", "あおいえい", "あう", "おえ", "おう"]},
+      {em:"🌿", name:"こけがすき？", q:["かきくけこ", "さしすせそ", "かきすき", "こけすき", "しそすき", "すいかすき", "さけすき", "しかすき", "うきうき"]},
+      {em:"👻", name:"こわい話①", q:["かさかさ", "こそこそ", "ききき", "けけけ", "くすくす", "せき", "かお", "あし"]},
+      {em:"🩸", name:"こわい話②", q:["たちつてと", "なにぬねの", "ち", "てかてか", "あつい", "とけた", "ぬけた", "すね", "かかと", "くち", "おと", "のそのそ", "なになに", "ねこかな", "なかない"]},
+      {em:"🕯️", name:"こわい話③", q:["はひふへほ", "まみむめも", "ひえ", "また", "みて", "むむむ", "め", "もも", "ひひひ", "ふふふ", "へへへ", "ほほほ", "はへはへ"]},
+      {em:"🙋", name:"わたしは…", q:["やゆよ", "らりるれろ", "わを", "こわい", "しかし", "よし", "いくよ", "やるよ", "あきらめない", "それゆけ", "はしれ", "ゆりな", "あれ", "ママ", "ははは", "わいわい", "ららら", "るるる", "おわり"]},
+      {em:"🤢", name:"ぐあいが・・・", q:["がぎぐげご", "ざじずぜぞ", "がんがん", "ぐらぐら", "じんじん", "ぜんぜん", "だめだわ", "かぜだな", "だんだん", "げろげろ"]},
+      {em:"🏷️", name:"シール？", q:["だぢづでど", "ばびぶべぼ", "ぱぴぷぺぽ", "ぼんぼん", "ぷくぷく", "ぷにぷに", "ぱんぱん", "ふくらんだ", "ぷりくら", "ぺらんぺらん"]},
+    ]},
+
+  { title:"はねる音", learn:"はつおん「ん」＝ n（いつも n）", mach:"ラチェット（カチカチ！）",
+    allow:{choon:false,hatsuon:true,youon:false,sokuon:false,apos:false},
+    series:[
+      {em:"🎒", name:"遠足だ！", q:["えんそく", "みんなで", "ならんで", "のりこんで", "がたんごとん", "どんどん", "すすんで", "たんけんだ"]},
+      {em:"🔨", name:"大工さん", q:["がたん", "ぎこぎこ", "ぐるぐる", "ごとごと", "できあがり", "ばんざい", "すごいね"]},
+    ]},
+
+  { title:"ねじれる音", learn:"ようおん「ゃ ゅ ょ」", mach:"Yリンク（シュッ！）",
+    allow:{choon:false,hatsuon:true,youon:true,sokuon:false,apos:false},
+    series:[
+      {em:"🐾", name:"動物？", q:["きゃんきゃん", "にゃんにゃん", "みゃんみゃん", "ちゅんちゅん", "ひょこ", "ぴょこ", "にょろにょろ", "ちょろちょろ", "びゅんびゅん"]},
+      {em:"😲", name:"ありゃりゃ", q:["ひゃくえん", "ちゃりん", "じゃらじゃら", "ぽちゃん", "べちゃ", "ねちょ", "ぐしょ", "ぎょぎょ", "ぎゃあ", "ありゃりゃ", "じゃぶじゃぶ", "ちゃぷちゃぷ", "しゃきん"]},
+    ]},
+
+  { title:"のばす音", learn:"ちょうおん（母音字をならべる／マクロン）", mach:"母音ライン（スーッ！）",
+    allow:{choon:true,hatsuon:true,youon:true,sokuon:false,apos:false},
+    series:[
+      {em:"👨‍👩‍👧", name:"かぞく", q:["おばあさん", "おとうさん", "おじいさん", "おとうと", "いもうと", "おおおじさん", "おおおばさん", "ああ", "いいね"]},
+      {em:"🌀", name:"台風", q:["ごうごう", "ざあざあ", "ぼうふう", "こうずい", "けいほう", "ぴゅうぴゅう", "じゅうじゅう"]},
+    ]},
+
+  { title:"つまる音", learn:"そくおん「っ」＝ 子音をかさねる", mach:"ストップ機構（ガシャン！）",
+    allow:{choon:true,hatsuon:true,youon:true,sokuon:true,apos:false},
+    series:[
+      {em:"🤼", name:"おすもう", q:["みあって", "はっけよい", "のこった", "つっぱり", "おっとっと", "とったり", "がっちり", "かった", "やった", "ごっつあんです"]},
+      {em:"🍜", name:"ラーメン", q:["いらっしゃい", "こってり", "さっぱり", "どっちにしよう", "おおもりいっちょう", "ねぎたっぷり", "もういっぱい", "ごっくり", "おいしかった", "はっぴゃくえん"]},
+      {em:"👯", name:"ふたご？", q:["そっくり", "びっくり", "まったくおなじ", "そろって", "こっち", "やっぱり", "あっち", "やっと", "わかって", "にっこり"]},
+      {em:"😴", name:"はやくねてね", q:["はやくねてって", "いったのに", "いっぱい", "しゃべって", "よなかになった", "やっと", "ぐっすり", "ねしずまった", "こっちは", "ぐったり"]},
+      {em:"🪒", name:"そります", q:["もじゃもじゃ", "じょりじょり", "すべすべ", "つるつる", "もちもち", "すはだ"]},
+    ]},
+
+  { title:"「'」のひみつ", learn:"アポストロフィ「'」＝ n と 母音/y の切れめ", mach:"分岐装置（カチ！）",
+    allow:{choon:true,hatsuon:true,youon:true,sokuon:true,apos:true},
+    series:[
+      {em:"🕵️", name:"「'」のひみつ", q:["こんやく", "ほんやく", "きんゆう", "しんよう", "せんゆう"]},
+    ]},
+
+  { title:"まぜまぜ特訓", learn:"ぜんぶ まぜて！", mach:"巨大ローマ字コンビナート",
+    allow:{choon:true,hatsuon:true,youon:true,sokuon:true,apos:true},
+    series:[
+      {em:"🍱", name:"おべんとう　なあに", q:["こんにゃく", "コーヒーゼリー", "ちゃんぽん", "ぎゅうにゅう", "らっきょう", "ぎょうざ", "うずらたまご", "おにぎらず", "にらたま"]},
+      {em:"🍒", name:"おべんとう　なあに２", q:["さくらんぼ"]},
+      {em:"🍗", name:"おべんとう　なあに３", q:["チキンチキンごぼう"]},
+      {em:"🫛", name:"おべんとう　なあに４", q:["えだまめ"]},
+      {em:"🥦", name:"おべんとう　なあに５", q:["ブロッコリー"]},
+      {em:"🍢", name:"おべんとう　なあに６", q:["やきとり"]},
+      {em:"🍥", name:"おべんとう　なあに７", q:["ちくわ"]},
+      {em:"🥒", name:"おべんとう　なあに８", q:["きゅうり"]},
+      {em:"🍫", name:"おべんとう　なあに９", q:["チョコもち"]},
+      {em:"🐟", name:"おべんとう　なあに１０", q:["しゃけ"]},
+      {em:"🥔", name:"おべんとう　なあに１１", q:["ジャーマンポテト"]},
+      {em:"🍮", name:"おべんとう　なあに１２", q:["りょくちゃプリン"]},
+    ]},
+
+];
+/* RAW:END */
+
+/* 第３工場（人名・地名）専用の 出題データ（Excel「工場」列＝3）。頭文字だけ 大文字。 */
+const RAW3 = [
+  { title:"地名・人名", learn:"人の名前・土地の名前。頭文字は 大文字！", mach:"すべての からくり きかい",
+    allow:{choon:true,hatsuon:true,youon:true,sokuon:true,apos:true},
+    series:[
+      {em:"😅", name:"失敗しないかな", q:["みちこ", "じょうのうち", "ひでき", "えびな", "あきら", "はら"]},
+      {em:"📛", name:"みょうじ", q:["たなか", "さとう", "いけだ", "やまぐち", "わたなべ", "ほんだ", "きむら", "みのりかわ"]},
+      {em:"🧒", name:"なまえ", q:["あやか", "ちひろ", "しずか", "りこ", "じゅんいち", "しょうま", "ゆうすけ", "りょうた", "かいと"]},
+      {em:"🗺️", name:"行きたいところ", q:["きゅうしゅう", "いとしま", "ほっかいどう", "はこだて", "きんき", "いせ", "しこく", "おおぼけ"]},
+    ]},
+];
+
+/* ---- 本表と 機械への分解 ---- */
+const KANA={};
+(function(){
+  const set=(k,c,ins,v)=>KANA[k]={c,ins,v,r:c+ins+v};
+  const P={
+    'あ':['','','a'],'い':['','','i'],'う':['','','u'],'え':['','','e'],'お':['','','o'],
+    'か':['k','','a'],'き':['k','','i'],'く':['k','','u'],'け':['k','','e'],'こ':['k','','o'],
+    'が':['g','','a'],'ぎ':['g','','i'],'ぐ':['g','','u'],'げ':['g','','e'],'ご':['g','','o'],
+    'さ':['s','','a'],'し':['s','h','i'],'す':['s','','u'],'せ':['s','','e'],'そ':['s','','o'],
+    'ざ':['z','','a'],'じ':['j','','i'],'ず':['z','','u'],'ぜ':['z','','e'],'ぞ':['z','','o'],
+    'た':['t','','a'],'ち':['c','h','i'],'つ':['t','s','u'],'て':['t','','e'],'と':['t','','o'],
+    'だ':['d','','a'],'ぢ':['j','','i'],'づ':['z','','u'],'で':['d','','e'],'ど':['d','','o'],
+    'な':['n','','a'],'に':['n','','i'],'ぬ':['n','','u'],'ね':['n','','e'],'の':['n','','o'],
+    'は':['h','','a'],'ひ':['h','','i'],'ふ':['f','','u'],'へ':['h','','e'],'ほ':['h','','o'],
+    'ば':['b','','a'],'び':['b','','i'],'ぶ':['b','','u'],'べ':['b','','e'],'ぼ':['b','','o'],
+    'ぱ':['p','','a'],'ぴ':['p','','i'],'ぷ':['p','','u'],'ぺ':['p','','e'],'ぽ':['p','','o'],
+    'ま':['m','','a'],'み':['m','','i'],'む':['m','','u'],'め':['m','','e'],'も':['m','','o'],
+    'や':['y','','a'],'ゆ':['y','','u'],'よ':['y','','o'],
+    'ら':['r','','a'],'り':['r','','i'],'る':['r','','u'],'れ':['r','','e'],'ろ':['r','','o'],
+    'わ':['w','','a'],'を':['','','o'],
+  };
+  for(const k in P) set(k,P[k][0],P[k][1],P[k][2]);
+  const yo={'き':'k','ぎ':'g','に':'n','ひ':'h','び':'b','ぴ':'p','み':'m','り':'r'};
+  for(const k in yo) ['ゃ','ゅ','ょ'].forEach((s,i)=>set(k+s,yo[k],'y','auo'[i]));
+  ['ゃ','ゅ','ょ'].forEach((s,i)=>{
+    set('し'+s,'s','h','auo'[i]); set('ち'+s,'c','h','auo'[i]);
+    set('じ'+s,'j','','auo'[i]);  set('ぢ'+s,'j','','auo'[i]);
+  });
+})();
+const KATA2HIRA=s=>s.replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60));
+const VOWELS='aiueo';
+
+function decomposeOps(kanaWord, isLong){
+  const w=KATA2HIRA(kanaWord); const ops=[]; let out='';
+  const push=(ch,m)=>{ ops.push({ch,m}); out+=ch; };
+  const lastV=()=>{ for(let i=out.length-1;i>=0;i--) if(VOWELS.includes(out[i])) return out[i]; return ''; };
+  const units=[];
+  for(let i=0;i<w.length;i++){ const two=w[i]+w[i+1];
+    if(KANA[two]){units.push(two);i++;} else units.push(w[i]); }
+  for(let i=0;i<units.length;i++){
+    const u=units[i], nx=KANA[units[i+1]];
+    if(u==='っ'){ if(!nx) throw new Error('「っ」の次がありません'); push(nx.r[0],'valve'); continue; }   // 子音を もう1回
+    if(u==='ー'){ const v=lastV(); if(!v) throw new Error('「ー」の前がありません'); push(v,'valve'); continue; }  // 母音を もう1回
+    if(u==='ん'){ push('n','valve');   // ん＝n（子音そうち）
+      if(nx&&(VOWELS.includes(nx.r[0])||nx.r[0]==='y')) push("'",'branch');
+      continue; }
+    const k=KANA[u]; if(!k) throw new Error('しらない かな「'+u+'」');
+    if(k.c) push(k.c,'valve');
+    if(k.ins) push(k.ins,'valve');   // し/ち の h、きゃ の y、つ の s は それぞれの 子音機械で 出す（よこ入れ廃止）
+    if(k.v){
+      const pv=lastV();
+      const long=isLong && !k.c && pv && (k.v===pv||(k.v==='u'&&pv==='o')||(k.v==='i'&&pv==='e'));
+      push(k.v, 'valve');   // 長音も 母音を もう1個（マクロンは 入力で えらべる）
+    }
+  }
+  return ops;
+}
+const buildRomaji=(k,L)=>decomposeOps(k,L).map(o=>o.ch).join('');
+
+/* ---- 母音：脱進機シリーズ（1個だけ落とす）---- */
+const VALVES={
+  pawl1: {name:'だるま落とし', gion:'ガン→コトン→ストン', sfx:'tick'},
+  pawl2: {name:'二本ツメ',   gion:'カチ・コトン', sfx:'tick2'},
+  drum:  {name:'回転ドラム', gion:'コロン',       sfx:'roll'},
+  slide: {name:'回転ポケット', gion:'カチ…コロン',   sfx:'slip'},
+  seesaw:{name:'シーソー',   gion:'コトッ',       sfx:'tip'},
+};
+const VALVE_OF={ a:'seesaw', i:'pawl2', u:'drum', e:'slide', o:'pawl1' };   // ɑ↔o 入れ替え：だるま落とし(pawl1)は 左に飛ぶので 右端の o に置く
+const valveOf=ch=>VALVE_OF[ch]||'pawl1';
+
+/* ---- 子音：大型搬送機械シリーズ（地面→高いレール）---- */
+const MACHINES={
+  plunger:{name:'発射装置（パチンコ）', gion:'バチン！', sfx:'ferris', build:'発射装置 完成！'},
+  ferris:{name:'観覧車',        gion:'ゴーッ！',     sfx:'ferris', build:'観覧車を 建設！'},
+  stairs:{name:'階段エレベータ',gion:'カタカタ！',   sfx:'stairs', build:'階段エレベータ 完成！'},
+  crane: {name:'クレーン',      gion:'ウィーン！',   sfx:'crane',  build:'クレーン工場 完成！'},
+  panto: {name:'パンタグラフ',  gion:'グーッ！',     sfx:'panto',  build:'パンタグラフ 完成！'},
+  screw: {name:'アルキメデスのねじ', gion:'ギュルギュル！', sfx:'screw', build:'ねじ揚げ機 完成！'},
+  bucket:{name:'バケットエレベータ', gion:'ガチャガチャ！', sfx:'bucket', build:'バケットエレベータ 完成！'},
+  jack:  {name:'ラック＆ピニオン', gion:'ジリジリ！',   sfx:'jack',   build:'ジャッキ工場 完成！'},
+  catapult:{name:'シーソー',    gion:'パチン！',     sfx:'piston', build:'シーソー工場 完成！'},
+  linkpush:{name:'リンク押し出し', gion:'カチャン！',  sfx:'jack',   build:'リンク押し出し機 完成！'},
+};
+const MACHINE_OF={
+  k:'catapult', s:'catapult',            // シーソー（逆向き＝左下から 右上へ）
+  t:'stairs', n:'stairs', c:'stairs',
+  h:'crane',  f:'crane',
+  m:'plunger',                           // 発射装置（パチンコ）を m に
+  y:'panto',  r:'panto',
+  w:'screw',  g:'screw',
+  z:'bucket', j:'bucket',
+  d:'jack',
+  b:'linkpush', p:'linkpush',            // 四節リンクで 水平に 押し出して 落とす
+};
+const machineOf=ch=>MACHINE_OF[ch]||'ferris';
+
+const SPECIAL={
+  macron: {name:'マクロン',       gion:'コトン',   sfx:'stamp', chNo:4},
+  branch: {name:"分岐（'）",       gion:'カチ！',   sfx:'tick',  chNo:6},
+};
+const SPECIAL_ORDER=['macron','branch'];
+const MACRON={a:'ā',i:'ī',u:'ū',e:'ē',o:'ō'}, MACRON_CHARS='āīūēō';
+// 長音は 告示どおり どちらも 正しい：母音字ならべ ↔ マクロン
+const macronForm=r=>r.replace(/aa/g,'ā').replace(/ii/g,'ī').replace(/uu/g,'ū').replace(/ee/g,'ē').replace(/oo/g,'ō').replace(/ou/g,'ō').replace(/ei/g,'ē');
+
+/* ---- データ組み立て＋検証 ---- */
+function flagsOf(kana,romaji,isLong){
+  return { hatsuon:kana.includes('ん'), youon:/[ゃゅょ]/.test(kana),
+    sokuon:kana.includes('っ'), apos:romaji.includes("'"), choon:!!isLong };
+}
+function buildChapters(RAWDATA){
+  const CH=RAWDATA.map((c,ci)=>({
+    no:ci+1, title:c.title, learn:c.learn, mach:c.mach, allow:c.allow,
+    series:c.series.map((s,si)=>({ key:`${ci}-${si}`, stage:si+1, em:s.em, name:s.name,
+      q:s.q.map(kana=>{ const romaji=buildRomaji(kana,false);
+        const isLong=c.allow.choon && macronForm(romaji)!==romaji;
+        return {kana,romaji,flags:flagsOf(kana,romaji,isLong)}; }) }))
+  }));
+  const seenLetters=new Set(VOWELS.split(''));   // 入力できる文字（よこ入れの H・Y もふくむ）
+  const seenMachines=new Set();                  // 搬送機械が建つ子音（装置から 出す文字だけ）
+  const seenCons=new Set(); let prevMach=new Set();
+  CH.forEach(c=>c.series.forEach(s=>{
+    s.q.forEach(q=>{
+      q.romaji.split('').forEach(ch=>{ if(ch!=="'") seenLetters.add(ch); });
+      try{ decomposeOps(q.kana,q.flags.choon).forEach(o=>{
+        if(o.m==='valve' && !VOWELS.includes(o.ch)) seenMachines.add(o.ch); }); }catch(e){}
+    });
+    s.letters=[...seenLetters].sort();
+    s.cons=[...seenMachines].sort();
+    s.newCons=s.cons.filter(x=>!seenCons.has(x)); s.cons.forEach(x=>seenCons.add(x));
+    s.machines=[...new Set(s.cons.map(machineOf))];
+    s.newMachines=s.machines.filter(m=>!prevMach.has(m)); s.machines.forEach(m=>prevMach.add(m));
+    s.hasApos=c.allow.apos;
+  }));
+  return CH;
+}
+const CHAPTERS_12=buildChapters(RAW), CHAPTERS_3=buildChapters(RAW3);   // 第1・2工場／第3工場（別出題）
+let CHAPTERS=CHAPTERS_12;                                               // アクティブな データ（setFactory で 切りかえ）
+(function verify(){
+  let u=0,mc=0,lt=0;
+  [CHAPTERS_12,CHAPTERS_3].forEach(CH=>CH.forEach(c=>c.series.forEach(s=>s.q.forEach(q=>{
+    for(const k in q.flags) if(q.flags[k]&&!c.allow[k]){u++;console.error('解放方式ちがい:',q.kana,'→',k);}
+    try{ if(buildRomaji(q.kana,q.flags.choon)!==q.romaji){mc++;console.error('機械ちがい:',q.kana);} }
+    catch(e){mc++;console.error('機械エラー:',q.kana,e.message);}
+    q.romaji.split('').forEach(ch=>{ if(ch==="'"){ if(!s.hasApos){lt++;} return; }
+      if(!s.letters.includes(ch)){lt++;console.error('装置にない文字:',ch,q.kana);} });
+  }))));
+  console.log(u===0?'解放方式チェック OK':`解放方式チェック NG:${u}件`);
+  console.log(mc===0?'機械チェック OK':`機械チェック NG:${mc}件`);
+  console.log(lt===0?'文字の解放チェック OK':`文字の解放チェック NG:${lt}件`);
+})();
+
+/* ---- 音：母音＝小さく繊細／子音＝大きく豪快 ---- */
+const Sound={
+  on:true, ctx:null,
+  init(){ if(!this.ctx){ try{ this.ctx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } },
+  tone(f,d,ty='sine',v=.14,sl=0){ if(!this.on||!this.ctx)return;
+    const t=this.ctx.currentTime,o=this.ctx.createOscillator(),g=this.ctx.createGain();
+    o.type=ty;o.frequency.setValueAtTime(f,t); if(sl)o.frequency.exponentialRampToValueAtTime(Math.max(40,f+sl),t+d);
+    g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);
+    o.connect(g);g.connect(this.ctx.destination);o.start(t);o.stop(t+d); },
+  noise(d,fr,v=.1){ if(!this.on||!this.ctx)return;
+    const n=Math.max(1,Math.floor(this.ctx.sampleRate*d)),buf=this.ctx.createBuffer(1,n,this.ctx.sampleRate),a=buf.getChannelData(0);
+    for(let i=0;i<n;i++)a[i]=(Math.random()*2-1)*(1-i/n);
+    const s=this.ctx.createBufferSource();s.buffer=buf;
+    const f=this.ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=fr;
+    const g=this.ctx.createGain();g.gain.value=v;s.connect(f);f.connect(g);g.connect(this.ctx.destination);s.start(); },
+  play(m){ this.init(); if(!this.on)return;
+    switch(m){
+      /* 母音：小さく繊細 */
+      case 'tick':   this.noise(.02,3600,.06); setTimeout(()=>this.tone(300,.12,'sine',.09,-80),420); break;
+      case 'tick2':  this.noise(.02,3800,.06); setTimeout(()=>this.noise(.02,3000,.05),160);
+                     setTimeout(()=>this.tone(280,.12,'sine',.09,-70),480); break;
+      case 'roll':   this.tone(220,.2,'sine',.09,-50); break;
+      case 'slip':   this.noise(.09,2000,.05); setTimeout(()=>this.tone(260,.11,'sine',.09,-60),400); break;
+      case 'tip':    this.tone(340,.09,'sine',.08,-40); setTimeout(()=>this.tone(240,.12,'sine',.09,-60),380); break;
+      /* 子音：大きく豪快 */
+      case 'ferris': this.tone(90,.7,'sine',.11,30); for(let i=0;i<4;i++) setTimeout(()=>this.noise(.05,500,.05),i*260); break;
+      case 'stairs': for(let i=0;i<5;i++) setTimeout(()=>{this.noise(.03,1600,.08); this.tone(200+i*40,.07,'square',.06);},i*210); break;
+      case 'crane':  this.tone(150,.8,'sawtooth',.06,120); setTimeout(()=>{this.tone(110,.2,'square',.11);this.noise(.1,700,.09);},950); break;
+      case 'panto':  this.tone(160,.9,'sine',.1,300); setTimeout(()=>this.noise(.08,1200,.07),950); break;
+      case 'screw':  for(let i=0;i<6;i++) setTimeout(()=>{this.tone(300+i*35,.14,'triangle',.07,-40);this.noise(.04,1500,.05);},i*160); break;
+      case 'bucket': for(let i=0;i<6;i++) setTimeout(()=>{this.noise(.04,1100,.07);this.tone(230,.06,'square',.05);},i*170); break;
+      case 'jack':   for(let i=0;i<8;i++) setTimeout(()=>this.noise(.025,2600,.06),i*120);
+                     setTimeout(()=>this.tone(200,.16,'triangle',.1,-50),950); break;
+      case 'piston': for(let i=0;i<3;i++) setTimeout(()=>{this.tone(420,.1,'triangle',.13,-160);this.noise(.05,900,.09);},i*330); break;
+      /* その他 */
+      case 'stop':   this.tone(120,.22,'square',.13); this.noise(.12,600,.1); break;
+      case 'stamp':  this.tone(300,.1,'triangle',.12,-120); setTimeout(()=>this.noise(.04,1400,.07),120); break;
+      case 'back':   this.tone(200,.09,'triangle',.1,80); break;
+      case 'done':   [784,988,1319].forEach((f,i)=>setTimeout(()=>this.tone(f,.5,'sine',.13),i*85)); break;
+      case 'build':  [523,659,784,1047].forEach((f,i)=>setTimeout(()=>this.tone(f,.6,'sine',.14),i*130)); break;
+      case 'ng':     this.tone(150,.18,'square',.1); break;
+    } }
+};
+
+/* ============================================================
+   絵
+   ============================================================ */
+const $=id=>document.getElementById(id);
+const NAVY='#1b3a5b', BROWN='#5b4636', STEEL='#8a97a6', LIGHT='#c3ced9', DIM='#d5dce3';
+
+/* 上＝母音 / 中央＝高いレール / 下＝子音 */
+/* 横長（Landscape）レイアウト。工場は よこに ひろがる。たては ふやさない。
+   ① 母音供給 → ② 高架レール → ③ 子音搬送機械（1段）→ ④ ベルト */
+const VIEW_W=960;
+const WP={x:16,y:10,w:190,h:126};                     // 左：できた ことばの リスト
+const VOW={w:96,h:130,y:8,gap:6}; VOW.start=214;      // ① 母音を 少し 狭く（右に B/P フィーダーの スペースを つくる）
+const KS_LAND=VOW.start+(VOW.w+VOW.gap)+VOW.w*0.5;    // k/s シーソーの 着地目標：い（i）の 下あたり
+const SPE_X=726, SPE_W=104;                           // 右：マクロン／分岐（上）＋ B/P 大型フィーダー（下）
+let RAIL_Y=190;                                     // ② 高架レール（図鑑では 一時的に 位置を 変える）
+const CON={h:150,y:212,gap:4,maxW:96,minW:40};      // ③ 子音：1段・よこに ひろがる
+const VIEW_H=390;
+/* レイアウトVer.1.0：左＝第1グループ（常設）／右＝第2グループ（搬入エリア）＋ c f j */
+const GROUP1=['k','s','t','c','n','h','f','m','y','r','w'];   // 左：常設（c は t の次、f は h の次）
+const GROUP2=['g','z','j','d'];                              // 右：搬入（b・p は 右上へ 移動）
+const MAIN_CONS=[...GROUP1,...GROUP2];                       // 本体1段（b・p 以外の 15）
+const CON_X0=214, CONW=44;                                   // 子音を 右へ ずらす：k が a の 下。左に 言葉の スペース
+const HOT2=new Set(['n','h','y']);                   // 特別色（ほかの行でも つかう）
+const ARRIVE_DIR={g:'topright',z:'topright',j:'right',d:'right'};
+const ZONE_L0=60, ZONE_L1=556, ZONE_R0=566, ZONE_R1=946, ZONE_DIV=561;   // （旧レイアウト定数・一部のみ使用）
+const BELT_Y2=370;                                  // ④ ベルト（下）
+const WORD_X=40, LW=23;
+let arriveP=1, arriveSet=new Set();                 // 新しい子音の 搬入アニメ
+
+let VPOS={}, CPOS={}, SPX={}, blocks=[], shipped=[], answer='';
+/* 工場（大小モード）：0=小文字 1=大文字 2=人名・地名（頭文字だけ大） */
+let caseMode=0, shiftOn=false, caseList=[], lives=3, shiftKeyEl=null;
+const FACTORY=[{name:'小文字ブロック',sub:'ぜんぶ 小文字',ex:'ai'},{name:'大文字ブロック',sub:'ぜんぶ 大文字',ex:'AI'},{name:'人名・地名工場',sub:'頭文字だけ 大文字',ex:'Ai'}];
+const isUpNext=()=> caseMode===1 || (caseMode===2 && shiftOn);          // つぎに 出す ブロックが 大文字か
+const applyCase=(str,cl)=>str.split('').map((c,i)=>cl&&cl[i]?c.toUpperCase():c).join('');
+const casedAnswer=()=>applyCase(answer, caseList);
+const caseTarget=r=> !r ? r : caseMode===1 ? r.toUpperCase() : caseMode===2 ? r[0].toUpperCase()+r.slice(1) : r;
+const dCh=ch=> (MS.active&&MS.active.ch===ch&&MS.cased) ? MS.cased : (caseMode===1?String(ch).toUpperCase():ch);   // 表示用（大小反映）
+let MS={active:null, phase:0, moving:0};
+
+/* 国語教科書に近い UD書体。文字は すべて 小文字 */
+const UDF="'UD デジタル 教科書体 NK-R','UD Digi Kyokasho NK-R','BIZ UDPGothic','BIZ UDGothic',sans-serif";
+/* 国語教科書の 字形に合わせる：a は 一階建ての ɑ（U+0251）で 見せる。
+   くらべる ときは いつも ふつうの a なので、こたえの 判定には ひびかない。 */
+const disp=s=>String(s==null?'':s).replace(/a/g,'ɑ').replace(/ā/g,'ɑ̄');   // 小文字の a は 教科書字形 ɑ（大文字 A は そのまま）。アプリ全体で 統一
+/* ブロックは 白地に 白だと 透けて 見えるので、影＋うすい面色 で 実体感を 出す */
+function blk(x,y,w,h,ch,op){ const o=op==null?1:op;
+  return `<rect x="${x+2}" y="${y+2.5}" width="${w}" height="${h}" rx="3" fill="#9fabb9" opacity="${o*0.5}"/>`+
+    `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="#edf1f6" stroke="${NAVY}" stroke-width="2" opacity="${o}"/>`+
+    `<text x="${x+w/2}" y="${y+h/2+5}" text-anchor="middle" font-family="${UDF}" font-size="${Math.min(h-2,16)}" font-weight="bold" fill="${NAVY}" opacity="${o}">${disp(ch)}</text>`; }
+
+/* ---------- 母音：脱進機（4層構造）----------
+   ① 背面ホッパー → ② ブロック → ③ 脱進機（手前）→ ④ 前面ガラス
+   ・脱進機は かならず ブロックより 手前。順番：静止→脱進機うごく→支え外す→落下
+   ・在庫は複数。落ちたら 1個ぶん 下がり、上から 補充 */
+function vowelModule(kind,x,y,w,h,ch,op){
+  const on=op>0.001, col=on?NAVY:'#5b7186', edge=on?NAVY:'#8ba0b5';
+  const cl=v=>Math.max(0,Math.min(1,v));
+  const P1=0.30, P2=0.60;
+  const openP = op<=P1 ? ease(op/P1) : op<=P2 ? 1 : 1-ease((op-P2)/(1-P2));   // 脱進機：ひらく→とじる
+  const fallP = op<=P1 ? 0 : op<=P2 ? ease((op-P1)/(P2-P1)) : 1;             // 一番下：落下
+  const descP = op<=P2 ? 0 : ease((op-P2)/(1-P2));                          // 在庫：落下の あとで 1個下降
+  const OFFT=0.86;                                                          // o：ブロックが 弁から 離れる時
+  const slideP = op<=P1 ? 0 : ease(Math.max(0,Math.min(1,(op-P1)/(OFFT-P1)))); // o：すべり＝在庫の 下降と 同時
+  const cx=x+w*0.5, bw=22, bh=13, step=bh+2;
+  const plate=`fill="#e7edf3" stroke="${col}" stroke-width="2.4"`;
+  let s=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="7" fill="#fff" stroke="${edge}" stroke-width="${on?2.6:1.4}"/>`;
+  s+=`<text x="${x+w-6}" y="${y+15}" text-anchor="end" font-family="${UDF}" font-size="15" font-weight="bold" fill="${BROWN}">${disp(ch)}</text>`;
+
+  if(kind==='pawl1'){
+    // ==== ɑ：だるま落とし ====
+    // 積んだ ブロックの 一番下を 小さい ハンマーで「水平に」たたく → その1個だけ 下へ 落ち、
+    //   上に あった ブロックは、1個 へった ぶんだけ「垂直に」下がる。弁（ストッパー）は なし。
+    const stackX=cx, baseTop=y+h-18, yBot=baseTop-bh, N=4;
+    // 台（アンビル）＋ 下への 落下口
+    s+=`<rect x="${stackX-bw/2-7}" y="${baseTop}" width="${bw+14}" height="6" rx="2" fill="#e7edf3" stroke="${col}" stroke-width="2"/>`;
+    s+=`<rect x="${stackX-bw/2-1}" y="${baseTop}" width="${bw+2}" height="6" fill="#fff"/>`;                            // 真ん中は 穴（下へ 落ちる）
+    s+=`<path d="M${stackX-4} ${baseTop+7} l4 6 l4 -6 Z" fill="${on?col:LIGHT}"/>`;
+    // ② 上の 在庫（1個 へった ぶん 垂直に 下がる）＋ 上から 補充
+    const dip=descP*step;
+    if(descP>0){ const yin=yBot-N*step+dip; s+=blk(stackX-bw/2, yin, bw,bh,ch,descP*0.9); }
+    for(let i=N-1;i>=1;i--) s+=blk(stackX-bw/2, yBot-i*step+dip, bw,bh,ch,1);
+    // 一番下：たたかれるまで 静止 → 右から 叩かれて「左へ 速く・遠く 飛び出し」、下の ベルトへ 向かう
+    if(op<=P1) s+=blk(stackX-bw/2, yBot, bw,bh,ch,1);
+    else { const ff=cl((op-P1)/(1-P1)),                            // 叩かれてから 最後まで 一気に（途中で 止まらない）
+           flyx=1-Math.pow(1-cl((op-P1)/0.22),2),                  // 横：はやめに 大きく 左へ
+           bx=stackX - flyx*110,                                   // 左へ 大きく 飛ぶ
+           bcy=(yBot+bh/2) + ff*ff*(RAIL_Y-(yBot+bh/2));           // 縦：加速して 一気に ベルト(RAIL_Y)の 上まで
+           s+=blk(bx-bw/2, bcy-bh/2, bw,bh,ch,1); }
+    // ③ 小さい ハンマー（右から 水平に 一番下を たたく）— ブロックより 手前
+    const hitP = op<=P1 ? ease(op/P1) : op<=P2 ? 1 : 1-ease((op-P2)/(1-P2));
+    const hcy=yBot+bh/2, hRest=stackX+bw/2+32, hHit=stackX+bw/2+1, hx=hRest-(hRest-hHit)*hitP;
+    s+=`<line x1="${hx+12}" y1="${hcy}" x2="${hx+30}" y2="${hcy}" stroke="${col}" stroke-width="2.6"/>`;                // 柄
+    s+=`<circle cx="${hx+30}" cy="${hcy}" r="3.2" fill="#fff" stroke="${col}" stroke-width="1.6"/>`;                   // 持ち手
+    s+=`<rect x="${hx}" y="${hcy-7}" width="12" height="14" rx="2" fill="#fff" stroke="${col}" stroke-width="2.4"/>`;  // ハンマーの 頭
+    if(hitP>0.6 && op<P2){ for(let i=0;i<3;i++) s+=`<line x1="${hx-2}" y1="${hcy-4+i*4}" x2="${hx-7}" y2="${hcy-4+i*4}" stroke="${col}" stroke-width="1.4"/>`; }  // 叩く 効果線
+    // ④ 前面ガラス（積みが 見える 程度に うすく）
+    s+=`<rect x="${stackX-bw/2-4}" y="${yBot-N*step-2}" width="${bw+8}" height="${(baseTop)-(yBot-N*step-2)}" rx="4" fill="#a9c4dd" opacity="0.07" stroke="#c3ced9" stroke-width="1.2"/>`;
+
+  } else if(kind==='pawl2' || kind==='seesaw'){
+    // ==== たてホッパー型（i・o）====
+    const chW=bw+8, chL=cx-chW/2, chR=cx+chW/2;
+    // o は 軸が 50°まわるので、下に すきまが 要る（ゲートを 上げる）
+    const topY=y+16, yGate=y+h-(kind==='seesaw'?46:32), sy=yGate+bh+1;
+    const N=Math.max(4, Math.floor((yGate-topY)/step));
+    const fallDist=(y+h+4)-yGate, supW=chW-4;
+    // ① 背面
+    s+=`<rect x="${chL}" y="${topY-2}" width="${chW}" height="${sy-topY+2}" fill="#e9eef3"/>`;
+    s+=`<line x1="${chL}" y1="${topY-2}" x2="${chL}" y2="${sy}" stroke="${LIGHT}" stroke-width="1.6"/>`;
+    s+=`<line x1="${chR}" y1="${topY-2}" x2="${chR}" y2="${sy}" stroke="${LIGHT}" stroke-width="1.6"/>`;
+    s+=`<path d="M${chL-8} ${topY-2} L${chL} ${topY-2} M${chR} ${topY-2} L${chR+8} ${topY-2}" stroke="${LIGHT}" stroke-width="1.6"/>`;
+    // ② ブロック：静止→落下（一番下）、在庫は descP で 1個下降
+    // o は すべり落ちと 同時に 在庫が 少し 下がり、上ゲートに あたって 止まる。
+    //   弁が 水平に もどり ゲートが ひらくと、のこりを 下りて 弁の上で 止まる。
+    const GSTOP=2.5;   // 上の弁（支えパッド）に あたるまでの わずかな 下降
+    const dPs = op<=P1 ? 0
+      : op<=OFFT ? (GSTOP/step)*ease((op-P1)/(OFFT-P1))
+      : (GSTOP+(step-GSTOP)*ease((op-OFFT)/(1-OFFT)))/step;
+    const dP = (kind==='seesaw') ? dPs : descP;
+    if(dP>0){ const yin=yGate-N*step+dP*step; s+=blk(cx-bw/2,yin,bw,bh,ch,dP*0.9); }
+    for(let i=N-1;i>=1;i--) s+=blk(cx-bw/2, yGate-i*step+dP*step, bw,bh,ch,1);
+    if(kind!=='seesaw'){   // ɑ・i は まっすぐ 落下（o は 板の上を すべるので 脱進機側で描く）
+      if(op<=P1) s+=blk(cx-bw/2, yGate, bw,bh,ch,1);
+      else { const yf=yGate+fallP*fallDist, o=Math.max(0,1-cl((fallP-0.72)/0.28)); if(o>0.02) s+=blk(cx-bw/2,yf,bw,bh,ch,o); }
+    }
+    // ③ 脱進機（手前）
+    if(kind==='pawl2'){
+      const uy=yGate-3;
+      s+=`<rect x="${chL+2}" y="${sy}" width="${Math.max(0.6,supW*(1-openP))}" height="5" rx="2" ${plate}/>`;      // 下ツメ
+      s+=`<rect x="${chR-2-supW*openP}" y="${uy}" width="${Math.max(0.6,supW*openP)}" height="5" rx="2" ${plate}/>`;// 上ツメ（反対から。落下中も 在庫を 支える）
+      const px=chR+9, py=(sy+uy)/2, ang=-14+openP*28;
+      s+=`<g transform="rotate(${ang} ${px} ${py})"><line x1="${px}" y1="${py-11}" x2="${px}" y2="${py+11}" stroke="${col}" stroke-width="2.4"/></g>`;
+      s+=`<circle cx="${px}" cy="${py}" r="3" fill="#fff" stroke="${col}" stroke-width="1.8"/>`;
+    } else {
+      // O：左の 共通じくに、下の弁（板）と 上の弁（支え）が ついた 1つの 回転体。
+      //    じくが 約50°まわると、下の弁は 下がって 出口が ひらき、
+      //    同時に 上の弁が チャンネルへ 入って 次のブロックの 支えに なる。
+      const P={x:chL-1, y:sy+1}, L=38, off=bh/2+2;
+      const openO = op<=P1 ? ease(op/P1) : op<=OFFT ? 1 : 1-ease((op-OFFT)/(1-OFFT));
+      const ROT=openO*50, rad=ROT*Math.PI/180;                    // 共通じくの 回転（50°）
+      const UA=-86.9*Math.PI/180, ual=20;                          // 上の弁の うで（待機は 左かべに そって たつ）
+      const ux=P.x+Math.cos(UA)*ual, uy=P.y+Math.sin(UA)*ual;
+      s+=`<g transform="rotate(${ROT} ${P.x} ${P.y})">`;
+      s+=`<rect x="${P.x}" y="${P.y-3}" width="${L}" height="5" rx="2.5" ${plate}/>`;                 // 下の弁（板）
+      s+=`<line x1="${P.x}" y1="${P.y}" x2="${ux}" y2="${uy}" stroke="${col}" stroke-width="3"/>`;    // 上の弁の うで
+      s+=`<g transform="rotate(-50 ${ux} ${uy})"><rect x="${ux-10}" y="${uy-2.5}" width="20" height="5" rx="2.5" ${plate}/></g>`;  // 支えパッド（50°まわると 水平）
+      s+=`</g>`;
+      s+=`<circle cx="${P.x}" cy="${P.y}" r="3.8" fill="#fff" stroke="${col}" stroke-width="2.2"/>`;  // 共通の じく（左かべ下）
+      // ブロック：板の 上を すべり落ち（板より 手前）→ はしから 落下
+      const d0=cx-P.x, d=d0+slideP*(L-d0+6);
+      const bcx=P.x+d*Math.cos(rad)+off*Math.sin(rad), bcy=P.y+d*Math.sin(rad)-off*Math.cos(rad);
+      if(op<OFFT) s+=blk(bcx-bw/2, bcy-bh/2, bw,bh,ch,1);
+      else { const k=(op-OFFT)/(1-OFFT);
+        s+=blk(P.x+L*Math.cos(50*Math.PI/180)-bw/2, P.y+L*Math.sin(50*Math.PI/180)+k*18, bw,bh,ch,1-k); }
+    }
+    // ④ 前面ガラス
+    s+=`<rect x="${chL-3}" y="${topY-4}" width="${chW+6}" height="${sy+7-(topY-4)}" rx="4" fill="#a9c4dd" opacity="0.09" stroke="#c3ced9" stroke-width="1.3"/>`;
+    s+=`<line x1="${chL+2}" y1="${topY-1}" x2="${chL+2}" y2="${sy+3}" stroke="#fff" stroke-width="1.6" opacity="0.55"/>`;
+
+  } else if(kind==='drum'){
+    // ==== U：大きい 回転ドラム。ブロックは ポケットで 運ばれ、真下で 落ちる ====
+    const R=27, dcx=cx, dcy=y+h-38, feedY=dcy-R-6;
+    // 送りホッパー（3個）
+    for(let i=0;i<3;i++) s+=blk(cx-bw/2, feedY-i*step+descP*step, bw,bh,ch, i===0?1:0.8-i*0.15);
+    // ドラム本体
+    s+=`<circle cx="${dcx}" cy="${dcy}" r="${R}" fill="#e9eef3" stroke="${col}" stroke-width="2.6"/>`;
+    for(let i=0;i<4;i++){ const a2=(op*180+i*90)*Math.PI/180; s+=`<line x1="${dcx}" y1="${dcy}" x2="${dcx+Math.cos(a2)*R}" y2="${dcy+Math.sin(a2)*R}" stroke="${LIGHT}" stroke-width="1.2"/>`; }
+    s+=`<circle cx="${dcx}" cy="${dcy}" r="3.2" fill="${col}"/>`;
+    // ポケットの ブロック：上(−90°)→真下(90°)へ 運ばれ、真下で 落下
+    const th=-90+op*180, rad=th*Math.PI/180, pr=R-9;
+    const px=dcx+Math.cos(rad)*pr, py=dcy+Math.sin(rad)*pr;
+    if(op<0.9) s+=blk(px-bw/2, py-bh/2, bw,bh,ch,1);
+    else { const k=(op-0.9)/0.1; s+=blk(dcx-bw/2, dcy+pr+k*22, bw,bh,ch, 1-k); }
+    s+=`<path d="M${dcx-4} ${dcy+R+3} L${dcx} ${dcy+R+9} L${dcx+4} ${dcy+R+3} Z" fill="${on?col:LIGHT}"/>`;   // 真下マーク
+    // ④ ガラス
+    s+=`<circle cx="${dcx}" cy="${dcy}" r="${R+3}" fill="#a9c4dd" opacity="0.07" stroke="#c3ced9" stroke-width="1.3"/>`;
+
+  } else if(kind==='slide'){
+    // ==== E：回転ポケット盤（スターホイール）。6つの 凹み（ポケット）に ブロック。
+    //   60°ずつ 回り、真下に きた 1個だけ 落ちる。====
+    const R=27, gcx=cx, gcy=y+h-38, rot=op*60, feedY=gcy-R-6;
+    for(let i=0;i<2;i++) s+=blk(cx-bw/2, feedY-i*step+descP*step, bw,bh,ch, i===0?1:0.75);
+    s+=`<circle cx="${gcx}" cy="${gcy}" r="${R}" fill="#e9eef3" stroke="${col}" stroke-width="2.6"/>`;
+    s+=`<circle cx="${gcx}" cy="${gcy}" r="3.2" fill="${col}"/>`;
+    // 6つの 凹み＋ブロック（上5つは 在庫、真下に むかう1つが 落ちる）
+    for(let k=0;k<6;k++){ const ang=k*60-90+rot, ar=ang*Math.PI/180;
+      const ex=gcx+Math.cos(ar)*(R-2), ey=gcy+Math.sin(ar)*(R-2);
+      s+=`<circle cx="${ex}" cy="${ey}" r="${bh*0.75}" fill="#fff" stroke="${col}" stroke-width="1.6"/>`;   // 凹み
+      const norm=((ang%360)+360)%360;
+      if(norm>250 || norm<80){                                    // 上がわ＝在庫
+        const bx=gcx+Math.cos(ar)*(R-9), by=gcy+Math.sin(ar)*(R-9);
+        s+=blk(bx-bw/2, by-bh/2, bw,bh,ch,1);
+      }
+    }
+    // 真下に いちばん 近い凹み → 落下
+    if(op>0.6){ const kk=(op-0.6)/0.4; s+=blk(gcx-bw/2, gcy+R-6+kk*22, bw,bh,ch,1-kk); }
+    s+=`<path d="M${gcx-4} ${gcy+R+3} L${gcx} ${gcy+R+9} L${gcx+4} ${gcy+R+3} Z" fill="${on?col:LIGHT}"/>`;
+    s+=`<circle cx="${gcx}" cy="${gcy}" r="${R+3}" fill="#a9c4dd" opacity="0.07" stroke="#c3ced9" stroke-width="1.3"/>`;
+  }
+
+  s+=`<text x="${x+w/2}" y="${y+h-5}" text-anchor="middle" font-size="9" fill="${BROWN}" font-family="${UDF}">${VALVES[kind].name}</text>`;
+  return s;
+}
+
+/* ---------- 子音：大型搬送機械（地面 → 高いレール）---------- */
+function consModule(kind,x,y,w,h,ch,op){
+  const on=op>0.001, edge=on?BROWN:'#a89c8c', col=on?BROWN:'#8b8172';
+  const cl=v=>Math.max(0,Math.min(1,v));
+  let s=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="7" fill="#fff" stroke="${edge}" stroke-width="${on?2.6:1.4}"/>`;
+  s+=`<text x="${x+7}" y="${y+16}" font-family="${UDF}" font-size="14" font-weight="bold" fill="${HOT2.has(ch)?'#a4542a':BROWN}">${disp(ch)}</text>`;   // N・H・Y は 特別色
+  const gy=y+h-20, ty=y+28, cx=x+w/2, bw=19, bh=16;
+  const a360=op*360, rad=a360*Math.PI/180;
+  s+=`<line x1="${x+5}" y1="${gy}" x2="${x+w-5}" y2="${gy}" stroke="${STEEL}" stroke-width="2"/>`;
+  s+=`<line x1="${x+5}" y1="${ty-7}" x2="${x+w-5}" y2="${ty-7}" stroke="${LIGHT}" stroke-width="2"/>`;
+  const lift=p=>gy-14-(gy-14-ty)*p;
+  const teeth=(gx,gy2,r,n,ang,c)=>{ let g=`<g transform="rotate(${ang} ${gx} ${gy2})">`;
+    for(let i=0;i<n;i++){ const a=i*2*Math.PI/n, px=gx+Math.cos(a)*r, py=gy2+Math.sin(a)*r;
+      g+=`<rect x="${px-1.8}" y="${py-1.8}" width="3.6" height="3.6" fill="${c}" transform="rotate(${i*360/n} ${px} ${py})"/>`; }
+    return g+`</g>`; };
+
+  if(kind==='ferris'){
+    // 観覧車：小さな歯車が リムの歯を かんで まわす
+    const R=Math.min(w,h)*0.26, ccx=cx, ccy=(gy+ty)/2+2, rot=a360/2;
+    s+=`<line x1="${ccx-R*0.7}" y1="${gy}" x2="${ccx}" y2="${ccy}" stroke="${col}" stroke-width="2.4"/>`;
+    s+=`<line x1="${ccx+R*0.7}" y1="${gy}" x2="${ccx}" y2="${ccy}" stroke="${col}" stroke-width="2.4"/>`;
+    s+=`<circle cx="${ccx}" cy="${ccy}" r="${R}" fill="none" stroke="${col}" stroke-width="2.2"/>`;
+    s+=teeth(ccx,ccy,R,16,rot,col);
+    for(let i=0;i<6;i++){ const a=(i*60+rot)*Math.PI/180, px=ccx+Math.cos(a)*R, py=ccy+Math.sin(a)*R;
+      s+=`<line x1="${ccx}" y1="${ccy}" x2="${px}" y2="${py}" stroke="${LIGHT}" stroke-width="1.3"/>`;
+      s+=`<rect x="${px-6}" y="${py}" width="12" height="10" rx="2" fill="#fff" stroke="${col}" stroke-width="1.4"/>`; }
+    const a=(90+rot)*Math.PI/180;
+    s+=blk(ccx+Math.cos(a)*R-bw/2, ccy+Math.sin(a)*R, bw, bh, ch, 1);
+    s+=`<circle cx="${ccx}" cy="${ccy}" r="3" fill="${col}"/>`;
+    const px2=ccx+R+9, py2=ccy+R*0.35, pr=7;
+    s+=teeth(px2,py2,pr,8,-a360*2,col);
+    s+=`<circle cx="${px2}" cy="${py2}" r="${pr}" fill="#fff" stroke="${col}" stroke-width="1.8"/>`;
+    s+=`<line x1="${px2}" y1="${py2}" x2="${px2+Math.cos(-a360*2*Math.PI/180)*(pr-1)}" y2="${py2+Math.sin(-a360*2*Math.PI/180)*(pr-1)}" stroke="${col}" stroke-width="1.6"/>`;
+
+  } else if(kind==='plunger'){
+    // パチンコ発射：下の バネで ブロックを 一気に 打ち上げる。バネは 台（下・固定）から 発射板まで。
+    //   引くと ちぢみ（板が 下がる）、パッと 解放すると のびて（板が 上がって）ブロックを 打ち上げる。
+    const lx=cx, base=gy+4;                                                       // バネ台（下・固定）
+    const comp = op<0.30 ? ease(op/0.30) : 1-ease(cl((op-0.30)/0.07));            // 引く(0→1)→パッと 解放(1→0)
+    const natLen=Math.max(26,(gy-ty)*0.5), springLen=natLen*(1-0.6*comp);        // 自然長 ↔ 60%まで ちぢむ
+    const plateY=base-springLen;                                                 // 発射板（バネの 上）：のびると 上がる
+    const coils=6; let sp=`M${lx} ${base}`;                                       // コイル：巻き数 一定・ピッチが 変わる＝伸びちぢみが 見える
+    for(let i=0;i<coils;i++){ const yy=base-springLen*(i+0.5)/coils; sp+=` L${lx-9} ${yy+2} L${lx+9} ${yy-2}`; }
+    sp+=` L${lx} ${plateY}`;
+    s+=`<path d="${sp}" fill="none" stroke="${col}" stroke-width="2"/>`;
+    s+=`<line x1="${lx-13}" y1="${base}" x2="${lx+13}" y2="${base}" stroke="${col}" stroke-width="2.6"/>`;             // バネ台（下・固定）
+    s+=`<rect x="${lx-bw/2-2}" y="${plateY-5}" width="${bw+4}" height="5" rx="2" fill="#fff" stroke="${col}" stroke-width="2.2"/>`;  // 発射板（バネの 上）
+    // 打ち上げ：解放で 急な角度で 上へ 飛び、ベルトの 高さ(RAIL_Y)へ 着地
+    let bcx, bcy;
+    if(op<0.37){ bcx=lx; bcy=plateY-5-bh/2-1; }
+    else { const k=cl((op-0.37)/0.63);
+      const ey=RAIL_Y, ex=lx-18, sx0=lx, sy0=(base-natLen)-5-bh/2, arcH=(sy0-ey)/2+40;                                // 放物線（横は 小さめ＝急な角度、上に 高く）
+      bcx=sx0+(ex-sx0)*k; bcy=sy0*(1-k)+ey*k-arcH*4*k*(1-k); }
+    s+=blk(bcx-bw/2, bcy-bh/2, bw, bh, ch, 1);
+    if(op>0.30 && op<0.44){ const spy=plateY-8;                                                                       // バチン！の 火花（解放の しゅんかん）
+      for(let i=0;i<4;i++){ const a=(i*90+30)*Math.PI/180; s+=`<line x1="${lx}" y1="${spy}" x2="${lx+Math.cos(a)*7}" y2="${spy+Math.sin(a)*7}" stroke="${col}" stroke-width="1.6"/>`; } }
+
+  } else if(kind==='stairs'){
+    // 階段エレベータ：大きさ・動きが 同じ カム4つ。高さが 1ずつ 高く、上下の タイミングが 1テンポずつ ずれる。
+    //   隣りあう カムが 同じ 高さで 出会う 瞬間に ブロックを わたし、次の カムが 1段 持ち上げる＝「歩く 階段」。
+    // ひとつの 回転軸（シャフト）が 4つの カムを まわす。カムは キー角（位相）が 1テンポずつ ちがい、
+    //   それぞれの follower 棒が フロアを 上下させる → 歩く階段で ブロックが 上がる。
+    const N=4, mgn=9, sw=(w-2*mgn)/N, base=gy-2, TILT=9;   // 段を 右下がりに 少し 傾ける＝ブロックが 右へ すべって 次の段へ
+    const topGoal=RAIL_Y+4+bh/2, stepH=Math.max(6,(base-topGoal)/N);           // 各棒の 高さを 調節：最後の フロアが ベルトコンベアの 高さに とどく
+    const gp=Math.min(1,op), TH=gp*N*Math.PI;                                   // N*π＝2周ぶんで 1回 はこぶ
+    const camX=i=>x+mgn+i*sw+sw/2;
+    const lift=i=>(1-Math.cos(TH-i*Math.PI))/2;                                 // カム i の 上下（隣は 半周＝1テンポ ずれ）
+    const floorY=i=>base-(i+lift(i))*stepH;                                     // フロア i の 上面（高さ i ＋ 上下ぶん）
+    const shaftY=base, eR=Math.min(sw*0.24,2.6), dR=Math.min(sw*0.32,2.9), crankX=x+mgn-5;
+    // 1本の 太い シャフト＝ひとつの 動力（左の クランクで まわす）
+    s+=`<line x1="${crankX}" y1="${shaftY}" x2="${camX(N-1)+sw*0.35}" y2="${shaftY}" stroke="${col}" stroke-width="2.6"/>`;
+    s+=`<circle cx="${crankX}" cy="${shaftY}" r="4.6" fill="#fff" stroke="${col}" stroke-width="1.9"/>`;
+    s+=`<line x1="${crankX}" y1="${shaftY}" x2="${crankX+Math.cos(TH)*4.6}" y2="${shaftY+Math.sin(TH)*4.6}" stroke="${col}" stroke-width="1.6"/>`;
+    s+=`<circle cx="${crankX+Math.cos(TH)*4.6}" cy="${shaftY+Math.sin(TH)*4.6}" r="1.7" fill="${BROWN}"/>`;
+    for(let i=0;i<N;i++){ const rx=camX(i), fY=floorY(i), psi=TH-i*Math.PI+Math.PI/2;   // カムが 上を むく時 フロアも 上
+      const ecx=rx+Math.cos(psi)*eR, ecy=shaftY+Math.sin(psi)*eR;                       // 偏心カムの 中心（軸まわりに 回る）
+      s+=`<line x1="${rx}" y1="${fY}" x2="${rx}" y2="${ecy-dR}" stroke="${col}" stroke-width="2.2"/>`;      // follower 棒（カムに おされる）
+      s+=`<g transform="rotate(${TILT} ${rx} ${fY-1.5})"><rect x="${rx-sw/2+1}" y="${fY-4}" width="${sw-2}" height="5" rx="1.3" fill="#fff" stroke="${col}" stroke-width="1.6"/></g>`;  // フロア板（右下がり）
+      s+=`<circle cx="${ecx}" cy="${ecy}" r="${dR}" fill="#eef2f6" stroke="${col}" stroke-width="1.5"/>`;    // カム（偏心円・回る）
+      s+=`<line x1="${rx}" y1="${shaftY}" x2="${ecx}" y2="${ecy}" stroke="${col}" stroke-width="1.1"/>`;      // 偏心アーム（キー角＝位相の ちがい）
+      s+=`<circle cx="${rx}" cy="${shaftY}" r="1.4" fill="${col}"/>`;                                        // 軸受け
+    }
+    // ブロック：カムに はこばれて 左下→右上へ（フロアが 出会う 高さで 1段ずつ わたる）
+    const bp=gp*N, fi=Math.min(N-1,Math.floor(bp+1e-6)), f=Math.min(1,bp-Math.floor(bp+1e-6)), nx=Math.min(N-1,fi+1);
+    const bx=camX(fi)+f*(camX(nx)-camX(fi));
+    const by=floorY(fi)-4-bh;
+    s+=`<g transform="rotate(${TILT} ${bx} ${by+bh/2})">`+blk(bx-bw/2, by, bw, bh, ch, 1)+`</g>`;   // ブロックも 段の 傾きに のる
+
+  } else if(kind==='crane'){
+    // クレーン：ウインチが ワイヤを 巻き取る → 滑車を 通って フックが 上がる
+    const mx=x+15, jy=ty, tx2=x+w-24, hy=lift(op);
+    s+=`<rect x="${mx-7}" y="${gy-6}" width="14" height="6" fill="#fff" stroke="${col}" stroke-width="1.8"/>`;
+    s+=`<line x1="${mx}" y1="${gy-6}" x2="${mx}" y2="${jy}" stroke="${col}" stroke-width="3"/>`;
+    for(let i=0;i<4;i++){ const yy=jy+i*((gy-jy)/4);
+      s+=`<line x1="${mx-5}" y1="${yy}" x2="${mx+5}" y2="${yy+((gy-jy)/8)}" stroke="${LIGHT}" stroke-width="1.2"/>`; }
+    s+=`<line x1="${mx}" y1="${jy}" x2="${x+w-13}" y2="${jy}" stroke="${col}" stroke-width="3"/>`;
+    const wx=mx+14, wy=gy-13, wr=8;
+    s+=`<circle cx="${wx}" cy="${wy}" r="${wr}" fill="#fff" stroke="${col}" stroke-width="2"/>`;
+    s+=`<g transform="rotate(${a360} ${wx} ${wy})"><line x1="${wx-wr}" y1="${wy}" x2="${wx+wr}" y2="${wy}" stroke="${col}" stroke-width="1.4"/>`;
+    s+=`<line x1="${wx}" y1="${wy-wr}" x2="${wx}" y2="${wy+wr}" stroke="${LIGHT}" stroke-width="1.4"/></g>`;
+    for(let i=0;i<2;i++) s+=`<circle cx="${wx}" cy="${wy}" r="${wr-2.5-i*2.5}" fill="none" stroke="${LIGHT}" stroke-width="1"/>`;
+    s+=`<circle cx="${mx}" cy="${jy}" r="3.4" fill="#fff" stroke="${col}" stroke-width="1.6"/>`;
+    s+=`<circle cx="${tx2}" cy="${jy}" r="3.4" fill="#fff" stroke="${col}" stroke-width="1.6"/>`;
+    s+=`<path d="M${wx} ${wy-wr} L${mx} ${jy+3} L${tx2} ${jy-3}" fill="none" stroke="${STEEL}" stroke-width="1.4"/>`;
+    s+=`<line x1="${tx2}" y1="${jy+3}" x2="${tx2}" y2="${hy}" stroke="${STEEL}" stroke-width="1.4"/>`;
+    s+=`<path d="M${tx2-4} ${hy} h8" stroke="${col}" stroke-width="2.2"/>`;
+    s+=blk(tx2-bw/2, hy+2, bw, bh, ch, 1);
+
+  } else if(kind==='panto'){
+    // パンタグラフ：下を 左右から しめると 上に のびる（N段）。待機は もっと 下（ちぢんだ 状態）。
+    //   段の高さ segH を なめらかに 動かす（hw を直接動かすと 端で 一瞬に 縮むので）。もっと 上（ベルト）まで。
+    const N=3, L=22, segMin=8, segMax=37.5;
+    const extP = op<0.45 ? ease(op/0.45) : 1;                                        // のびる（前半）
+    const compP = op<0.45 ? 0 : ease((op-0.45)/0.55);                                // 縮む（後半、ゆっくり 下へ）
+    const segH = segMin+(segMax-segMin)*Math.max(0, extP-compP);                     // のびきってから ゆっくり 縮む
+    const hw   = Math.sqrt(Math.max(1, L*L-(segH/2)*(segH/2)));                      // その 高さに 合う 半幅（＝ちぢみ）
+    const hwR  = Math.sqrt(Math.max(1, L*L-(segMin/2)*(segMin/2)));                  // 待機の 半幅（ベース寸法用）
+    s+=`<rect x="${cx-hwR-8}" y="${gy-4}" width="${hwR*2+16}" height="5" rx="2" fill="#fff" stroke="${col}" stroke-width="1.8"/>`;
+    for(let i=0;i<N;i++){ const y0=gy-4-i*segH, y1=y0-segH;
+      s+=`<line x1="${cx-hw}" y1="${y0}" x2="${cx+hw}" y2="${y1}" stroke="${col}" stroke-width="2.6"/>`;
+      s+=`<line x1="${cx+hw}" y1="${y0}" x2="${cx-hw}" y2="${y1}" stroke="${col}" stroke-width="2.6"/>`;
+      s+=`<circle cx="${cx}" cy="${(y0+y1)/2}" r="2.6" fill="${col}"/>`;
+      [[cx-hw,y0],[cx+hw,y0],[cx-hw,y1],[cx+hw,y1]].forEach(function(q){
+        s+=`<circle cx="${q[0]}" cy="${q[1]}" r="2.2" fill="#fff" stroke="${col}" stroke-width="1.3"/>`; }); }
+    const py=gy-4-N*segH;
+    s+=`<rect x="${cx-hwR-4}" y="${py-5}" width="${hwR*2+8}" height="5" rx="2" fill="#fff" stroke="${col}" stroke-width="1.8"/>`;
+    // ブロック：前半で まっすぐ 押し上げ（ベルト RAIL_Y へ）→ その直後 ベルトに 乗って 左へ 流れる
+    const restC=gy-4-N*segMin-5-bh/2;
+    let bcx, bcy;
+    if(op<0.45){ const k=ease(op/0.45); bcx=cx; bcy=restC+(RAIL_Y-restC)*k; }
+    else { const k=ease((op-0.45)/0.55); bcx=cx+((x-24)-cx)*k; bcy=RAIL_Y; }
+    s+=blk(bcx-bw/2, bcy-bh/2, bw, bh, ch, 1);
+    // 下の しめる しくみ：ねじが 回ると 左右の ナットが 内がわへ
+    const sy=gy+7;
+    s+=`<line x1="${cx-hwR-11}" y1="${sy}" x2="${cx+hwR+11}" y2="${sy}" stroke="${col}" stroke-width="2.2"/>`;
+    for(let i=0;i<10;i++){ const hx=cx-hwR-9+i*((hwR*2+18)/10)+((a360/40)%4);
+      s+=`<line x1="${hx}" y1="${sy-3.5}" x2="${hx+2.5}" y2="${sy+3.5}" stroke="${LIGHT}" stroke-width="1.2"/>`; }
+    [-1,1].forEach(function(d){
+      s+=`<rect x="${cx+d*hw-4}" y="${sy-5}" width="8" height="10" rx="1.5" fill="#fff" stroke="${BROWN}" stroke-width="1.7"/>`;
+      s+=`<line x1="${cx+d*hw}" y1="${sy-5}" x2="${cx+d*hw}" y2="${gy-3}" stroke="${BROWN}" stroke-width="1.5"/>`;
+      if(on) s+=`<path d="M${cx+d*(hw+12)} ${sy} l${-d*7} -3.5 v7 Z" fill="${BROWN}"/>`; });
+    s+=`<circle cx="${cx+hwR+14}" cy="${sy}" r="5" fill="#fff" stroke="${col}" stroke-width="1.7"/>`;
+    s+=`<line x1="${cx+hwR+14}" y1="${sy}" x2="${cx+hwR+14+Math.cos(rad)*4}" y2="${sy+Math.sin(rad)*4}" stroke="${col}" stroke-width="1.5"/>`;
+
+  } else if(kind==='screw'){
+    // アルキメデスのねじ：らせんが 回ると 谷が 上へ 動き、ブロックを おし上げる
+    const x0=x+13, y0=gy-8, x1=x+w-15, y1=ty+8;
+    const dx=x1-x0, dy=y1-y0, len=Math.hypot(dx,dy), ux=dx/len, uy=dy/len;
+    const nx=-uy, ny=ux, half=9;
+    // とい（つつ）
+    s+=`<line x1="${x0+nx*half}" y1="${y0+ny*half}" x2="${x1+nx*half}" y2="${y1+ny*half}" stroke="${LIGHT}" stroke-width="1.6"/>`;
+    s+=`<line x1="${x0-nx*half}" y1="${y0-ny*half}" x2="${x1-nx*half}" y2="${y1-ny*half}" stroke="${col}" stroke-width="2"/>`;
+    // じく
+    s+=`<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" stroke="${LIGHT}" stroke-width="1.4"/>`;
+    // らせん（回すと 山が 上へ ずれる）
+    const turns=7;
+    for(let i=0;i<turns;i++){
+      const f=((i/turns)+(op%1))%1, px=x0+ux*len*f, py=y0+uy*len*f;
+      const ph=Math.sin((f*turns)*2*Math.PI), s1=half*ph;
+      s+=`<path d="M${px-nx*half} ${py-ny*half} Q${px+ux*5+nx*s1} ${py+uy*5+ny*s1} ${px+ux*10+nx*half} ${py+uy*10+ny*half}" fill="none" stroke="${col}" stroke-width="1.8"/>`;
+    }
+    // ブロックは 谷に のって のぼる
+    const bp=ease(Math.min(1,op)), bx=x0+ux*len*bp, by=y0+uy*len*bp;
+    s+=blk(bx-bw/2, by-bh/2, bw, bh, ch, 1);
+    // 下の ハンドル（ここを 回す）
+    s+=`<circle cx="${x0-6}" cy="${y0+4}" r="7" fill="#fff" stroke="${col}" stroke-width="1.9"/>`;
+    s+=`<line x1="${x0-6}" y1="${y0+4}" x2="${x0-6+Math.cos(rad)*6}" y2="${y0+4+Math.sin(rad)*6}" stroke="${col}" stroke-width="1.7"/>`;
+    s+=`<circle cx="${x0-6+Math.cos(rad)*6}" cy="${y0+4+Math.sin(rad)*6}" r="2.2" fill="${BROWN}"/>`;
+    s+=`<line x1="${x0-6}" y1="${y0+4}" x2="${x0}" y2="${y0}" stroke="${LIGHT}" stroke-width="1.4"/>`;
+  } else if(kind==='catapult'){
+    // シーソー（逆向き）：右を おし下げると 左が 跳ね上がり、左端の ブロックが「右上」へ ぽんと 飛ぶ。
+    //   （すでに ある ブロックより 右へ 行く）
+    const pivx=x+w*0.56, pivy=gy-4, L=Math.min(w*0.32, 30);
+    const press = op<0.18 ? Math.pow(op/0.18,1.8) : 1;                                                                // 一気に 加速して 勢いよく 押し下げる
+    const ang = press*44;                                                                                            // 右を おし下げ＝左が 上がる（時計回り）
+    s+=`<path d="M${pivx-8} ${pivy+9} L${pivx} ${pivy} L${pivx+8} ${pivy+9} Z" fill="#e7edf3" stroke="${col}" stroke-width="2"/>`;   // 支点（三角）
+    s+=`<g transform="rotate(${ang} ${pivx} ${pivy})">`;
+    s+=`<rect x="${pivx-L-3}" y="${pivy-3}" width="${2*L+6}" height="6" rx="3" fill="#fff" stroke="${col}" stroke-width="2.4"/>`;    // シーソー板
+    s+=`<rect x="${pivx+L-10}" y="${pivy-12}" width="12" height="11" rx="2" fill="#fff" stroke="${col}" stroke-width="2"/>`;        // 右：押し手
+    s+=`<line x1="${pivx-L+7}" y1="${pivy-3}" x2="${pivx-L+7}" y2="${pivy-8}" stroke="${col}" stroke-width="1.6"/>`;                // 左：受けツメ
+    s+=`</g>`;
+    if(op<0.18) s+=`<path d="M${pivx+L} ${pivy-19} l0 9 M${pivx+L-4} ${pivy-13} l4 3 l4 -3" stroke="${col}" stroke-width="1.6" fill="none"/>`;  // 右を おす 矢印
+    // ブロック：左端に のる → 跳ね上げで「右上」へ 飛ぶ
+    const rad=ang*Math.PI/180, dx=-(L-2), dy=-6;
+    const rex=pivx+dx*Math.cos(rad)-dy*Math.sin(rad), rey=pivy+dx*Math.sin(rad)+dy*Math.cos(rad);
+    if(op<0.18) s+=blk(rex-bw/2, rey-bh, bw,bh,ch,1);
+    else { const k=cl((op-0.18)/0.82), t=1-Math.pow(1-k,2.4);
+      const ey=RAIL_Y, ex=KS_LAND;                                                                                    // 着地：ベルトの 高さ、い（i）の 下あたり
+      const sx0=rex, sy0=rey-bh/2, arcH=(sy0-ey)/2+50;                                                                // 放物線：右上へ 強く 打ち上げて ベルトへ
+      const bcx=sx0+(ex-sx0)*t, bcy=sy0*(1-t)+ey*t-arcH*4*t*(1-t);
+      s+=blk(bcx-bw/2, bcy-bh/2, bw,bh,ch,1); }
+    if(op>0.14 && op<0.30){ for(let i=0;i<3;i++){ const a=(i*66-16)*Math.PI/180;                                      // パチン！の 効果
+      s+=`<line x1="${pivx-L}" y1="${pivy-8}" x2="${pivx-L-Math.cos(a)*8}" y2="${pivy-8+Math.sin(a)*8}" stroke="${col}" stroke-width="1.6"/>`; } }
+  } else if(kind==='linkpush'){
+    // 大型フィーダー：クランク・ロッカー型 四節リンク（左右反転＝クランクは 左）。土台 O1-O2 は
+    //   下辺に 固定。左の クランク O1-B が 時計回りに 回り、連接棒 B-A（大きく揺れる）＋ロッカー
+    //   O2-A（右）を うごかす。連接棒を のばした 長い弁 P が 弧を えがき、待ち列の 先頭を すくって
+    //   右へ かき出し→ベルトへ 落とす。戻りは 高い所を 通るので 次のブロックに 当たらない。
+    //   クランク先 B にも もう1枚の弁を つけ、次の次のブロックを 送りこむ。
+    const S=13, cx=x+w/2, gYf=y+50;                                     // 上下左右 反転：土台は 上ぎみ・クランクは 右・弁は 左へ
+    const r=0.8, c=1.8, k=1.6, tExt=1.2, th0=140*Math.PI/180;           // 長い弁（tExt=1.2）／op0＝すくい始め
+    const BLKY=gYf+2.11*S, slot=1.46;                                   // ブロック段／待ち列の 間かく
+    const ixr=(x1,y1,r1,x2,y2,r2)=>{ const dx=x2-x1,dy=y2-y1,d=Math.hypot(dx,dy);
+      const a=(r1*r1-r2*r2+d*d)/(2*d), hh=Math.sqrt(Math.max(0,r1*r1-a*a));
+      return [x1+a*dx/d - hh*dy/d, y1+a*dy/d + hh*dx/d]; };
+    const cfg=th=>{ const B=[-1+r*Math.cos(th), r*Math.sin(th)];        // クランク先 B
+      const A=ixr(1,0,k, B[0],B[1],c);                                  // ロッカー先＝連接棒端 A
+      const P=[A[0]+tExt*(A[0]-B[0]), A[1]+tExt*(A[1]-B[1])];           // 連接棒を のばした 長い弁 P
+      return {B,A,P}; };
+    const sc=p=>[cx-p[0]*S, gYf-p[1]*S];                                // 単位→画面（上下左右 反転）
+    const O1=sc([-1,0]), O2=sc([1,0]);
+    // 弁 P の 軌道（弧）を うすく
+    let loop=''; for(let kk=0;kk<=60;kk++){ const p=sc(cfg(kk/60*2*Math.PI).P); loop+=(kk?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1); }
+    s+=`<path d="${loop}Z" fill="none" stroke="${LIGHT}" stroke-width="1" stroke-dasharray="3 2"/>`;
+    // 段（待ち列が のる 床）と 左はしの 落下やじるし
+    const edgeX=sc([2.9,0])[0];
+    s+=`<line x1="${edgeX}" y1="${BLKY+bh/2+1}" x2="${x+w-6}" y2="${BLKY+bh/2+1}" stroke="${col}" stroke-width="1.5"/>`;
+    s+=`<path d="M${edgeX-4} ${BLKY+bh/2+3} l0 6 m-2 -4 l2 4 l2 -4" stroke="${col}" stroke-width="1.3" fill="none"/>`;
+    // 待ち列（次の 3個）：op で 左へ 1こま 送られる（フィード）
+    const feed=ease(op)*slot;
+    for(let i=0;i<3;i++){ const qx=sc([-0.16 - i*slot + feed, 0])[0]; s+=blk(qx-bw/2, BLKY-bh/2, bw, bh, ch, 0.92); }
+    // 出力ブロック：長い弁 P に すくわれ、弧を えがいて 左へ→ベルトへ 落下
+    const workEnd=0.44, G=cfg(th0+op*2*Math.PI), B=sc(G.B), A=sc(G.A), P=sc(G.P);
+    const Pend=sc(cfg(th0+workEnd*2*Math.PI).P);
+    let ox, oy;
+    if(op<=workEnd){ ox=P[0]-2-bw; oy=P[1]-bh/2; }                       // 弁の 弧に のって 左へ
+    else { const t=ease(Math.min(1,(op-workEnd)/0.32)); ox=Pend[0]-2-bw; oy=(Pend[1]-bh/2)+t*(RAIL_Y-Pend[1]); }  // 落下
+    s+=blk(ox, oy, bw, bh, ch, 1);
+    // リンク本体
+    s+=`<circle cx="${O1[0]}" cy="${O1[1]}" r="${r*S}" fill="none" stroke="${LIGHT}" stroke-width="0.8" stroke-dasharray="2 2"/>`;   // クランク回転円
+    s+=`<line x1="${O1[0]}" y1="${O1[1]}" x2="${O2[0]}" y2="${O2[1]}" stroke="${LIGHT}" stroke-width="2"/>`;               // 土台（下・固定）
+    s+=`<line x1="${O2[0]}" y1="${O2[1]}" x2="${A[0]}" y2="${A[1]}" stroke="${col}" stroke-width="2.2"/>`;                 // ロッカー O2-A（右・首振り）
+    s+=`<line x1="${A[0]}" y1="${A[1]}" x2="${B[0]}" y2="${B[1]}" stroke="${BROWN}" stroke-width="2.4"/>`;                 // 連接棒 B-A（大きく揺れる）
+    s+=`<line x1="${A[0]}" y1="${A[1]}" x2="${P[0]}" y2="${P[1]}" stroke="${BROWN}" stroke-width="2.4"/>`;                 // 長い弁 A-P
+    s+=`<line x1="${O1[0]}" y1="${O1[1]}" x2="${B[0]}" y2="${B[1]}" stroke="${col}" stroke-width="3"/>`;                   // クランク O1-B（左・時計回り）
+    // 第2の弁（クランク先 B に）：外向きに のびて 次の次を 送る
+    const rl=Math.hypot(B[0]-O1[0],B[1]-O1[1])||1, SP=[B[0]+(B[0]-O1[0])/rl*0.7*S, B[1]+(B[1]-O1[1])/rl*0.7*S];
+    s+=`<line x1="${B[0]}" y1="${B[1]}" x2="${SP[0]}" y2="${SP[1]}" stroke="${col}" stroke-width="2.4"/>`;
+    s+=`<rect x="${SP[0]-2}" y="${SP[1]-4}" width="4" height="8" rx="1.5" fill="#fff" stroke="${col}" stroke-width="1.5"/>`;         // 第2の弁 頭
+    [O1,O2].forEach(q=>s+=`<circle cx="${q[0]}" cy="${q[1]}" r="2.4" fill="#fff" stroke="${col}" stroke-width="1.7"/>`);   // 固定ピボット O1・O2
+    s+=`<circle cx="${A[0]}" cy="${A[1]}" r="1.8" fill="${BROWN}"/><circle cx="${B[0]}" cy="${B[1]}" r="2.2" fill="${col}"/>`;       // 関節 A／クランク先 B
+    s+=`<rect x="${P[0]-2.5}" y="${P[1]-6}" width="5" height="12" rx="1.5" fill="#fff" stroke="${col}" stroke-width="1.9"/>`;        // 長い弁 P の 頭
+
+  } else if(kind==='bucket'){
+    // バケットエレベータ：無端チェーンに ついた バケットが 下で すくって 上へ はこぶ
+    const r=8, yt2=ty+8, yb=gy-12, L=yb-yt2, P=2*L+2*Math.PI*r;
+    // わく
+    s+=`<line x1="${cx-r}" y1="${yt2}" x2="${cx-r}" y2="${yb}" stroke="${LIGHT}" stroke-width="1.6"/>`;
+    s+=`<line x1="${cx+r}" y1="${yt2}" x2="${cx+r}" y2="${yb}" stroke="${col}" stroke-width="2"/>`;
+    s+=`<circle cx="${cx}" cy="${yt2}" r="${r}" fill="#fff" stroke="${col}" stroke-width="2"/>`;
+    s+=`<circle cx="${cx}" cy="${yb}" r="${r}" fill="#fff" stroke="${col}" stroke-width="2"/>`;
+    s+=teeth(cx,yb,r,8,a360,col); s+=teeth(cx,yt2,r,8,a360,LIGHT);
+    s+=`<circle cx="${cx}" cy="${yb}" r="2.4" fill="${col}"/><circle cx="${cx}" cy="${yt2}" r="2.4" fill="${col}"/>`;
+    // バケット（右がわを のぼり、上で かたむいて 左がわを おりる）
+    const adv=op*(L/P);
+    for(let i=0;i<6;i++){
+      const u=(i/6+adv)%1, d=u*P;
+      let bx2,by2,tilt=0;
+      if(d<L){ bx2=cx+r; by2=yb-d; }
+      else if(d<L+Math.PI*r){ const a=(d-L)/r; bx2=cx+Math.cos(a)*r; by2=yt2-Math.sin(a)*r*0.5; tilt=a*57; }
+      else { bx2=cx-r; by2=yt2+(d-L-Math.PI*r); tilt=180; }
+      s+=`<g transform="rotate(${tilt} ${bx2} ${by2})"><rect x="${bx2-6}" y="${by2-4}" width="12" height="9" rx="1.5" fill="#fff" stroke="${col}" stroke-width="1.4"/></g>`;
+    }
+    const bu=adv*P;
+    s+=blk(cx+r-bw/2, (bu<L? yb-bu : yt2)-bh/2, bw, bh, ch, 1);
+    s+=`<line x1="${cx}" y1="${yb}" x2="${cx+Math.cos(rad)*(r-2)}" y2="${yb+Math.sin(rad)*(r-2)}" stroke="${col}" stroke-width="1.7"/>`;
+
+  } else if(kind==='jack'){
+    // ラック＆ピニオン式ジャッキ：歯車が 歯ざおを かんで おし上げる。つめで もどらない
+    const rxw=13, rx=cx-rxw/2, hgt=gy-ty-6, py=lift(ease(Math.min(1,op)));
+    s+=`<rect x="${cx-16}" y="${gy-6}" width="32" height="6" rx="2" fill="#fff" stroke="${col}" stroke-width="1.8"/>`;
+    // 歯ざお（ラック）
+    s+=`<rect x="${rx}" y="${py}" width="${rxw}" height="${gy-6-py}" rx="2" fill="#fff" stroke="${col}" stroke-width="2"/>`;
+    for(let i=0;i*9<gy-6-py;i++)
+      s+=`<rect x="${rx+rxw}" y="${py+4+i*9}" width="4" height="4" fill="${col}"/>`;
+    s+=blk(cx-bw/2, py-bh-1, bw, bh, ch, 1);
+    // ピニオン（歯車）＋ハンドル
+    const gx2=rx+rxw+11, gy3=gy-30, gr2=9;
+    s+=teeth(gx2,gy3,gr2,10,-a360,col);
+    s+=`<circle cx="${gx2}" cy="${gy3}" r="${gr2}" fill="#fff" stroke="${col}" stroke-width="2"/>`;
+    s+=`<circle cx="${gx2}" cy="${gy3}" r="2.4" fill="${col}"/>`;
+    s+=`<line x1="${gx2}" y1="${gy3}" x2="${gx2+Math.cos(-rad)*(gr2-2)}" y2="${gy3+Math.sin(-rad)*(gr2-2)}" stroke="${col}" stroke-width="1.7"/>`;
+    s+=`<circle cx="${gx2+Math.cos(-rad)*(gr2-2)}" cy="${gy3+Math.sin(-rad)*(gr2-2)}" r="2.2" fill="${BROWN}"/>`;
+    // 逆もどり止めの つめ
+    s+=`<path d="M${rx-4} ${py+14} l-6 -4 l0 8 Z" fill="#fff" stroke="${BROWN}" stroke-width="1.5"/>`;
+  }
+  s+=`<text x="${x+w/2}" y="${y+h-5}" text-anchor="middle" font-size="8" fill="${BROWN}" font-family="${UDF}">${MACHINES[kind].name}</text>`;
+  return s;
+}
+
+/* ---------- 特別機構（よこ入れ ／ 上から落とす2つ）---------- */
+/* 特別装置＝斜めレーン（右上→左下）＋ さかさコップの弁。
+   コップに ブロックの穴が あき、180°まわると 穴が 下を むいて 1個だけ 落ちる。
+   出す字：マクロン→ā ／ 分岐→' ／ よこ入れ→h（見本） */
+function specialModule(kind,x,y,w,h,op,unlocked,ich){
+  const on=op>0.001, col=on?NAVY:(unlocked?'#8ba0b5':DIM);
+  let s=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="7" fill="#fff" stroke="${on?NAVY:(unlocked?'#9fb0c0':DIM)}" stroke-width="${on?2.6:1.3}"/>`;
+  s+=`<text x="${x+7}" y="${y+12}" font-size="8" fill="${unlocked?BROWN:'#c3ccd4'}" font-family="${UDF}">${SPECIAL[kind].name}</text>`;
+  const bs=11, cl=v=>Math.max(0,Math.min(1,v));
+  const rep = kind==='macron'?'ā' : "'";
+  const R=9;
+  // 斜めレーン：右上 → 左下（坂に そって ブロックを かたむける）
+  const pT=[x+w-12, y+9], pB=[x+22, y+h-15];
+  const lp=u=>[pT[0]+(pB[0]-pT[0])*u, pT[1]+(pB[1]-pT[1])*u];
+  const tilt=Math.atan2(pB[1]-pT[1], pB[0]-pT[0])*180/Math.PI-180;    // 坂の 傾き（ブロックを これで かたむける）
+  const th=tilt*Math.PI/180;
+  const ccx=pB[0]+R*Math.sin(th), ccy=pB[1]-R*Math.cos(th);          // コップ：縁（口＝下端）を 斜面に ぴったり そろえて 伏せて 置く
+  s+=`<line x1="${pT[0]}" y1="${pT[1]}" x2="${pB[0]}" y2="${pB[1]}" stroke="${col}" stroke-width="2"/>`;               // レーンの 床
+  s+=`<line x1="${pT[0]}" y1="${pT[1]-bs-2}" x2="${pB[0]}" y2="${pB[1]-bs-2}" stroke="${LIGHT}" stroke-width="1.3"/>`; // 上ガイド
+  // 坂に そって 傾いた ブロックを おく
+  const tb=(px,py,a)=>`<g transform="rotate(${tilt} ${px} ${py})">`+blk(px-bs/2,py-bs/2,bs,bs,rep,a)+`</g>`;
+  const slideP=ease(cl(op));
+  // 在庫（次・その次）：重ならず 横に ならべ、坂に そって 傾ける
+  const q2=lp(0.60+slideP*0.14), q1=lp(0.36+slideP*0.14);
+  s+=tb(q2[0], q2[1]-bs/2-1, 0.85) + tb(q1[0], q1[1]-bs/2-1, 0.95);
+  if(slideP>0.15){ const q0=lp(0.10); s+=tb(q0[0], q0[1]-bs/2-1, slideP*0.7); }               // 上から 補充
+  // いちばん下の 在庫が、回転で コップの 穴へ 1個 入っていく（op 0→0.5）
+  const qe=lp(0.86+slideP*0.14), enter=cl(op/0.5);
+  const ex=qe[0]+(ccx-qe[0])*enter, ey=(qe[1]-bs/2-1)+(ccy-(qe[1]-bs/2-1))*enter;
+  if(op<0.48) s+=tb(ex, ey, 1);
+  // コップ：水道の蛇口のように「縦軸まわり」に ひねる。
+  //   穴は 普段 向こうを むく＝手前は ふさがって 見え、中の ブロックは 隠れる。
+  //   半回転すると 穴が 手前に 来て、はじめて 穴と ブロックが 見え、ブロックが 落ちる。
+  const rot=op*180, cph=Math.cos(rot*Math.PI/180), sx=Math.max(0.12,Math.abs(cph));
+  // コップ本体は 坂の 角度に 傾けて「伏せて」置く（縦軸ひねりは 坂に 垂直な じくで）
+  s+=`<g transform="rotate(${tilt} ${ccx} ${ccy})">`;
+  s+=`<line x1="${ccx}" y1="${ccy-R-11}" x2="${ccx}" y2="${ccy+R+2}" stroke="${LIGHT}" stroke-width="1.3"/>`;          // 坂に 垂直な 回転軸
+  s+=`<g transform="rotate(${rot*0.2} ${ccx} ${ccy-R-9})"><line x1="${ccx-7}" y1="${ccy-R-9}" x2="${ccx+7}" y2="${ccy-R-9}" stroke="${col}" stroke-width="2.6"/><circle cx="${ccx-7}" cy="${ccy-R-9}" r="2" fill="${col}"/><circle cx="${ccx+7}" cy="${ccy-R-9}" r="2" fill="${col}"/></g>`;  // つまんで ひねる ハンドル
+  s+=`<line x1="${ccx}" y1="${ccy-R-9}" x2="${ccx}" y2="${ccy-R}" stroke="${col}" stroke-width="2"/>`;                 // じく棒
+  s+=`<g transform="translate(${ccx} 0) scale(${sx} 1) translate(${-ccx} 0)">`;
+  if(cph>=0){
+    // 手前は ふさがった 面（穴は 向こう）→ 中の ブロックは 見えない。さかさコップ＝口は 下
+    s+=`<path d="M${ccx-R} ${ccy+R} L${ccx-R} ${ccy+1} Q${ccx} ${ccy-R-3} ${ccx+R} ${ccy+1} L${ccx+R} ${ccy+R} Z" fill="#dfe6ee" stroke="${col}" stroke-width="2.2"/>`;
+    s+=`<line x1="${ccx-R+2}" y1="${ccy+R-3}" x2="${ccx+R-2}" y2="${ccy+R-3}" stroke="${LIGHT}" stroke-width="1.2"/>`;
+  } else {
+    // 穴（口）が 手前に 来た → さかさコップ（口は 下）の 中の ブロックが 見える
+    s+=`<path d="M${ccx-R} ${ccy+R} L${ccx-R} ${ccy+1} Q${ccx} ${ccy-R-3} ${ccx+R} ${ccy+1} L${ccx+R} ${ccy+R}" fill="#f4f7fa" stroke="${col}" stroke-width="2.2"/>`;
+    if(op<0.9) s+=blk(ccx-bs/2, ccy-bs/2, bs, bs, rep, 1);
+  }
+  s+=`</g></g>`;                                                                                                      // 本体・傾き とじる
+  // 落ち口マーク＋落下は 重力方向（まっすぐ 下、傾きの 外）
+  s+=`<path d="M${ccx-4} ${ccy+R+3} L${ccx} ${ccy+R+8} L${ccx+4} ${ccy+R+3} Z" fill="${on?col:LIGHT}"/>`;              // 落ち口マーク
+  if(op>0.55){ const k=(op-0.55)/0.45; s+=blk(ccx-bs/2, ccy+R-2+k*18, bs, bs, rep, 1-k); }
+  return s;
+}
+
+/* ---------- 配置 ---------- */
+function layout(cons){
+  VPOS={}; CPOS={}; SPX={};
+  VOWELS.split('').forEach((v,i)=>{ VPOS[v]={x:VOW.start+i*(VOW.w+VOW.gap), y:VOW.y, w:VOW.w, h:VOW.h}; });
+  // 本体子音（b・p 以外の 15）を 右へ ずらして 1段に。k が a の 下あたり＝左に 言葉の スペース。
+  const main=MAIN_CONS.filter(c=>cons.includes(c)), gp=CON.gap;
+  main.forEach((c,i)=>{ CPOS[c]={x:CON_X0+i*(CONW+gp), y:CON.y, w:CONW, h:CON.h}; });
+  // b・p は 右の 大型フィーダー（下・横ならび）。クランク・ロッカーで 弁が 弧を えがき、
+  //   待ち列から 1個ずつ かき出して ベルトへ 落とす。下辺が 固定・上に あき＝そのまま 落下。
+  if(cons.includes('b')) CPOS['b']={x:SPE_X,     y:70, w:104, h:116};
+  if(cons.includes('p')) CPOS['p']={x:SPE_X+108, y:70, w:104, h:116};
+  // 右上：マクロン（左）／分岐（右）＝横ならび（母音を 狭めて あいた ぶん）
+  SPX['macron']={x:SPE_X,     y:8, w:104, h:55};
+  SPX['branch']={x:SPE_X+108, y:8, w:104, h:55};
+}
+
+function drawFactory(){
+  const playing=!$('play').classList.contains('hidden');
+  const c=playing?CHAPTERS[Game.ci]:null, st=playing?Game.cur():null;
+  // 左：できた ことばの リスト（正解した 単語を ローマ字で つみ上げる）
+  let v=`<rect x="${WP.x}" y="${WP.y}" width="${WP.w}" height="${WP.h}" rx="8" fill="#fff" stroke="${LIGHT}" stroke-width="1.4"/>`;
+  v+=`<path d="M${WP.x} ${WP.y+18} v-8 a8 8 0 0 1 8 -8 h${WP.w-16} a8 8 0 0 1 8 8 v8 Z" fill="#1b3a5b"/>`;
+  v+=`<text x="${WP.x+10}" y="${WP.y+14}" font-size="10" fill="#fff" font-family="${UDF}" font-weight="bold">✓ できた ことば</text>`;
+  const nWords=Math.floor((WP.h-30)/16);
+  shipped.slice(-nWords).forEach((word,i)=>{
+    v+=`<text x="${WP.x+13}" y="${WP.y+36+i*16}" font-family="${UDF}" font-size="14" font-weight="bold" fill="${NAVY}">${disp(word)}</text>`; });
+  Object.keys(VPOS).forEach(ch=>{ const P=VPOS[ch];
+    const op=(MS.active&&MS.active.isValve&&MS.active.ch===ch)?MS.phase:0;
+    v+=vowelModule(valveOf(ch),P.x,P.y,P.w,P.h,dCh(ch),op); });
+  $('vowels').innerHTML=v;
+
+  let cs='';
+  Object.keys(CPOS).forEach(ch=>{ const P=CPOS[ch];
+    const op=(MS.active&&MS.active.isCons&&MS.active.ch===ch)?MS.phase:0;
+    const body=consModule(machineOf(ch),P.x,P.y,P.w,P.h,dCh(ch),op);
+    if(arriveSet.has(ch)&&arriveP<1){                 // 画面外から 搬入（方向は 機械ごと）
+      const e=ease(arriveP), k=1-e, dir=ARRIVE_DIR[ch]||'right';
+      let dx=0,dy=0;
+      if(dir==='topright'){ dx=k*200; dy=-k*(P.y+34); }        // G・Z：右上から すべりこむ
+      else if(dir==='bottom'){ dy=k*(VIEW_H-P.y+30); }         // B・P：下から せり上がる
+      else { dx=k*(VIEW_W+40-P.x); }                           // D・C・F・J：右から 押し出す
+      cs+=`<g transform="translate(${dx},${dy})" opacity="${Math.min(1,0.15+e)}">${body}</g>`;
+    } else cs+=body; });
+  $('consonants').innerHTML=cs;
+
+  let sp='';
+  SPECIAL_ORDER.forEach(k=>{ const P=SPX[k]; if(!P) return;
+    const chNo=SPECIAL[k].chNo;
+    const unlocked=c?(c.no>chNo||(c.no===chNo&&(chNo!==1||st.stage>=2))):false;
+    const op=(MS.active&&MS.active.isSpecial&&MS.active.kind===k)?MS.phase:0;
+    const ich=(op>0&&MS.active&&MS.active.ch)?MS.active.ch:'h';   // よこ入れは その都度 入れる 文字（h/y/s）
+    sp+=specialModule(k,P.x,P.y,P.w,P.h,op,unlocked,ich); });
+  $('specials').innerHTML=sp;
+
+  // ② 高架レール
+  let r=`<line x1="16" y1="${RAIL_Y+14}" x2="${VIEW_W-16}" y2="${RAIL_Y+14}" stroke="${STEEL}" stroke-width="3"/>`;
+  for(let i=0;i*88<VIEW_W-40;i++) r+=`<line x1="${40+i*88}" y1="${RAIL_Y+14}" x2="${40+i*88}" y2="${RAIL_Y+22}" stroke="${LIGHT}" stroke-width="2"/>`;
+  // 搬入中の あんない
+  if(arriveP<1 && arriveSet.size) r+=`<text x="${VIEW_W/2}" y="${RAIL_Y-24}" text-anchor="middle" font-family="${UDF}" font-size="15" font-weight="800" fill="${BROWN}">🏗️ 新せつび 搬入中！</text>`;
+  // ④ ベルトコンベア（下）
+  r+=`<line x1="16" y1="${BELT_Y2}" x2="${VIEW_W-16}" y2="${BELT_Y2}" stroke="${STEEL}" stroke-width="3"/>`;
+  for(let i=0;i*40<VIEW_W-32;i++) r+=`<line x1="${24+i*40}" y1="${BELT_Y2}" x2="${18+i*40}" y2="${BELT_Y2+7}" stroke="${LIGHT}" stroke-width="1.6"/>`;
+  // ゾーンの しきり＋ラベル（左＝常設 / 右＝搬入エリア）
+  r+=`<line x1="${ZONE_DIV}" y1="${CON.y-4}" x2="${ZONE_DIV}" y2="${BELT_Y2}" stroke="${LIGHT}" stroke-width="1.5" stroke-dasharray="4 5"/>`;
+  $('rail').innerHTML=r;
+}
+function drawBlocks(){
+  let s='';
+  blocks.forEach(b=>{ s+=`<g transform="translate(${b.x},${b.y}) scale(${b.scale||1})" opacity="${b.op==null?1:b.op}">`+
+    `<rect x="-9" y="-9.5" width="22" height="24" rx="3" fill="#9fabb9" opacity="0.5"/>`+
+    `<rect x="-11" y="-12" width="22" height="24" rx="3" fill="#edf1f6" stroke="${b.bad?'#b23b3b':NAVY}" stroke-width="2"/>`+
+    `<text x="0" y="6" text-anchor="middle" font-family="${UDF}" font-size="17" font-weight="bold" fill="${b.bad?'#b23b3b':NAVY}">${disp(b.ch)}</text></g>`; });
+  $('blocks').innerHTML=s;
+}
+
+function loop(){
+  drawBlocks();
+  if(MS.active) drawFactory();       // 押している あいだだけ 動く
+  if(!$('zukan').classList.contains('hidden')) drawZukan();   // 図鑑の きかいを 動かす
+  if(!$('title').classList.contains('hidden')) drawTitleAnim(performance.now());   // トップ画面の からくり
+  requestAnimationFrame(loop);
+}
+function tween(dur,fn){ return new Promise(res=>{ const t0=performance.now();
+  (function f(){ const p=Math.min(1,(performance.now()-t0)/dur); fn(p);
+    if(p<1) requestAnimationFrame(f); else res(); })(); }); }
+const ease=p=>p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;
+/* 擬音の 文字（「ギュルギュル！」など）は 画面に 出さない。音だけ 鳴らす */
+function gion(){}
+
+function mechFallback(ch,prev){
+  if(ch==="'") return 'branch';
+  if(MACRON_CHARS.includes(ch)) return 'macron';
+  return 'valve';
+}
+
+/* 1文字ぶん 機械を うごかす */
+async function dropLetter(ch, m, upArg){
+  const slot=answer.length;
+  if(!m) m=mechFallback(ch, answer[answer.length-1]||'');
+  const isVowelSlot = (m==='valve' && VOWELS.includes(ch));
+  const isConsSlot  = (m==='valve' && !VOWELS.includes(ch));
+  const isSpecial   = (m!=='valve');
+  let kind, info, dur;
+  if(isVowelSlot){ kind=valveOf(ch); info=VALVES[kind]; dur=850; }
+  else if(isConsSlot){ kind=machineOf(ch); info=MACHINES[kind]; dur=1250; }
+  else { kind=m; info=SPECIAL[kind]; dur=900; }
+
+  const up=(upArg!==undefined?upArg:isUpNext()), cch=up?String(ch).toUpperCase():ch;   // 物理シフトは 1文字ごとに upArg で 伝える
+  answer+=ch; caseList.push(up); if(caseMode===2){ shiftOn=false; updateShiftKey(); }
+  $('inp').value=disp(casedAnswer());
+  MS.active={kind,ch,isValve:isVowelSlot,isCons:isConsSlot,isSpecial}; MS.cased=cch;
+  gion(info.gion); Sound.play(info.sfx);
+  await tween(dur,p=>{ MS.phase=p; });
+  MS.phase=0; MS.active=null; drawFactory();
+
+  let from;
+  if(isVowelSlot){ const P=VPOS[ch];                                              // 上から おりる
+    if(valveOf(ch)==='pawl1'){ from={x:P.x+P.w*0.5-110, y:RAIL_Y}; }              // o だるま：左へ 大きく 飛んで ベルトに 着地した 先から
+    else { const dx=(valveOf(ch)==='seesaw')?8:0; from={x:P.x+P.w*0.5+dx, y:P.y+P.h-8}; } }
+  else if(isConsSlot){ const P=CPOS[ch];                                          // 下から のぼる
+    const mk=P&&machineOf(ch);
+    if(mk==='catapult'){ from={x:KS_LAND, y:RAIL_Y}; }                            // シーソー（k/s）：右上へ 投げて い（i）の 下へ 着地した 先から
+    else if(mk==='plunger'){ from={x:P.x+P.w*0.5-18, y:RAIL_Y}; }                 // 発射（m）：ベルトに 着地した 先から
+    else if(mk==='panto'){ from={x:P.x-24, y:RAIL_Y}; }                           // パンタグラフ：押し上げ後 ベルトに 乗った 先から
+    else if(mk==='linkpush'){ from={x:P.x+15, y:RAIL_Y}; }                        // b/p 大型フィーダー：弁が 左へ かき出して ベルトへ 落ちた 先から
+    else if(mk==='stairs'){ const m=9,sww=(P.w-2*m)/4; from={x:P.x+m+3.5*sww, y:RAIL_Y}; }   // 階段：最後の 段（ベルトの 高さ）から
+    else from=P?{x:P.x+P.w*0.5, y:P.y+20}:{x:430, y:CON.y1}; }
+  else { const P=SPX[kind];
+    from={x:P.x+22, y:P.y+P.h-3}; }                             // マクロン・分岐：さかさコップの 下（出口）から
+  const b={ch:cch, x:from.x, y:from.y, scale:1}; blocks.push(b);
+  const tx=WORD_X+slot*LW;
+  MS.moving++;
+  const vdist=Math.abs(from.y-RAIL_Y);
+  const goLeft=()=>{ b.y=RAIL_Y; return tween(700,p=>{ b.x=from.x+(tx-from.x)*ease(p); }); };
+  // ベルトに 着いていれば 縦移動は なし＝留まらず すぐ 運ぶ。上下する ときも 距離に 応じた 短い 時間で。
+  (vdist<4 ? goLeft() : tween(Math.min(500,Math.max(150,vdist*3.4)),p=>{ b.y=from.y+(RAIL_Y-from.y)*ease(p); }).then(goLeft))
+    .then(()=>{ b.x=tx; b.y=RAIL_Y; MS.moving--; });
+}
+function popLetter(){ if(!answer) return;
+  answer=answer.slice(0,-1); caseList.pop(); $('inp').value=disp(casedAnswer());
+  const b=blocks.pop(); if(!b) return; Sound.play('back');
+  tween(160,p=>{ b.op=1-p; b.y=b.y-p*22; }); }
+function clearBlocks(){ answer=''; caseList=[]; $('inp').value=''; blocks=[]; }
+
+/* ============================================================
+   ゲーム進行
+   ============================================================ */
+const KEY='majideromaji.v6';
+const loadDone=()=>{try{return new Set(JSON.parse(localStorage.getItem(KEY)||'[]'));}catch(e){return new Set();}};
+const saveDone=s=>{try{localStorage.setItem(KEY,JSON.stringify([...s]));}catch(e){}};
+// マシーン図鑑：出会った（プレイした）機械を 記録。工場を またいで 保持（一度アンロックしたら 消えない）。
+const MKEY='majideromaji.machines.v1';
+let unlockedMachines=(()=>{try{return new Set(JSON.parse(localStorage.getItem(MKEY)||'[]'));}catch(e){return new Set();}})();
+const saveUnlockedMachines=()=>{try{localStorage.setItem(MKEY,JSON.stringify([...unlockedMachines]));}catch(e){}};
+function unlockMachinesForSeries(s){ let ch=false;
+  VOWELS.split('').forEach(v=>{ const k=valveOf(v); if(!unlockedMachines.has(k)){unlockedMachines.add(k);ch=true;} });   // 母音装置は 常設
+  (s.cons||[]).forEach(c=>{ const k=machineOf(c); if(!unlockedMachines.has(k)){unlockedMachines.add(k);ch=true;} });     // その章の 搬送機械
+  if(ch) saveUnlockedMachines(); }
+// のびしろリスト：まちがえた 問題を ストック（工場をまたいで 保持）。cm＝まちがえた ときの 工場。
+const NKEY='majideromaji.mistakes.v1';
+let mistakes=(()=>{try{return JSON.parse(localStorage.getItem(NKEY)||'[]');}catch(e){return [];}})();
+const saveMistakes=()=>{try{localStorage.setItem(NKEY,JSON.stringify(mistakes));}catch(e){}};
+function addMistake(kana,cm){ if(!mistakes.some(x=>x.kana===kana&&x.cm===cm)){ mistakes.push({kana,cm}); saveMistakes(); } }
+function removeMistake(kana,cm){ mistakes=mistakes.filter(x=>!(x.kana===kana&&x.cm===cm)); saveMistakes(); }
+// のびしろ練習用：どの まちがい語も 作れるよう、すべての 装置・文字を つかえる 合成ステージ
+function makeReviewSeries(kana){
+  const romaji=buildRomaji(kana,false), isLong=macronForm(romaji)!==romaji;
+  const q={kana,romaji,flags:flagsOf(kana,romaji,isLong)};
+  const allCons=[...GROUP1,...GROUP2,'b','p'];
+  const letters=[...new Set([...VOWELS.split(''),...allCons,'h','y','s'])].sort();
+  return { key:'review', stage:1, em:'🌱', name:'のびしろ', q:[q], cons:allCons.slice(),
+    letters, hasApos:true, machines:[...new Set(allCons.map(machineOf))], newCons:[], newMachines:[] };
+}
+
+function renderLives(){ const el=$('pLives'); if(el) el.textContent='❤'.repeat(Math.max(0,lives))+'🖤'.repeat(Math.max(0,3-lives)); }
+function updateShiftKey(){ if(!shiftKeyEl) return; shiftKeyEl.textContent=shiftOn?'⇧ 大':'⇧ 小'; shiftKeyEl.classList.toggle('on',shiftOn); }
+function setFactory(m){ caseMode=m; shiftOn=false; CHAPTERS = m===2 ? CHAPTERS_3 : CHAPTERS_12; }
+const fkey=k=>caseMode+':'+k;                       // クリア記録は 工場ごとに 別（第1・2・3 それぞれ 進行を もつ）
+// 第m工場（0=小 1=大）を すべて クリアしたか
+function factoryCleared(m){ return CHAPTERS_12.every(c=>c.series.every(s=>Game.doneSeries.has(m+':'+s.key))); }
+function factory3Unlocked(){ return factoryCleared(0) || factoryCleared(1); }   // 第3工場は 第1か第2を クリアで 解放
+const Game={
+  doneSeries:loadDone(), ci:0, si:0, qi:0, attempts:0, busy:false,
+  queue:[], pumping:false, ops:null,
+
+  chapterUnlocked(ci){ if(ci===0) return true;
+    const p=CHAPTERS[ci-1]; return p?p.series.every(s=>this.doneSeries.has(fkey(s.key))):false; },
+  stageUnlocked(ci,si){ if(si===0) return this.chapterUnlocked(ci);
+    return this.doneSeries.has(fkey(CHAPTERS[ci].series[si-1].key))||this.doneSeries.has(fkey(CHAPTERS[ci].series[si].key)); },
+
+  show(id){ ['title','chapters','play','done','gameover','zukan','nobishiro'].forEach(x=>$(x).classList.toggle('hidden',x!==id)); },
+  toZukan(){ buildZukan(); this.show('zukan'); },
+  toNobishiro(){ this.review=null; buildNobishiro(); this.show('nobishiro'); },
+  startReview(idx){
+    const mk=mistakes[idx]; if(!mk) return;
+    setFactory(mk.cm); this.review=mk; this.reviewSeries=makeReviewSeries(mk.kana);
+    this.ci=0; this.si=0; this.qi=0; this.attempts=0; this.busy=false;
+    lives=3; shiftOn=false; renderLives();
+    this.queue.length=0; blocks=[]; shipped=[]; answer=''; caseList=[];
+    const s=this.reviewSeries;
+    layout(s.cons); buildKeyboard(s.letters, s.hasApos, true);
+    this.show('play'); this.renderQuestion();
+    arriveSet=new Set(); arriveP=1; drawFactory();
+  },
+  toTitle(){ this.review=null; this.show('title'); if(typeof refreshFactoryLocks==='function') refreshFactoryLocks(); if(typeof updateTitleNobiCount==='function') updateTitleNobiCount(); },
+  gameOver(){ Sound.play('ng'); this.show('gameover'); },
+  toChapters(){ this.renderChapters(); this.show('chapters'); },
+
+  renderChapters(){
+    const fl=$('chapFactory'); if(fl) fl.textContent=`第${'１２３'[caseMode]||caseMode+1}工場（${FACTORY[caseMode].sub}）`;
+    const wrap=$('chapList'); wrap.innerHTML='';
+    CHAPTERS.forEach((c,ci)=>{
+      const un=this.chapterUnlocked(ci);
+      const el=document.createElement('div'); el.className='chap'+(un?'':' locked');
+      const bar=document.createElement('div'); bar.className='bar';
+      bar.innerHTML=`<span class="no">第${c.no}章</span><div><div class="name">${c.title}</div>`+
+        `<div class="learn">${c.learn}</div></div>`+
+        (un?'':'<span class="lock">🔒 まえの章をクリア</span>');
+      el.appendChild(bar);
+      if(un){ const sr=document.createElement('div'); sr.className='series';
+        c.series.forEach((s,si)=>{ const okS=this.stageUnlocked(ci,si);
+          const b=document.createElement('button'); b.className='sbtn';
+          b.innerHTML=`<span class="st">${'①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳'[s.stage-1]||('S'+s.stage)}</span><span>${s.em}</span>${s.name}`+
+            (this.doneSeries.has(fkey(s.key))?' ✓':'')+(okS?'':' 🔒');
+          if(okS) b.addEventListener('click',()=>this.startSeries(ci,si)); else b.style.opacity=.45;
+          sr.appendChild(b); });
+        el.appendChild(sr); }
+      wrap.appendChild(el);
+    });
+  },
+
+  renderCollection(){ /* きかいコレクションUIは 廃止 */ },
+
+  startSeries(ci,si){
+    this.review=null;
+    this.ci=ci; this.si=si; this.qi=0; this.attempts=0; this.busy=false;
+    lives=3; shiftOn=false; renderLives();
+    this.queue.length=0; blocks=[]; shipped=[]; answer=''; caseList=[];
+    const s=CHAPTERS[ci].series[si];
+    layout(s.cons);
+    buildKeyboard(s.letters, s.hasApos, CHAPTERS[ci].allow.choon);
+    this.show('play'); this.renderCollection(); this.renderQuestion();
+    // 新しい子音は 画面外から 搬入（横から 入ってくる演出）
+    arriveSet=new Set((s.newCons||[]).filter(c=>GROUP2.includes(c)));   // 第1グループは 常設（搬入演出なし）
+    if(arriveSet.size){ arriveP=0; tween(760,p=>{ arriveP=p; drawFactory(); }).then(()=>{arriveP=1;arriveSet=new Set();drawFactory();}); }
+    else { arriveP=1; arriveSet=new Set(); }
+    drawFactory();
+  },
+  cur(){ return this.review ? this.reviewSeries : CHAPTERS[this.ci].series[this.si]; },
+
+  renderQuestion(){
+    const s=this.cur(), q=s.q[this.qi];
+    if(this.review){ $('pChap').textContent='🌱 のびしろリスト'; $('pStage').textContent='まちがい 練習'; }
+    else { const c=CHAPTERS[this.ci]; $('pChap').textContent=`第${c.no}章 ${c.title}`; $('pStage').textContent=`ステージ${s.stage}`; }
+    $('pQn').textContent=`もんだい ${this.qi+1}/${s.q.length}`;
+    $('qSeries').textContent=`${s.em} ${s.name}`;
+    $('qKana').textContent=q.kana;
+    try{ this.ops=decomposeOps(q.kana,q.flags.choon); }catch(e){ this.ops=null; }
+    this.queue.length=0; clearBlocks();
+    $('inp').className='mono'; $('msg').textContent=''; $('msg').className='msg'; $('hint').innerHTML='';
+    this.attempts=0; shiftOn=false; updateShiftKey();
+  },
+
+  enqueue(a){ if(this.busy) return; this.queue.push(a); this.pump(); },
+  async pump(){ if(this.pumping) return; this.pumping=true;
+    while(this.queue.length){ const a=this.queue.shift();
+      if(a.t==='back'){ popLetter(); continue; }
+      if(answer.length>=14) continue;
+      const step=this.ops&&this.ops[answer.length];
+      const m=(step&&step.ch===a.ch)?step.m:null;
+      await dropLetter(a.ch,m,a.up); }
+    this.pumping=false; },
+  async drain(){ while(this.pumping||this.queue.length) await new Promise(r=>setTimeout(r,16)); },
+  press(ch,up){ this.enqueue({t:'drop',ch,up}); },
+  back(){ this.enqueue({t:'back'}); },
+
+  async submit(){
+    if(this.busy) return; await this.drain();
+    const q=this.cur().q[this.qi], inp=$('inp'), msg=$('msg');
+    const ans2 = q.flags.choon ? macronForm(q.romaji) : null;   // マクロン形も 正解
+    const my=casedAnswer(), t1=caseTarget(q.romaji), t2=ans2?caseTarget(ans2):null;
+    if(my!==t1 && my!==t2){
+      this.attempts++; Sound.play('ng');
+      if(!this.review){ addMistake(q.kana, caseMode); lives=Math.max(0,lives-1); renderLives(); }   // まちがいを のびしろリストへ（練習中は 追加も 減りも しない）
+      inp.className='mono bad'; setTimeout(()=>inp.classList.remove('bad'),320);
+      msg.className='msg ng'; msg.textContent=(this.review||lives>0)?'もういちど！':'マシーンが こわれた…';
+      $('hint').innerHTML=`ヒント：<span class="mono" style="font-weight:800">${disp(t1)}</span>`+(t2?` <span class="mono">/ ${disp(t2)}</span>`:'');
+      this.busy=true; blocks.forEach(b=>b.bad=true);
+      await tween(420,p=>{ blocks.forEach(b=>{ b.op=1-p; b.y=RAIL_Y+p*14; }); });
+      clearBlocks(); this.busy=false;
+      if(!this.review && lives<=0){ this.gameOver(); } return;
+    }
+    this.busy=true; inp.className='mono good';
+    msg.className='msg ok'; msg.textContent='せいかい！';
+    gion('しゅっか！'); Sound.play('done');
+    await tween(460,p=>{ const e=ease(p); blocks.forEach(b=>{ b.x-=e*36; b.op=1-e*.9; b.scale=1-e*.4; }); });
+    shipped.push(casedAnswer()); clearBlocks(); drawFactory();
+    this.busy=false; this.advance();
+  },
+
+  advance(){ this.qi++; if(this.qi>=this.cur().q.length) this.finishSeries(); else this.renderQuestion(); },
+
+  finishSeries(){
+    if(this.review){ removeMistake(this.review.kana,this.review.cm); this.review=null; Sound.play('build'); this.toNobishiro(); return; }   // のびしろ：クリアで リストから 消す
+    this.doneSeries.add(fkey(this.cur().key)); saveDone(this.doneSeries);
+    const c=CHAPTERS[this.ci], s=this.cur();
+    if(caseMode!==2) unlockMachinesForSeries(s);       // 図鑑：第1・第2工場で クリアした 分だけ アンロック（第3工場は 増やさない）
+    const nm=s.newMachines||[];
+    if(nm.length){ Sound.play('build');
+      $('doneNew').innerHTML='🏗️ '+nm.map(m=>MACHINES[m].build).join('　'); }
+    else $('doneNew').textContent='';
+    $('doneScore').innerHTML=`<span style="font-size:12px;color:#5b4636">つかえる文字：`+s.letters.map(disp).join(' ')+`</span><br>`+
+      `<span style="font-size:12px;color:#1b3a5b">きかい：`+(s.machines.length?s.machines.map(m=>MACHINES[m].name).join('・'):'（まだ 母音だけ）')+`</span>`;
+    const nb=$('nextBtn');
+    if(this.si+1<c.series.length){ nb.classList.remove('hidden');
+      nb.textContent=`つぎ：${c.series[this.si+1].em} ${c.series[this.si+1].name}`; }
+    else if(CHAPTERS[this.ci+1]){ nb.classList.remove('hidden'); nb.textContent=`第${this.ci+2}章へ`; }
+    else nb.classList.add('hidden');
+    this.show('done');
+  },
+
+  nextSeries(){ const c=CHAPTERS[this.ci];
+    if(this.si+1<c.series.length) this.startSeries(this.ci,this.si+1);
+    else if(CHAPTERS[this.ci+1]) this.startSeries(this.ci+1,0);
+    else this.toChapters(); },
+};
+
+/* ---- 入力 ---- */
+/* 子音キーは 五十音の順（カ サ タ ナ ハ マ ヤ ラ ワ → だくおん → とくべつ） */
+const CONS_ORDER=[...GROUP1,...GROUP2,'b','p'];   // キーボード：本体子音（k…d）＋ 右上の b・p
+const HOT_KEYS=['h','n','y'];   // ハ行・ナ行・ヤ行いがいにも つかう 特別な文字（拗音の y、し/ち の h、ん の n）
+
+function buildKeyboard(letters, hasApos, hasChoon){
+  const kb=$('kb'); kb.innerHTML=''; shiftKeyEl=null;
+  const kl=lb=>caseMode===1?String(lb).toUpperCase():lb;   // 大文字工場では キーも 大文字
+  const mkKey=(label,cls,onPress,title)=>{
+    const b=document.createElement('button'); b.className='key'+(cls||'');
+    b.textContent=disp(label); if(title) b.title=title;
+    b.addEventListener('click',onPress); return b; };
+  const row=()=>{ const r=document.createElement('div'); r.className='row'; return r; };
+
+  // 母音（a i u e o）
+  const r1=row();
+  VOWELS.split('').forEach(ch=>r1.appendChild(
+    mkKey(kl(ch),' vw',()=>Game.press(ch),VALVES[valveOf(ch)].name)));
+  kb.appendChild(r1);
+
+  // 子音（五十音順）。h・n は色つき。c の となりに ch をおく
+  const cons=CONS_ORDER.filter(c=>letters.includes(c));
+  const items=[];
+  cons.forEach(ch=>{
+    items.push({label:kl(ch), cls:HOT_KEYS.includes(ch)?' sp':' cn',
+      press:()=>Game.press(ch), title:MACHINES[machineOf(ch)]?MACHINES[machineOf(ch)].name:''});
+    if(ch==='c' && letters.includes('h'))       // 「ち」のための セット
+      items.push({label:kl('ch'), cls:' duo', press:()=>{Game.press('c');Game.press('h');},
+        title:'「ち」の セット'});
+  });
+  // 母音の すぐ下の段に、左から カ行 サ行 タ行… の順で ならべる（せまい画面では おりかえす）
+  const rc=row();
+  items.forEach(it=>rc.appendChild(mkKey(it.label,it.cls,it.press,it.title)));
+  kb.appendChild(rc);
+
+  if(hasChoon){ const r=row();   // マクロン（のばす音）。母音字ならべ でも OK
+    'aiueo'.split('').forEach(v=>r.appendChild(mkKey(kl(MACRON[v]),' vw',()=>Game.press(MACRON[v]),'マクロン（のばす音）')));
+    kb.appendChild(r); }
+  if(hasApos){ const r=row(); r.appendChild(mkKey("'",' sp',()=>Game.press("'"),'切れめ')); kb.appendChild(r); }
+
+  const ctrl=row();
+  if(caseMode===2){   // 人名・地名工場：大文字／小文字 切り替えボタン（頭文字だけ 大文字に）
+    shiftKeyEl=mkKey('⇧ 小',' wide shift',()=>{ shiftOn=!shiftOn; updateShiftKey(); });
+    ctrl.appendChild(shiftKeyEl); updateShiftKey(); }
+  ctrl.appendChild(mkKey('⌫ もどす',' wide del',()=>Game.back()));
+  ctrl.appendChild(mkKey('✓ できた',' wide go',()=>Game.submit()));
+  kb.appendChild(ctrl);
+}
+document.addEventListener('keydown',e=>{
+  if($('play').classList.contains('hidden')) return;
+  if(e.key==='Enter'){ e.preventDefault(); Game.submit(); return; }
+  if(e.key==='Backspace'){ e.preventDefault(); Game.back(); return; }
+  const ch=e.key.toLowerCase(); const s=Game.cur&&Game.cur(); if(!s) return;
+  if(ch==="'"&&s.hasApos){ e.preventDefault(); Game.press("'"); return; }
+  if(/^[a-z]$/.test(ch)&&s.letters.includes(ch)){ e.preventDefault();
+    Game.press(ch, caseMode===2?e.shiftKey:undefined); }   // 人名・地名工場：Shift＋文字＝大文字（頭文字だけ）
+});
+const on=(id,fn)=>{const el=$(id); if(el) el.addEventListener('click',fn);};
+// スタート画面：ギア形の 工場ボタンを 3つ つくる（小文字／大文字／人名・地名）
+(function buildFactories(){
+  const wrap=$('factories'); if(!wrap) return;
+  const COG='<svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg"><path class="cog" d="'+cogPath(70,70,60,44,12)+'"/><circle cx="70" cy="70" r="30" fill="none" stroke="#c7d0da" stroke-width="2"/></svg>';
+  FACTORY.forEach((f,m)=>{
+    const b=document.createElement('button'); b.className='gear'; b.type='button'; b.dataset.m=m;
+    b.innerHTML=`<div class="cogwrap">${COG}<div class="fx">${disp(f.ex)}</div></div>`+
+      `<div class="fn">第${m+1}工場<br>${f.name}</div><div class="fs">${f.sub}</div>`+
+      (m===2?`<div class="flock">🔒 第1か第2工場を<br>クリアで あく</div>`:'');
+    b.addEventListener('click',()=>{ if(m===2 && !factory3Unlocked()) return; setFactory(m); Sound.init(); Game.toChapters(); });
+    wrap.appendChild(b);
+  });
+})();
+function refreshFactoryLocks(){                     // 第3工場の ロック表示を 更新（タイトルを 表示する たび）
+  const b=document.querySelector('#factories .gear[data-m="2"]'); if(!b) return;
+  b.classList.toggle('locked', !factory3Unlocked());
+}
+function devUnlockAll(){                            // かくし機能（テスト用）：全工場・全ステージ・図鑑を アンロック
+  [[0,CHAPTERS_12],[1,CHAPTERS_12],[2,CHAPTERS_3]].forEach(([m,CH])=>CH.forEach(c=>c.series.forEach(s=>Game.doneSeries.add(m+':'+s.key))));
+  saveDone(Game.doneSeries);
+  ZUKAN.forEach(z=>unlockedMachines.add(z.kind)); saveUnlockedMachines();
+  refreshFactoryLocks();
+  const dm=$('devMsg'); if(dm){ dm.textContent='　✔ ぜんぶ アンロック！'; setTimeout(()=>{dm.textContent='';},2500); }
+}
+function cogPath(cx,cy,rOut,rIn,teeth){   // ギアの アウトライン（歯つき）
+  const step=Math.PI/teeth, half=step*0.5; let d='';
+  for(let i=0;i<teeth;i++){ const a=i*2*step;
+    const p=[[rOut,a-half*0.7],[rOut,a+half*0.7],[rIn,a+half],[rIn,a+2*step-half]];
+    p.forEach((pt,j)=>{ const x=cx+pt[0]*Math.cos(pt[1]), y=cy+pt[0]*Math.sin(pt[1]); d+=(i===0&&j===0?'M':'L')+x.toFixed(1)+' '+y.toFixed(1);});
+  }
+  return d+'Z';
+}
+{ const du=$('devUnlock'); if(du) du.addEventListener('click',e=>{ if(e.detail>=3) devUnlockAll(); }); }   // 「参考」トリプルクリックで 全アンロック
+on('btnZukan',()=>Game.toZukan());
+on('btnZukanBack',()=>Game.toTitle());
+on('btnNobishiro',()=>Game.toNobishiro());
+on('btnNobiBack',()=>Game.toTitle());
+on('btnTitle',()=>Game.toTitle());
+on('btnQuit',()=>Game.review?Game.toNobishiro():Game.toChapters());
+on('btnToChapters',()=>Game.toChapters());
+on('goRetry',()=>Game.startSeries(Game.ci,Game.si));
+on('goChapters',()=>Game.toChapters());
+on('nextBtn',()=>Game.nextSeries());
+on('btnSound',()=>{Sound.on=!Sound.on;$('btnSound').textContent=Sound.on?'🔊':'🔇';});
+
+/* ============ マシーン図鑑（仕組み図鑑）============
+   現実の機構と ゲームの機械を むすぶ 学習コンテンツ。図は ゲームと 同じ 描画関数を
+   そのまま つかう（同じ ブロック・色・線）。t:'valve'＝母音脱進機／'cons'＝子音搬送機。 */
+const ZUKAN=[
+  {t:'valve',kind:'seesaw',ch:'a',formal:'シーソー脱進機',short:'シーソー（あ）',
+    uses:[['🛝','こうえんの\nシーソー'],['⚖️','てんびん']],
+    role:'あ の ブロックを、てこ（シーソー）で かたむけて <b>1個だけ</b> コトッと おとします。'},
+  {t:'valve',kind:'pawl2',ch:'i',formal:'アンクル脱進機（二本ツメ）',short:'二本ツメ（い）',
+    uses:[['⏰','目ざまし\n時計'],['🕰️','ふりこ\n時計']],
+    role:'い の ブロックを、2本の ツメが かわりばんこに 止めて <b>1個ずつ</b> おくります。<b>時計</b>と 同じ しくみ。'},
+  {t:'valve',kind:'drum',ch:'u',formal:'回転ドラム供給装置',short:'ドラム（う）',
+    uses:[['🎰','ガチャ'],['🍬','ガムボール\nマシン'],['🎫','はっけん機']],
+    role:'う の ブロックを、回る ドラムの あなに 入れて <b>1個ずつ</b> コロンと 出します。ガチャと 同じ しくみ。'},
+  {t:'valve',kind:'slide',ch:'e',formal:'回転ポケット供給盤（スターホイール）',short:'回転ポケット（え）',
+    uses:[['🎡','ルーレット'],['🎰','ガチャ']],
+    role:'え の ブロックを、6つの ポケットが ある 円ばんが くるっと 回って、真下に きた <b>1個だけ</b> コロンと おとします。'},
+  {t:'valve',kind:'pawl1',ch:'o',formal:'だるま落とし脱進機',short:'だるま落とし（お）',
+    uses:[['🪆','だるま\n落とし'],['🔨','木づち']],
+    role:'お の ブロックを、だるま落としのように 横から たたいて <b>1個だけ</b> 飛ばして おとします。'},
+  {t:'cons',kind:'catapult',ch:'k',cap:0.5,rail:24,formal:'カタパルト（投てき機）',short:'シーソー（か・さ行）',
+    uses:[['🛝','シーソー'],['🏰','とう石機']],
+    role:'か行・さ行の ブロックを、てこで <b>右上へ 投げ上げて</b> 高いレールへ とどけます。'},
+  {t:'cons',kind:'stairs',ch:'t',rail:24,formal:'階段リフト（カム式）',short:'階段（た・な行）',
+    uses:[['🏢','ビル'],['🏭','工場']],
+    role:'た行・な行の ブロックを、カムで <b>一段ずつ もち上げて</b> 階段のように レールへ はこびます。'},
+  {t:'cons',kind:'crane',ch:'h',formal:'クレーン搬送機',short:'クレーン（は行・ふ）',
+    uses:[['🏗️','こうじ'],['🏢','ビル'],['🚢','みなと'],['🪣','つるべ井戸']],
+    role:'は行・ふ の ブロックを、ワイヤと 滑車で <b>つり上げて</b> はこびます。井戸の <b>つるべ</b>と 同じ、滑車で 引き上げる しくみ。'},
+  {t:'cons',kind:'panto',ch:'y',cap:0.55,rail:24,formal:'パンタグラフ搬送機',short:'パンタグラフ（や・ら行）',
+    uses:[['🚆','電車'],['🚊','路面\n電車']],
+    role:'や行・ら行の ブロックを、パンタグラフを <b>ぐーっと のばして 押し上げ</b>ます。電車の 屋根の あれ。'},
+  {t:'cons',kind:'screw',ch:'w',formal:'アルキメデスのねじ搬送機',short:'ねじ（わ・が行）',
+    uses:[['🌾','ようすい'],['🍞','製粉'],['🏭','工場']],
+    role:'わ・が行の ブロックを、<b>らせん（ねじ）を 回して</b> 下から 上へ 送り上げます。'},
+  {t:'cons',kind:'bucket',ch:'z',formal:'バケットエレベータ',short:'バケット（ざ行）',
+    uses:[['🌾','お米・むぎ'],['🏗️','建設'],['🏭','工場']],
+    role:'ざ行の ブロックを、チェーンに ついた <b>たくさんの バケツで すくって</b> 上へ はこびます。サイロで お米・むぎを 運ぶ しくみ。'},
+  {t:'cons',kind:'jack',ch:'d',formal:'ラック＆ピニオン搬送機',short:'ラック＆ピニオン（だ行）',
+    uses:[['🚗','自動車'],['🚆','電車'],['🏭','工場']],
+    role:'だ行の ブロックを、歯車（ピニオン）と 歯ざお（ラック）で <b>ぐいぐい 押し上げ</b>ます。車の ハンドルにも。'},
+  {t:'cons',kind:'plunger',ch:'m',cap:0.6,rail:24,formal:'ばね発射装置（プランジャー）',short:'発射（ま行）',
+    uses:[['🎯','パチンコ'],['🔩','ばね']],
+    role:'ま行の ブロックを、<b>ばねで パチンと 打ち上げて</b> レールへ とどけます。パチンコと 同じ。'},
+  {t:'cons',kind:'linkpush',ch:'b',cap:0.8,rail:156,formal:'クランク・ロッカー フィーダー（四節リンク）',short:'フィーダー（ば・ぱ行）',
+    uses:[['🏭','工場'],['🖨️','印刷機'],['🤖','ロボット']],
+    role:'ば行・ぱ行の ブロックを、回る クランクと 弁（リンク）で <b>弧を えがいて かき出し</b>、ベルトへ おくります。'},
+];
+function buildZukan(){
+  const wrap=$('zukanList'); let n=0;                                 // アンロックした 機械だけ 表示（毎回 作り直す＝順次 ふえる）
+  const cards=ZUKAN.map((z,i)=>{
+    if(!unlockedMachines.has(z.kind)) return '';                      // まだ 出会っていない 機械は かくす
+    n++;
+    const uses=z.uses.map(u=>`<div class="zuse"><span class="em">${u[0]}</span>${u[1].replace(/\n/g,'<br>')}</div>`).join('');
+    return `<div class="zcard"><div class="zhead"><div class="zformal">${i+1}. ${z.formal}</div>`+
+      `<div class="zshort">ゲームでは「${z.short}」</div></div>`+
+      `<div class="zbody"><div class="zdiag"><svg viewBox="0 0 132 168" xmlns="http://www.w3.org/2000/svg"><g id="zg${i}"></g></svg></div><div class="zright">`+
+      `<div><div class="zlabel">▶ 身近な 利用れい</div><div class="zuses">${uses}</div></div>`+
+      `<div><div class="zlabel">▶ マジマジ！ローマ字マシーンでは…</div><div class="zrole">${z.role}</div></div>`+
+      `</div></div></div>`;
+  }).join('');
+  wrap.innerHTML = n===0
+    ? `<div class="zempty">図鑑は まだ カラっぽ。<br>工場で あそんで きかいと 出会うと、ここに どんどん ふえていくよ！</div>`
+    : cards;
+  const cnt=$('zukanCount'); if(cnt) cnt.textContent=`あつめた ${n} / ${ZUKAN.length} 台`;
+}
+let zukanT=0;
+function drawZukan(){
+  const now=performance.now(); if(now-zukanT<45) return; zukanT=now;
+  ZUKAN.forEach((z,i)=>{ const el=$('zg'+i); if(!el) return;       // ゲームと 同じ：<svg>内の <g> に 直接いれる
+    const op=(now/2600)%(z.cap||1);                                // op 0→上限 を くり返す＝順再生ループ（逆再生しない）
+    const savedRail=RAIL_Y; if(z.rail!=null) RAIL_Y=z.rail;        // 図鑑では レール位置を 図の 上/下に あわせる（ブロックの 向き）
+    el.innerHTML = z.t==='valve' ? vowelModule(z.kind,10,8,112,150,z.ch,op) : consModule(z.kind,10,8,112,150,z.ch,op);
+    RAIL_Y=savedRail; });
+}
+
+// トップ画面の からくり：歯車→クランク・スライダ(回転→直線)→弁→二本爪(i落下)／ホッパー→回転ドラム(u落下)／ベルトで 流れる
+let titleT=0;
+function drawTitleAnim(now){
+  const g=$('titleAnimG'); if(!g) return;
+  if(now-titleT<40) return; titleT=now;
+  const W=760, beltY=136, PER=2800, phi=(now/PER)%1;
+  let s='';
+  const gear=(gx,gy,r,teeth,ang)=>`<g transform="rotate(${ang.toFixed(1)} ${gx} ${gy})"><path d="${cogPath(gx,gy,r,r*0.7,teeth)}" fill="#fff" stroke="${NAVY}" stroke-width="2.2"/></g>`+
+    `<circle cx="${gx}" cy="${gy}" r="${(r*0.26).toFixed(1)}" fill="#fff" stroke="#c7d0da" stroke-width="1.8"/><circle cx="${gx}" cy="${gy}" r="2.1" fill="${NAVY}"/>`;
+  // ① 歯車トレイン（3枚 かみ合う）＝一つの 動力
+  s+=`<rect x="40" y="76" width="112" height="6" rx="3" fill="#eef2f6" stroke="${LIGHT}" stroke-width="1.3"/>`;
+  const a3=phi*360;
+  s+=gear(64,50,25,12, a3*(13/25))+gear(104,66,18,9, -a3*(13/18))+gear(136,52,13,8, a3);
+  // ② クランク → ロッド → スライダ（弁）：回転を 直線（左右）に かえる
+  const O3=[136,52], rc=8, pr=a3*Math.PI/180, pin=[O3[0]+rc*Math.cos(pr), O3[1]+rc*Math.sin(pr)];
+  const gY=52, sx=182+rc*Math.cos(pr);
+  s+=`<line x1="158" y1="${gY-7}" x2="200" y2="${gY-7}" stroke="${LIGHT}" stroke-width="1.3"/><line x1="158" y1="${gY+7}" x2="200" y2="${gY+7}" stroke="${LIGHT}" stroke-width="1.3"/>`;   // ガイド
+  s+=`<line x1="${pin[0].toFixed(1)}" y1="${pin[1].toFixed(1)}" x2="${(sx-9).toFixed(1)}" y2="${gY}" stroke="${BROWN}" stroke-width="2.2"/><circle cx="${pin[0].toFixed(1)}" cy="${pin[1].toFixed(1)}" r="2.2" fill="${BROWN}"/>`;   // ロッド
+  s+=`<rect x="${(sx-9).toFixed(1)}" y="${gY-6}" width="18" height="12" rx="2" fill="#fff" stroke="${NAVY}" stroke-width="2"/>`;   // スライダ（弁）
+  s+=`<line x1="${(sx+9).toFixed(1)}" y1="${gY}" x2="206" y2="${gY}" stroke="${BROWN}" stroke-width="2.2"/>`;   // 弁→二本爪 リンク
+  // ③ 二本爪（i）＝ゲームの脱進機。op=phi で iを 1個 落とす
+  s+=vowelModule('pawl2', 200, 2, 74, 120, 'i', phi);
+  // ④ ホッパー（じょうご）→ 回転ドラム（u）
+  s+=`<path d="M442 8 L530 8 L506 34 L466 34 Z" fill="#eef2f6" stroke="${BROWN}" stroke-width="1.8"/>`;
+  s+=vowelModule('drum', 448, 26, 76, 94, 'u', (phi+0.5)%1);
+  // ⑤ ベルトコンベア（動く）
+  s+=`<line x1="12" y1="${beltY}" x2="${W-12}" y2="${beltY}" stroke="${STEEL}" stroke-width="4"/>`;
+  s+=`<circle cx="24" cy="${beltY}" r="7" fill="#fff" stroke="${STEEL}" stroke-width="2.4"/><circle cx="${W-24}" cy="${beltY}" r="7" fill="#fff" stroke="${STEEL}" stroke-width="2.4"/>`;
+  const Vb=0.09, off=(now*Vb)%26;   // ベルトと ブロックは 同じ速度
+  for(let x=16;x<W-16;x+=26){ const xx=x-off+26; s+=`<line x1="${xx.toFixed(1)}" y1="${beltY}" x2="${(xx-7).toFixed(1)}" y2="${beltY+6}" stroke="${LIGHT}" stroke-width="2"/>`; }
+  // ⑥ 落ちた i・u が ベルトで 左へ 流れる（全ブロック 同じ速度＝追い抜かない）
+  const bw2=17,bh2=14, rest=beltY-bh2-1, dropT=300, DINT=PER;
+  [[236,'i',1400],[486,'u',0]].forEach(function(src){ const xs=src[0], ch=src[1], ph=src[2];
+    for(let j=0;j<4;j++){ const age=(((now-ph)%DINT)+DINT)%DINT + j*DINT;   // その落とし口の 過去の 落下たち
+      const bx=xs-bw2/2 - Vb*Math.max(0,age-dropT); if(bx<-bw2-4) continue;  // 落下後、一定速度で 左へ。画面外は 描かない
+      let by=rest; if(age<dropT){ by=104+(rest-104)*ease(age/dropT); }       // 落下中は 上から
+      s+=blk(bx,by,bw2,bh2,ch,1); } });
+  g.innerHTML=s;
+}
+function buildNobishiro(){
+  const wrap=$('nobiList'); if(!wrap) return;
+  if(mistakes.length===0){ wrap.innerHTML=`<div class="nobiEmpty">まだ まちがいは ないよ。<br>まちがえた 問題が ここに たまって、あとで 何回でも 練習できる！</div>`; }
+  else {
+    wrap.innerHTML=mistakes.map((mk,i)=>{
+      const romaji=buildRomaji(mk.kana,false);
+      const cl=romaji.split('').map((_,j)=> mk.cm===1 || (mk.cm===2&&j===0));
+      const blks=applyCase(romaji,cl).split('').map(c=>`<span class="nobiBlk">${disp(c)}</span>`).join('');
+      const fname=['小文字','大文字','人名・地名'][mk.cm]||'';
+      return `<button class="nobiCard" data-i="${i}"><div class="nobiKana">${mk.kana}</div><div class="nobiBlocks">${blks}</div><div class="nobiFac">第${mk.cm+1}工場・${fname}</div></button>`;
+    }).join('');
+    [...wrap.querySelectorAll('.nobiCard')].forEach(b=>{
+      b.addEventListener('click',()=>{ b.classList.add('glow'); setTimeout(()=>Game.startReview(+b.dataset.i),300); });
+    });
+  }
+  const cnt=$('nobiCount'); if(cnt) cnt.textContent=`${mistakes.length}こ`;
+}
+function updateTitleNobiCount(){ const el=$('titleNobiCount'); if(el) el.textContent=mistakes.length?`（${mistakes.length}こ）`:''; }
+
+window.Game=Game; window.CHAPTERS=CHAPTERS; window.buildRomaji=buildRomaji;
+window.decomposeOps=decomposeOps; window.VALVES=VALVES; window.valveOf=valveOf;
+window.MACHINES=MACHINES; window.machineOf=machineOf;
+window.__state=()=>({answer,blocks,shipped,VPOS,CPOS,SPX,MS});
+window.buildZukan=buildZukan; window.drawZukan=drawZukan; window.ZUKAN=ZUKAN;
+
+requestAnimationFrame(loop);
+console.log('マジマジ！ローマ字マシーン Ver.2.0：巨大からくり工場 じゅんび OK');
+</script>
