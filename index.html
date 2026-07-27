@@ -219,6 +219,73 @@ h1{
 /* button{}               ボタン */
 
 /* responsive{}           スマホ対応 */
+
+
+/* ========= スマホ表示最適化 ========= */
+.sp-br {
+    display: none;
+}
+
+@media (max-width: 768px) {
+
+    /* タイトルを2行に */
+    .sp-br {
+        display: inline;
+    }
+
+    /* ヘッダー */
+    header {
+        padding: 20px 15px;
+    }
+
+    /* タイトル */
+    header h1 {
+        font-size: 2rem;
+        line-height: 1.2;
+        margin-bottom: 10px;
+    }
+
+    /* サブタイトル */
+    header p {
+        font-size: 1rem;
+        line-height: 1.5;
+    }
+
+    /* メイン全体 */
+    main {
+        padding: 20px 15px;
+    }
+
+    /* カード */
+    .card {
+        padding: 18px;
+        margin-bottom: 18px;
+    }
+
+    /* カードタイトル */
+    .card h2 {
+        font-size: 1.3rem;
+    }
+
+    /* 本文 */
+    .card p {
+        font-size: 1rem;
+        line-height: 1.7;
+    }
+
+    /* ボタン */
+    .btn {
+        width: 100%;
+        font-size: 1rem;
+        padding: 14px;
+    }
+
+    /* フッター */
+    footer {
+        font-size: 0.9rem;
+        padding: 20px 15px;
+    }
+}
 </style>
 
 
@@ -228,7 +295,9 @@ h1{
 <body>
 
 <header>
-    <h1>わだおばちゃんのアプリひろば</h1>
+    <h1>
+    わだおばちゃんの<span class="sp-br"><br></span>アプリひろば
+</h1>
     <p>たのしく学べる！ブラウザでつかえる！</p>
 </header>
 
