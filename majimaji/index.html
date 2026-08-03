@@ -10,7 +10,7 @@
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%}
   body{background:var(--paper);color:var(--ink);display:flex;justify-content:center;font-family:var(--ud)}
-  #app{width:100%;max-width:1100px;height:100vh;display:flex;flex-direction:column;padding:0 12px 10px}
+  #app{width:100%;max-width:1100px;height:100vh;height:100dvh;display:flex;flex-direction:column;padding:0 12px 10px;overflow:hidden}
   /* 横向き（Landscape）を標準に。たて画面では 案内を出す */
   #rotate{position:fixed;inset:0;z-index:300;background:#fff;display:none;
     flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;
@@ -74,7 +74,7 @@
   .sbtn:active{background:#eef2f6}
   .backbtn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 11px;font-size:12px}
 
-  #play{flex:1;display:flex;flex-direction:column;gap:5px}
+  #play{flex:1;min-height:0;display:flex;flex-direction:column;gap:5px}
   .topbar{display:flex;align-items:center;gap:9px;font-size:12px;padding:8px 2px;border-bottom:1px solid var(--line)}
   .topbar .c1{font-weight:800;color:var(--navy)}
   .topbar .c2{color:var(--brown)}
@@ -115,6 +115,23 @@
   .key.shift{border-color:var(--hot);color:var(--hot);border-width:2px}
   .key.shift.on{background:var(--hot);color:#fff}
 
+  /* 横向きで画面が低いスマホ：マシンとキーボードを同時に収める */
+  @media (max-height:500px){
+    #app{padding:0 10px 4px}
+    #play{gap:2px}
+    .topbar{padding:3px 2px;font-size:11px;gap:6px}
+    .topbar .lives{font-size:12px}
+    .qcard .sname{font-size:10px}
+    .qcard .kana{font-size:clamp(16px,4.6vh,24px)}
+    .answer{gap:1px}
+    #inp{font-size:clamp(14px,3.6vh,19px);letter-spacing:3px}
+    .msg{height:14px;font-size:11px}
+    .hint{height:13px;font-size:11px}
+    .kb .row{gap:3px;margin-bottom:2px}
+    .key{width:clamp(30px,6.4vw,44px);height:clamp(22px,5.4vh,32px);font-size:clamp(12px,4.6vh,16px)}
+    .key.duo{width:clamp(42px,9vw,64px)}
+    .key.wide{width:clamp(64px,13vw,100px);font-size:clamp(10px,4vh,13px)}
+  }
 
   #done{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:9px}
   #done .big{font-size:22px;font-weight:800;color:var(--navy)}
