@@ -251,7 +251,7 @@
   #roul{font-size:clamp(58px,17vw,126px);font-weight:900;letter-spacing:2px;color:#5a3418;line-height:1;margin:6px 0;}
   #roul .x{color:#c05a2a;margin:0 6px;}
   #roulMsg{color:#a07a50;font-weight:800;}
-  .pakisplash{font-size:clamp(30px,9vw,64px);font-weight:900;color:#c05a2a;
+  .pakisplash{font-size:clamp(22px,6vw,42px);font-weight:900;color:#c05a2a;white-space:nowrap;
     text-shadow:0 3px 0 #e9c98c;animation:paki .5s ease;}
   @keyframes paki{0%{transform:scale(.3) rotate(-12deg);opacity:0}60%{transform:scale(1.2) rotate(4deg);opacity:1}100%{transform:scale(1) rotate(0)}}
 
@@ -659,13 +659,24 @@ function startGame(){
 const SPECIAL_INFO={
   star:   {icon:"×2", name:'チョコが 2<ruby>倍<rt>ばい</rt></ruby>（おいた板チョコ）', n:2},
   lucky:  {icon:"🍀", name:'ラッキー（もう<ruby>一<rt>いち</rt>度<rt>ど</rt></ruby>）', n:3},
-  rock:   {icon:"🪨", name:'<ruby>岩<rt>いわ</rt></ruby>（おけない）', n:6},
+  rock:   {icon:"🪨", name:'<ruby>岩<rt>いわ</rt></ruby>（おけない）', n:3},
 };
 function placeSpecials(){
-  const cells=[...Array(TOTAL).keys()];
-  for(let i=cells.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[cells[i],cells[j]]=[cells[j],cells[i]];}
-  let p=0;
-  for(const k in SPECIAL_INFO) for(let c=0;c<SPECIAL_INFO[k].n;c++) G.special.set(cells[p++],k);
+  const rc=i=>[(i/SIZE)|0, i%SIZE];
+  const cheby=(i,j)=>{ const [r1,c1]=rc(i),[r2,c2]=rc(j); return Math.max(Math.abs(r1-r2),Math.abs(c1-c2)); };
+  const empties=()=>{ const o=[]; for(let i=0;i<TOTAL;i++) if(!G.special.has(i)) o.push(i); return o; };
+  const put=(k,n,minSame)=>{
+    const placed=[];
+    for(let c=0;c<n;c++){
+      let pool=empties();
+      if(minSame>0){ const far=pool.filter(i=>placed.every(j=>cheby(i,j)>=minSame)); if(far.length)pool=far; }  // 同じ種類は はなす（無理なら ゆるめる）
+      if(!pool.length) break;
+      const cell=pool[Math.floor(Math.random()*pool.length)];
+      G.special.set(cell,k); placed.push(cell);
+    }
+  };
+  // 🍀ラッキーは 一度に2こ 取れないよう 遠くに（板チョコ最大9マスより はなす）
+  for(const k in SPECIAL_INFO) put(k, SPECIAL_INFO[k].n, k==="lucky"?10:0);
 }
 
 /* ---------------- board rendering ---------------- */
@@ -920,7 +931,7 @@ async function cpuLearn(pl,v){
     </div>`);
   const M=buildMold($("mold"),a,b,pl.chara);
   await M.playFill();
-  sfxSnap(); $("paki").innerHTML=`<span class="pakisplash">パキッ！</span>`;
+  sfxSnap(); $("paki").innerHTML=`<span class="pakisplash"><ruby>板<rt>いた</rt></ruby>チョコ<ruby>完成<rt>かんせい</rt></ruby>！</span>`;
   await sleep(650); closeOverlay(); return true;
 }
 
@@ -1021,7 +1032,7 @@ function quizModal(pl,v){
       prodBox.classList.toggle("right",ok); prodBox.classList.toggle("wrong",!ok);
       if(ok){ clearQuizTimer(); setWho("happy"); $("msgB").textContent="せいかい！ 🎉"; $("msgB").className="qmsg ok";
         prodBox.readOnly=true; prodBox.classList.remove("active"); $("stageB").classList.add("done");
-        M.fillAll(); sfxSnap(); $("paki").innerHTML=`<span class="pakisplash">パキッ！</span>`;
+        M.fillAll(); sfxSnap(); $("paki").innerHTML=`<span class="pakisplash"><ruby>板<rt>いた</rt></ruby>チョコ<ruby>完成<rt>かんせい</rt></ruby>！</span>`;
         const go=$("learnGo"); go.style.display="";
         go.onclick=()=>{ if(finished)return; finished=true; M.cancel(); closeOverlay(); res(true); };
         setTimeout(()=>{try{go.focus();}catch(e){}},40);
