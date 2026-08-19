@@ -90,6 +90,18 @@
   #modeTag.hard  { color:#ff9ab0; border-color:#7a3d52; background:#301620; }
 
   /* ---- おとボタン（どの画面でも いちばん手前） ---- */
+  /* ---- ギブアップ（どうしても のぼれない とき） ---- */
+  #giveUpBtn{
+    position:absolute; right:10px; top:56px; z-index:44;
+    font:inherit; font-size:13px; font-weight:700; letter-spacing:1px; cursor:pointer;
+    padding:6px 14px; border-radius:9px; color:#c3b9d8;
+    background:rgba(22,16,36,.82); border:2px solid #6a5a90;
+    backdrop-filter:blur(2px); transition:all .12s;
+  }
+  #giveUpBtn[hidden]{ display:none; }
+  #giveUpBtn:hover{ color:#ffd0d8; border-color:#e8598b; }
+  #giveUpBtn:active{ transform:translateY(2px); }
+
   /* ---- ストップウォッチ（むずかしい だけ） ---- */
   #watch{
     position:absolute; right:62px; top:10px; z-index:46;
@@ -325,17 +337,22 @@
 
   /* ---- ステージえらび ---- */
   .pick{ display:flex; flex-direction:column; gap:7px; align-items:center; margin:12px 0 2px; }
-  .prow{ display:flex; align-items:center; gap:9px; }
+  .prow{ display:flex; align-items:center; gap:8px; }
   .prowBtns{ display:flex; align-items:center; justify-content:center;
-             gap:9px; flex-wrap:wrap; }
-  .prow .plb{ font-size:16px; font-weight:700; color:#cfc6e4; width:124px;
-              text-align:right; flex:none; letter-spacing:1px; }
+             gap:8px; flex-wrap:wrap; }
+  /* たかさの 3つは いつでも 1れつ。せまいときは ボタンの ほうが ちぢむ
+     （はみ出して 右が 切れるのを ふせぐ） */
+  .prow3 .prowBtns{ flex-wrap:nowrap; }
+  #overlay .prow3 button.opt{ flex:1 1 0; min-width:0; }
+  #overlay .prow3 button.opt span{ min-width:0; }
+  .prow .plb{ font-size:14.5px; font-weight:700; color:#cfc6e4; width:126px;
+              text-align:right; flex:none; letter-spacing:0; white-space:nowrap; }
   /* #overlay button より強い指定にしないと 下の共通ボタン色に負ける */
   #overlay button.opt{
     display:flex; align-items:center; gap:8px;
     font:inherit; font-size:16px; font-weight:700; cursor:pointer;
     color:#c3b9d8; background:#241d33; border:2px solid #4a3d68; border-radius:9px;
-    padding:6px 13px; min-width:104px; line-height:1.2;
+    padding:6px 10px; min-width:0; line-height:1.2;
     margin:0; box-shadow:none; letter-spacing:1px; text-align:left;
     transition:background .12s, color .12s, border-color .12s, box-shadow .12s;
   }
@@ -388,6 +405,9 @@
   <!-- 「むずかしい」だけ 出る ストップウォッチ -->
   <div id="watch" hidden><span id="watchT">0.0</span><small>びょう</small></div>
 
+  <!-- どうしても のぼれなく なったとき -->
+  <button id="giveUpBtn" hidden>ギブアップ</button>
+
   <button id="climb1" class="climbBtn p1 sideL" hidden><b>のぼる！</b><i>Ｑ</i></button>
   <button id="climb2" class="climbBtn p2 sideR" hidden><b>のぼる！</b><i>Ｐ</i></button>
 
@@ -399,7 +419,7 @@
         <span class="pb"><i id="hbar"></i></span>
       </div>
       <div class="gauge">
-        <span class="lb" id="qlabel">つぎ パチン（ゆれ3）</span>
+        <span class="lb" id="qlabel">パチン（ゆれ3）まで</span>
         <span class="pb"><i id="qbar"></i></span>
       </div>
     </div>
@@ -481,14 +501,15 @@ const CONFIG = {
   PICK_HALF: 26,
 
   JUMP_H: 5,            // 三角飛び1回で上がる高さ
-  JUMP_TIME: 0.22,      // 三角飛びの所要時間(s)
+  JUMP_TIME: 0.26,      // 三段跳び 1歩の 時間(s)
+  JUMP_REST: 0.07,      // 1歩とぶたびの ひと呼吸(s)
   THROW_TIME: 0.24,     // 棒を投げてから着地するまで(s)
   FALL_DEATH: 11,       // これ以上落ちるとゲームオーバー
 
-  QUAKE_FIRST: 32,      // 最初のきょだいいびきまで(s)
-  QUAKE_INTERVAL: 21,   // 以降の間隔(s)
-  QUAKE_INTERVAL_MIN: 12,
-  ROLL_EVERY: 5,        // 5回に1回は「ねがえり」
+  QUAKE_FIRST: 18,      // 最初のゆれまで(s)
+  QUAKE_INTERVAL: 14,   // 以降の間隔(s)
+  QUAKE_INTERVAL_MIN: 8,
+  ROLL_EVERY: 4,        // 4回に1回は「ねがえり」
   ROLL_TURN: 1.1,       // ねがえりで大魔王が寝返る時間(s)
   DANGER_LEAD: 6,       // 何秒前から背景が赤くなりはじめるか
 
@@ -496,6 +517,8 @@ const CONFIG = {
   // 上に行くほど大きくずれる。数値を上げすぎると柱がぐにゃぐにゃになる。
   TILT_LOOSE: 0.0030,   // 未固定ブロックが ふだんから ゆれる角度
   TILT_SHAKE: 0.0034,   // ゆれの大きさ1あたりに上乗せされる角度（大きく左右にゆれる）
+  TILT_SNORE: 0.0045,   // いびき1回ごとに 未固定ブロックが よけいに かたむく角度
+  SNORE_WOBBLE_T: 1.6,  // そのゆらぎが おさまるまで(s)
 };
 
 /* 大魔王の揺れ。
@@ -562,9 +585,9 @@ let CAM_MAX = 0;                                                // カメラ上�
 /* でぐちの まど（たて最大92px）が 画面に入りきる高さに おさえてある。
    目安：でぐち ≦ (地面596 − 建築ビューの上120 − 100) ÷ UNIT */
 const STAGES = [
-  { name: 'かんたん',   goal: 10, note: 'でぐちが ひくい（10）' },
+  { name: 'かんたん',   goal: 10, note: 'ひくい（10）' },
   { name: 'ふつう',     goal: 15, note: 'まんなか（15）' },
-  { name: 'むずかしい', goal: 20, note: 'でぐちが たかい（20）' },
+  { name: 'むずかしい', goal: 20, note: 'たかい（20）' },
 ];
 let stageIdx = 1;
 let playerCount = 1;                    // 1 = ひとり / 2 = ふたりで協力
@@ -890,8 +913,8 @@ function newState(){
     /* プレイヤー。ひとりなら1つ、ふたりなら2つ。
        主人公は「壁と壁の隙間（脱出シャフト）」に立つ。side は張り付いている壁(-1:左 / +1:右) */
     players: LAYOUT[playerCount].shafts.map((col, i) => ({
-      id: i, cursor: col, held: null, done: false, ready: false,
-      hero: { col, h: 0, side: 0, anim: null, throwT: 0, failT: 0, swingT: 0, castT: 0 },
+      id: i, cursor: col, held: null, done: false, ready: false, running: false,
+      hero: { col, h: 0, side: 0, anim: null, throwT: 0, restT: 0, swingT: 0, castT: 0 },
       castFrom: null,
     })),
     playT: 0,                  // あそんでいる あいだだけ すすむ 時計（タイム用）
@@ -902,6 +925,7 @@ function newState(){
              count: 0, mag: 0, shake: 0, shakeMax: 1 },
     demon: { flip: 1, rollU: 0, popT: 0 },   // 寝返りで左右反転 / popT は鼻提灯がはじけた余韻
     snoreT: 1.0,                             // つぎに いびきが鳴るまで
+    snoreW: 0,                               // いびきの たびの ゆらぎ（1→0）
     paused: false,
     cam: 0,
     fx: { debris: [], sparks: [], texts: [], drops: [], flash: 0, shakeX: 0, shakeY: 0 },
@@ -1215,8 +1239,13 @@ function updateQuake(dt){
       → 崩れるのは “いちばん上の固定ブロックより上にある未固定ブロック” だけ。
     ・固定ブロック自身は強度に応じてごくまれに壊れる（完全固定は絶対に壊れない）。
       壊れた場合はそこから上が落ちるので、土台こそ強く固めたい。 */
+/** のぼりみちの すぐ となり（＝かべに つかう柱）か */
+function isWallCol(c){
+  return state.players.some(p => c === p.hero.col - 1 || c === p.hero.col + 1);
+}
+
 function resolveTopple(mag){
-  let fell = 0;
+  let fell = 0, deadWall = false;
   for (let c = 0; c < CONFIG.COLS; c++){
     const col = state.cols[c];
     if (!col.length) continue;
@@ -1235,6 +1264,18 @@ function resolveTopple(mag){
       if (col[i].tier > 0 && Math.random() < mag * TIER[col[i].tier].quake) cut = i;
     }
 
+    /* のぼりみちの すぐ となりの柱で、「下は グラグラ・上は 固定」に なった場合。
+       のぼれる高さは 地面から とぎれず 固定されている ぶんだけ なので、
+       この柱は そのままでは いくら 積んでも 役に立たない。
+       つみ直せるよう、ゆれが 来たら まっさきに 崩れるようにする。 */
+    if (isWallCol(c)){
+      for (let i = guard; i >= 0; i--){
+        if (col[i].tier === 0 && Math.random() < clamp(0.55 + mag * 0.3, 0, 0.95)){
+          cut = i; deadWall = true;
+        }
+      }
+    }
+
     if (cut >= 0){
       let hh = 0;
       for (let i = 0; i < cut; i++) hh += col[i].n;
@@ -1250,7 +1291,9 @@ function resolveTopple(mag){
     Sfx.collapse();
     state.fx.flash = 0.5;
     state.stats.fallen += fell;
-    flashMsg(fell >= 5 ? 'ガラガラ… おおくずれ！' : 'ガラガラ…', 1.6);
+    flashMsg(deadWall ? 'グラグラの かべが くずれた！'
+           : fell >= 5   ? 'ガラガラ… おおくずれ！'
+           :               'ガラガラ…', 1.8);
   }
   applyLocks(false);          // 支えを失った固定は解除される
   checkHeroSupport();
@@ -1289,6 +1332,9 @@ function heroJump(p){
   for (const s of sides){
     if (!lockedAt(hr.col + s, nh - 0.5)) continue;
     hr.anim = { fromCol: hr.col, fromH: hr.h, fromSide: hr.side, t: 0, dur: CONFIG.JUMP_TIME };
+    // 壁を 蹴った 足もとで こなが とぶ
+    const kx = heroBaseX(hr.col, hr.side, hr.h);
+    for (let i = 0; i < 5; i++) addSpark(kx, hr.h);
     hr.h = nh; hr.side = s;
     Sfx.jump();
     return true;
@@ -1340,11 +1386,25 @@ function checkHeroSupport(){
 
 /* 左右の壁が でぐちまで つながると「のぼる！」ボタンが 出る。
    おすたびに 三段跳びが 一歩ずつ すすむ。自動では のぼらない。 */
+/* ボタンは 1回 おすだけ。あとは ピョンピョンと でぐちまで 上がっていく。 */
 function climbTap(p){
   if (state.phase !== 'play' || p.done) { Sfx.deny(); return; }
-  if (!p.ready) { Sfx.deny(); flashMsg('りょうがわの かべが まだ とどいてない！'); return; }
-  if (p.hero.anim) return;                       // とんでいる さいちゅう
-  if (!heroJump(p)) { Sfx.deny(); flashMsg('かべが きえている！'); }
+  if (!p.ready) { Sfx.deny(); flashMsg('みぎと ひだりの かべが まだ とどいてない！'); return; }
+  if (p.running) return;                         // もう のぼっている
+  p.running = true; p.hero.restT = 0;
+  if (!heroJump(p)) { p.running = false; Sfx.deny(); flashMsg('かべが きえている！'); }
+}
+
+/** のぼっている あいだ。1歩 とぶたびに ひと呼吸おいて つぎの1歩へ。 */
+function stepClimb(p, dt){
+  const hr = p.hero;
+  if (hr.anim || p.done) return;
+  hr.restT -= dt;
+  if (hr.restT > 0) return;
+  if (!heroJump(p)){                             // ゆれで 足場が きえた
+    p.running = false;
+    Sfx.deny(); flashMsg('かべが くずれて とまった！');
+  }
 }
 
 function updateHero(dt){
@@ -1360,7 +1420,7 @@ function updateHero(dt){
       if (ready && !p.ready){
         p.ready = true;
         Sfx.lock(TIER_MAX);
-        flashMsg('りょうがわの かべが とどいた！「のぼる！」を おせ！', 2.4);
+        flashMsg('みぎと ひだりの かべが とどいた！「のぼる！」を おせ！', 2.4);
       } else if (!ready && p.ready && p.hero.h === 0){
         p.ready = false;                          // のぼる前に かべが きえたら 消す
       }
@@ -1368,7 +1428,9 @@ function updateHero(dt){
 
     if (hr.anim){
       hr.anim.t += dt;
-      if (hr.anim.t >= hr.anim.dur) hr.anim = null;
+      if (hr.anim.t >= hr.anim.dur){ hr.anim = null; hr.restT = CONFIG.JUMP_REST; }
+    } else if (state.phase === 'play' && p.running){
+      stepClimb(p, dt);
     }
     if (hr.h >= CONFIG.GOAL_HEIGHT) p.done = true;
   }
@@ -1378,13 +1440,16 @@ function updateHero(dt){
 function heroScreenPos(p){
   const hr = p.hero;
   if (!hr.anim) return { x: heroBaseX(hr.col, hr.side, hr.h), y: screenY(hr.h), arc: 0 };
+  /* 三段跳び。手で つかまって よじ登るのではなく、
+     壁を あしで 蹴った 勢いで 一気に とぶ。
+     ＝ 蹴った 直後が いちばん速く、あがるほど ゆっくりになる。 */
   const k = clamp(hr.anim.t / hr.anim.dur, 0, 1);
-  const e = k < 0.5 ? 2*k*k : 1 - Math.pow(-2*k+2, 2)/2;
+  const e = 1 - Math.pow(1 - k, 1.8);
   const x0 = heroBaseX(hr.anim.fromCol, hr.anim.fromSide, hr.anim.fromH);
   const x1 = heroBaseX(hr.col, hr.side, hr.h);
   const h  = hr.anim.fromH + (hr.h - hr.anim.fromH) * e;
   return { x: x0 + (x1 - x0) * e,
-           y: screenY(h) - Math.sin(k * Math.PI) * 9,
+           y: screenY(h) - Math.sin(k * Math.PI) * 26,   // 大きく はずむ
            arc: k };
 }
 
@@ -1863,6 +1928,9 @@ function drawBackground(){
 function drawTower(){
   const q = state.quake;
   const shakeAmp = q.mode === 'shake' ? 3.5 * q.mag : (q.mode === 'warn' ? 0.9 : 0);
+  /* いびき1回ごとの ゆらぎ。すっと 立ちあがって ゆっくり おさまる。 */
+  const sw = state.snoreW || 0;
+  const snoreW = Math.sin(Math.min(1, (1 - sw) * 8) * Math.PI / 2) * sw;
   for (let c = 0; c < CONFIG.COLS; c++){
     const col = state.cols[c];
     if (!col.length) continue;
@@ -1876,7 +1944,9 @@ function drawTower(){
       const wave = Math.sin(state.time * 6.5 - h * 0.05 + c * 0.6 + b.ph * 0.2);
       let ang = 0;
       if (b.tier === 0){
-        ang = (CONFIG.TILT_LOOSE + shakeAmp * CONFIG.TILT_SHAKE) * wave;
+        // ふだんの いびきでも、固まっていない石は ひとゆれ する
+        ang = (CONFIG.TILT_LOOSE + shakeAmp * CONFIG.TILT_SHAKE
+               + snoreW * CONFIG.TILT_SNORE) * wave;
       } else if (b.tier < TIER_MAX && shakeAmp > 0){
         ang = shakeAmp * CONFIG.TILT_SHAKE * ((TIER_MAX - b.tier) / TIER_MAX) * 0.5 * wave;
       }
@@ -2101,9 +2171,11 @@ function drawDrops(){
 
 /* つりざおの かたむきと 長さ。さおの先の位置を 出すのにも つかう。 */
 const ROD_ANG = 0.78, ROD_LEN = 40;
-/* かかった夢石を 下へ ひきおろす量。流れている石と かさならないように、
-   雲の下のはしまで さげる。長い石は もともと はみ出すので あまり さがらない。 */
-const hookPull = n => clamp(DREAM_Y + DREAM_H - 4 - (DREAM_MID + 2 + n * CONFIG.UNIT / 2), 0, 34);
+/* かかった夢石を 下へ ひきおろす量。
+   雲の中に のこすと、あとから 流れてくる 石と かさなって
+   「数字より 大きい 石」に 見えてしまうので、雲の 下まで ひっぱり出す。 */
+const HOOK_TOP = DREAM_Y + DREAM_H + 4;          // ひきおろした 石の 上のはし
+const hookPull = n => HOOK_TOP - (DREAM_MID + 2 - n * CONFIG.UNIT / 2);
 function rodTip(pl){
   const esc = state.phase === 'escape' ? escPose(pl) : null;
   const p = esc || heroScreenPos(pl);
@@ -2194,6 +2266,11 @@ function drawOneHero(pl){
     ctx.beginPath(); ctx.ellipse(0, 0, 13, 4, 0, 0, 7); ctx.fill();
   }
   ctx.scale(face, 1);                     // 張り付いている壁のほうを向く
+  /* とんでいる あいだ。0〜1 で すすむ（-1 は とんでいない） */
+  const air = (!esc && hr.anim) ? clamp(hr.anim.t / hr.anim.dur, 0, 1) : -1;
+  const fly = air >= 0 && air < 1;
+  const swing = fly ? Math.sin(air * Math.PI) : 0;
+  if (fly) ctx.rotate(0.34 * swing);      // 蹴った いきおいで 前のめりに
 
   /* つりざお と リール。夢石を えらぶと 糸を上へ のばして 引っかける。
      主人公は こちらに 背を向けているので、さおは 右手のあたりに 出す。 */
@@ -2240,9 +2317,29 @@ function drawOneHero(pl){
       ctx.beginPath(); ctx.moveTo(0, -19); ctx.lineTo(s * 11, -34); ctx.stroke();
       ctx.beginPath(); ctx.arc(s * 12, -36, 3.4, 0, 7); ctx.fillStyle = '#ffe0c0'; ctx.fill();
     }
+  } else if (fly){
+    // とんでいる あいだは 手で つかまらず、いきおいよく ふる
+    ctx.beginPath(); ctx.moveTo(0, -20);
+    ctx.lineTo(-7 - swing * 5, -29 - swing * 7); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, -15);
+    ctx.lineTo(10 + swing * 4, -6 + swing * 5); ctx.stroke();
   } else if (onWall){
     ctx.beginPath(); ctx.moveTo(0, -20); ctx.lineTo(11, -26); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(11, -6);  ctx.stroke();
+  }
+
+  /* あし。三段跳びの あいだは 大きく けり出す（脚で とぶ 感じ） */
+  if (!esc){
+    ctx.strokeStyle = '#3a2a55'; ctx.lineWidth = 3.8; ctx.lineCap = 'round';
+    if (fly){
+      ctx.beginPath(); ctx.moveTo(-2, -7);
+      ctx.lineTo(-10 - swing * 8, 1 + swing * 4); ctx.stroke();   // 蹴った あし
+      ctx.beginPath(); ctx.moveTo(3, -7);
+      ctx.lineTo(8 + swing * 6, -5 - swing * 7); ctx.stroke();    // つぎに つく あし
+    } else if (onWall){
+      ctx.beginPath(); ctx.moveTo(-2, -7); ctx.lineTo(-5, 2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(3, -7);  ctx.lineTo(7, 0);  ctx.stroke();
+    }
   }
 
   /* うしろ姿。まきゅうの おくを 向いているので 顔は見えない。 */
@@ -2506,7 +2603,7 @@ function updateClimbBtn(){
   if (!state) return;
   for (let i = 0; i < elClimb.length; i++){
     const p = state.players[i];
-    const on = !!p && state.phase === 'play' && p.ready && !p.done;
+    const on = !!p && state.phase === 'play' && p.ready && !p.done && !p.running;
     elClimb[i].hidden = !on;
     if (on){
       // ひとりは 右に。ふたりは 1P=ひだり／2P=みぎ（のぼりみちの 色と そろえる）
@@ -2522,8 +2619,18 @@ function updateClimbBtn(){
 const elWatch = document.getElementById('watch');
 const elWatchT = document.getElementById('watchT');
 
+/* ギブアップ。石の並びしだいでは どうやっても のぼれなく なるので、
+   崩れるのを 待つしかない ときに 自分から やめられるようにする。 */
+const elGiveUp = document.getElementById('giveUpBtn');
+elGiveUp.onclick = e => {
+  e.stopPropagation();
+  if (!state || state.phase !== 'play') return;
+  gameOver('つぎこそは だっしゅつ！');
+};
+
 function updateHud(){
   updateClimbBtn();
+  elGiveUp.hidden = !(state && state.phase === 'play');
   // ストップウォッチは「むずかしい」だけ。だっしゅつしたら その場で 止まる。
   const useWatch = stageIdx === 2 && state && ['play','escape','clear'].includes(state.phase);
   elWatch.hidden = !useWatch;
@@ -2553,7 +2660,7 @@ function updateHud(){
     elQLab.textContent = (q.mode === 'shake' ? k.hitMsg : k.warnMsg);
     elQBar.style.width = '100%';
   } else {
-    elQLab.textContent = 'つぎ ' + k.label + '（ゆれ' + k.yure + '）';
+    elQLab.textContent = k.label + '（ゆれ' + k.yure + '）まで';
     const total = Math.max(CONFIG.QUAKE_INTERVAL_MIN, CONFIG.QUAKE_INTERVAL - q.count * 1.2);
     elQBar.style.width = clamp((1 - q.t / (q.count === 0 ? CONFIG.QUAKE_FIRST : total)) * 100, 0, 100) + '%';
   }
@@ -2639,8 +2746,9 @@ function rulesHTML(){
           <figcaption>ジグザグに<br>のぼる</figcaption>
         </figure>
       </div>
-      <div class="magic"><b>りょうがわ</b>の かべが でぐちまで とどいたら、
-        <b>「のぼる！」</b>を なんども おす。</div>
+      <div class="magic"><b>みぎと ひだり</b>の かべが でぐちまで とどいたら、
+        <b>「のぼる！」</b>を 1かい おす。<br>
+        したが かたまっていない かべは、ゆれで くずれる。</div>
     </div>
 
     <div class="rule">
@@ -2652,7 +2760,7 @@ function rulesHTML(){
         ${lrow(0, 'グラグラ', [[5],[7]],                    'たかさが ちがう')}
         ${lrow(0, 'グラグラ', [[5],[5]],                    'わけて ない')}
         ${lrow(0, 'グラグラ', [[3,4,5],[2,6,4]],            '3つ いじょう どうし')}
-        ${lrow(1, 'しっかり', [[5],[3,2]],                  '1本を 2つに')}
+        ${lrow(1, 'しっかり', [[5],[3,2]],                  '1こを 2つに')}
         ${lrow(2, 'がっちり', [[5],[3,2],[5]],              '3れつ')}
         ${lrow(3, 'むてき',   [[9],[4,3,2],[9],[4,3,2]],    '4れつ＋3つに')}
         <div class="edge">▼ くずれ<b style="color:#8affc8">にくい</b></div>
@@ -2668,7 +2776,7 @@ function rulesHTML(){
              <ellipse cx="6.5" cy="6.5" rx="1.8" ry="1.2" fill="#fff"/>
              <path d="M20 4 L23 9 L20 14 M17 9 L24 9" stroke="#ff9a5c" stroke-width="1.6"
                    fill="none" stroke-linecap="round"/></svg>`)}
-        ${shakeRow('ねがえり', 5, 'ゆれ 5かいに 1かい')}
+        ${shakeRow('ねがえり', 5, 'ゆれ 4かいに 1かい')}
       </div>
     </div>`;
 }
@@ -2826,7 +2934,7 @@ function showTitle(){
         ${opt(playerCount===2, 2, 'ふたり', 'きょうりょく・じかんせいげん', 'p', ICON.two,
               '#c9c0ff','#7d6ae0','rgba(150,130,255,.35)')}
       </div></div>
-      <div class="prow"><span class="plb">でぐちの たかさ</span><div class="prowBtns">
+      <div class="prow prow3"><span class="plb">でぐちの たかさ</span><div class="prowBtns">
         ${opt(stageIdx===0, 0, STAGES[0].name, STAGES[0].note, 'g', ICON.h1,
               '#b9ffd9','#3fbe83','rgba(90,220,160,.35)')}
         ${opt(stageIdx===1, 1, STAGES[1].name, STAGES[1].note, 'g', ICON.h2,
@@ -2842,7 +2950,6 @@ function showTitle(){
       </div></div>
     </div>
     <button id="startBtn">はじめる</button>
-    <div class="tap">どこを おしても はじまる</div>
     <button id="recBtn" class="small">きろく</button>
     ${rulesHTML()}`;
   overlay.classList.remove('hide');
@@ -2890,34 +2997,36 @@ function startGame(mode){
   state = newState();
   state.phase = 'play';
   for (let i = 0; i < 8; i++) state.queue.push(NUM_BAG[(Math.random()*NUM_BAG.length)|0]);
-  // ベルトに最初から数個流しておく
-  for (let i = 0; i < 4; i++){
-    state.belt.push({ n: drawNumber(), x: cloudX0() + i * 130, id: ++uid, ph: Math.random() * 6.28 });
+  /* 雲に 最初から 数個 流しておく。
+     ★ ふだん 出てくる 間かく（速さ×時間）と そろえること。
+        そろえないと 次に 出る 石と かさなり、
+        「数字より 大きい 石」に 見えてしまう。 */
+  const gap = CONFIG.BELT_SPEED * CONFIG.SPAWN_INTERVAL;
+  for (let i = 1; i <= 4; i++){
+    state.belt.push({ n: drawNumber(), x: cloudX0() + i * gap, id: ++uid, ph: Math.random() * 6.28 });
   }
+  state.spawnT = CONFIG.SPAWN_INTERVAL;      // 先頭と かさならないよう 1回ぶん おく
   overlay.classList.add('hide');
 }
 
 function endBox(title, color, note){
-  const s = state.stats;
   obox.innerHTML = `
     <h1 style="color:${color}">${title}</h1>
     <p>${note}</p>
-    <div class="stat">
-      おいた いし ${s.placed}こ　／　カチン！ ${s.locks}かい<br>
-      パチン ${s.pops}かい　／　ねがえり ${s.rolls}かい　／　くずれた ${s.fallen}こ
-    </div>
     <div class="btnRow">
       <button id="againBtn">もういちど</button>
       <button id="modeBtn" class="small">モードを えらぶ</button>
-    </div>
-    <div class="tap">どこを おしても もういちど</div>`;
+    </div>`;
   overlay.classList.remove('hide');
   bindEndButtons();
 }
 
-/** 終わりの画面の共通処理。イベントが startGame に渡らないよう包む。 */
+/** 終わりの画面の共通処理。まちがって さわって やり直さないよう、
+    はたらくのは ボタンだけに する。 */
 function bindEndButtons(){
-  overlay.onclick = () => startGame();
+  overlay.onclick = null;
+  const ab = document.getElementById('againBtn');
+  if (ab) ab.onclick = e => { e.stopPropagation(); startGame(); };
   const mb = document.getElementById('modeBtn');
   if (mb) mb.onclick = e => { e.stopPropagation(); showTitle(); };
 }
@@ -3075,7 +3184,7 @@ function gameOver(reason){
   if (state.phase !== 'play') return;
   state.phase = 'over';
   Sfx.rumbleStop(); Sfx.fail();
-  endBox('ゲームオーバー', '#ff7a7a', reason);
+  endBox('ざんねん・・・', '#ff7a7a', reason);
 }
 
 /* ============================ 9. Loop / Input ============================ */
@@ -3105,7 +3214,9 @@ function update(dt){
   if (state.snoreT <= 0){
     state.snoreT = 6.98;
     Sfx.snore(state.quake.mode === 'idle' ? 1 : 0.4);   // ゆれの最中は ひかえめに
+    state.snoreW = 1;                                   // グラグラの石が ひとゆれ する
   }
+  if (state.snoreW > 0) state.snoreW = Math.max(0, state.snoreW - dt / CONFIG.SNORE_WOBBLE_T);
 
   updateQuake(dt);
   updateHero(dt);
