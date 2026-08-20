@@ -625,13 +625,13 @@ function applyStage(){
   CAM_MAX = Math.max(0, CONFIG.GOAL_HEIGHT + 9 - VIS_UNITS);
 
   // ふたりは 二人ぶん建てるので 制限時間つき
-  CONFIG.TIME_LIMIT = playerCount === 2 ? 90 + STAGES[stageIdx].goal * 4.2 : 0;
+  CONFIG.TIME_LIMIT = 0;                 // せいげん時間は なし（ふたりでも ゆっくり そうだんできる）
 
   const g = document.getElementById('hgoal');
   if (g) g.textContent = CONFIG.GOAL_HEIGHT;
   const st = document.getElementById('stage');
   if (st) st.style.width = W + 'px';
-  document.getElementById('timeRow').style.display = playerCount === 2 ? '' : 'none';
+  document.getElementById('timeRow').style.display = 'none';
   // 操作の説明も 人数で入れかえる
   buildWalls();
   const kr = document.getElementById('keyRow');
@@ -2639,10 +2639,6 @@ function updateHud(){
     // いま どちらの ばんか（キーの行が 光る）
     if (elKey1) elKey1.classList.toggle('on', state.turn === 0);
     if (elKey2) elKey2.classList.toggle('on', state.turn === 1);
-    const t = Math.max(0, state.timeLeft);
-    elTNow.textContent = Math.ceil(t);
-    elTBar.style.width = clamp(t / CONFIG.TIME_LIMIT * 100, 0, 100) + '%';
-    elTBar.classList.toggle('low', t < 30);
   }
   const p0 = state.players[0];
   const h = playerCount === 2
@@ -2931,7 +2927,7 @@ function showTitle(){
       <div class="prow"><span class="plb">にんずう</span><div class="prowBtns">
         ${opt(playerCount===1, 1, 'ひとり', 'ひとりで だっしゅつ', 'p', ICON.one,
               '#bfe0ff','#5aa0e8','rgba(120,180,255,.35)')}
-        ${opt(playerCount===2, 2, 'ふたり', 'きょうりょく・じかんせいげん', 'p', ICON.two,
+        ${opt(playerCount===2, 2, 'ふたり', 'ふたりで きょうりょく', 'p', ICON.two,
               '#c9c0ff','#7d6ae0','rgba(150,130,255,.35)')}
       </div></div>
       <div class="prow prow3"><span class="plb">でぐちの たかさ</span><div class="prowBtns">
@@ -3221,15 +3217,6 @@ function update(dt){
   updateQuake(dt);
   updateHero(dt);
   updateFx(dt);
-
-  // 制限時間（ふたりのときだけ）
-  if (CONFIG.TIME_LIMIT > 0 && state.phase === 'play'){
-    state.timeLeft -= dt;
-    if (state.timeLeft <= 0){
-      state.timeLeft = 0;
-      gameOver('じかん ぎれ！ ふたり そろって にげよう');
-    }
-  }
 
   /* カメラ。塔の足もとが見えなくなるのを いちばん嫌うので、
      てっぺんが画面の上に つかえそうになるまで 動かさない。 */
