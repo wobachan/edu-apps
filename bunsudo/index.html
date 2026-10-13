@@ -1026,10 +1026,11 @@ function gatherAnimation(p){
     let s="";
     for(let k=1;k<p.rd;k++){ const x=(k*CAKE_W/p.rd).toFixed(2); s+=`<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="#fff" stroke-width="12" opacity=".85"/><line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="#3b2112" stroke-width="6"/>`; }
     s+=`<rect x="0" y="0" width="${X}" height="${H}" fill="none" stroke="#c43d63" stroke-width="10"/>`;
-    const cx=X/2;
+    const whole=p.rd===1, cx=whole ? X/2-90 : X/2;   // 分母が1なら「＝1」も書くので分数を少し左へ
     s+=`<g font-family="inherit" font-weight="bold" text-anchor="middle" fill="#fff" stroke="#c43d63" stroke-width="7" paint-order="stroke">
          <text x="${cx}" y="${H/2-14}" font-size="88">${p.rn}</text>
-         <text x="${cx}" y="${H/2+84}" font-size="88">${p.rd}</text></g>
+         <text x="${cx}" y="${H/2+84}" font-size="88">${p.rd}</text>
+         ${whole?`<text x="${cx+100}" y="${H/2+30}" font-size="80">＝</text><text x="${cx+200}" y="${H/2+38}" font-size="110">${p.rn}</text>`:""}</g>
         <rect x="${cx-46}" y="${H/2-4}" width="92" height="12" rx="4" fill="#fff" stroke="#c43d63" stroke-width="4"/>`;
     const co=svg.querySelector(".coarse"); co.innerHTML=s; co.style.opacity="0";
     co.style.transition="opacity .5s"; requestAnimationFrame(()=>requestAnimationFrame(()=>co.style.opacity="1"));
