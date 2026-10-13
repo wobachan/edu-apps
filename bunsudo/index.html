@@ -484,19 +484,19 @@ const STAGES = [
 ];
 // Bコース：[分子, 分母, 約分後の分子, 約分後の分母, ケーキ]
 const DAY2 = [
-  // 分母が小さい問題から（1切れずつタップしやすい）
-  { n:2,   d:8,   rn:1, rd:4, cake:"castella" },
-  { n:6,   d:8,   rn:3, rd:4, cake:"tiramisu" },
-  { n:2,   d:10,  rn:1, rd:5, cake:"pound" },
-  { n:8,   d:10,  rn:4, rd:5, cake:"castella" },
-  { n:3,   d:15,  rn:1, rd:5, cake:"tiramisu" },
-  { n:5,   d:15,  rn:1, rd:3, cake:"pound" },
-  // 分母が大きい問題
-  { n:100, d:200, rn:1, rd:2, cake:"castella" },
-  { n:50,  d:100, rn:1, rd:2, cake:"tiramisu" },
-  { n:50,  d:200, rn:1, rd:4, cake:"pound" },
-  { n:25,  d:100, rn:1, rd:4, cake:"castella" },
-  { n:100, d:100, rn:1, rd:1, cake:"tiramisu" }
+  // 分母が大きい問題から（ケーキがこまかく分かれていて、約分のありがたみが大きい）
+  { n:50,  d:100, rn:1, rd:2, cake:"castella" },
+  { n:100, d:200, rn:1, rd:2, cake:"tiramisu" },
+  { n:25,  d:100, rn:1, rd:4, cake:"pound" },
+  { n:50,  d:200, rn:1, rd:4, cake:"castella" },
+  { n:100, d:100, rn:1, rd:1, cake:"tiramisu" },
+  // 分母が小さい問題
+  { n:2,   d:8,   rn:1, rd:4, cake:"pound" },
+  { n:6,   d:8,   rn:3, rd:4, cake:"castella" },
+  { n:2,   d:10,  rn:1, rd:5, cake:"tiramisu" },
+  { n:8,   d:10,  rn:4, rd:5, cake:"pound" },
+  { n:3,   d:15,  rn:1, rd:5, cake:"castella" },
+  { n:5,   d:15,  rn:1, rd:3, cake:"tiramisu" }
 ];
 const CAKE_NAME = { castella:"カステラ", tiramisu:"ティラミス", pound:"フルーツパウンドケーキ" };
 
