@@ -996,7 +996,9 @@ function reduceDiagram(n,d,rn,rd,g){
     <line x1="${x-34}" y1="100" x2="${x+34}" y2="100" stroke="#4a2e1e" stroke-width="3.5" stroke-linecap="round"/>
     <text x="${x}" y="134" text-anchor="middle" font-size="32" font-weight="bold" fill="#4a2e1e">${b}</text>`;
   const lab=(y)=>`<text x="150" y="${y}" text-anchor="middle" font-size="21" font-weight="bold" fill="${red}" stroke="#fff" stroke-width="6" paint-order="stroke">÷${g}</text>`;
-  return `<svg class="reduce" viewBox="0 0 300 200" width="300" role="img" aria-label="${n}/${d}の分子と分母を${g}でわると${rn}/${rd}">
+  // 分母が1になったら「＝1」まで書く（1分の1は1）
+  const whole = rd===1, VW = whole ? 380 : 300;
+  return `<svg class="reduce" viewBox="0 0 ${VW} 200" width="${VW}" role="img" aria-label="${n}/${d}の分子と分母を${g}でわると${rn}/${rd}${whole?`、${rn}/1は${rn}`:""}">
     <defs><marker id="rdArr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0 0L10 5L0 10z" fill="${red}"/></marker></defs>
     <path class="arc" d="M${L+12} 56 Q150 0 ${R-12} 56" fill="none" stroke="${red}" stroke-width="3" marker-end="url(#rdArr)"/>
@@ -1004,7 +1006,8 @@ function reduceDiagram(n,d,rn,rd,g){
     ${lab(36)}${lab(180)}
     ${frac(L,n,d)}
     <text x="150" y="111" text-anchor="middle" font-size="32" font-weight="bold" fill="#4a2e1e">＝</text>
-    <g class="after">${frac(R,rn,rd)}</g>
+    <g class="after">${frac(R,rn,rd)}${whole?`<text x="290" y="111" text-anchor="middle" font-size="32" font-weight="bold" fill="#4a2e1e">＝</text>
+      <text x="345" y="112" text-anchor="middle" font-size="40" font-weight="bold" fill="#c43d63">${rn}</text>`:""}</g>
   </svg>`;
 }
 
