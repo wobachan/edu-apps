@@ -75,7 +75,8 @@ h1{font-size:34px;text-align:center;margin:6px 0 2px;letter-spacing:1px}
 .hero figure{margin:0;width:32%;max-width:220px;text-align:center}
 .hero svg{width:100%;height:auto}
 .hero figcaption{font-size:14px;font-weight:bold;color:var(--sub);margin-top:-4px}
-.stagelist{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stagehead{font-size:14px;color:var(--sub);text-align:center;margin:2px 0 4px}
+.stagelist{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
 .stagelist .s{background:#fffaf4;border:2px solid var(--line);border-radius:14px;padding:8px;text-align:center;font-size:14px;font-family:inherit;line-height:1.5;cursor:pointer;touch-action:manipulation;transition:transform .12s}
 .stagelist .s:hover{transform:translateY(-3px)}
 .stagelist .s:active{transform:translateY(1px)}
@@ -83,7 +84,7 @@ h1{font-size:34px;text-align:center;margin:6px 0 2px;letter-spacing:1px}
 .stagelist .s b{display:block;font-size:15px}
 .btn .gbadge{display:inline-block;vertical-align:middle;margin-left:8px;background:#fff1d6;color:#4a2266;border-radius:999px;padding:0 10px;font-size:13px;letter-spacing:0;text-shadow:none}
 .stagelist .grade{display:inline-block;background:#7e1f2c;color:#fff1d6;border:2px solid var(--gold);border-radius:999px;padding:0 10px;font-size:13px;font-weight:bold;margin-bottom:2px}
-.stagelist svg{width:100%;height:auto}
+.stagelist svg{width:72%;max-width:120px;height:auto;display:block;margin:0 auto -4px}
 @media (max-width:480px){h1{font-size:27px}.stagelist{grid-template-columns:1fr}.stagelist .s{display:flex;gap:10px;align-items:center;text-align:left}.stagelist svg{width:90px;flex:none}}
 
 /* 出題 */
@@ -327,12 +328,10 @@ h1,.shopname{font-family:"Yu Mincho","YuMincho","Hiragino Mincho ProN","MS Minch
     <div class="hero" id="hero"></div>
     <div class="card">
       <button class="btn" id="go1">Aコース：大きいのはどっち？</button>
+      <div class="stagehead">Aコースは、ステージをえらんで はじめることもできるよ</div>
+      <div class="stagelist" id="stagelist"></div>
       <button class="btn mint" id="go2">Bコース：食べる分は、どれだけ？<span class="gbadge">5年生向き</span></button>
       <button class="btn plain" id="howBtn">あそびかた</button>
-    </div>
-    <div class="card">
-      <div style="font-weight:bold;margin-bottom:6px">Aコースのステージ <span style="font-weight:normal;font-size:14px">（タップすると、そのステージからあそべるよ）</span></div>
-      <div class="stagelist" id="stagelist"></div>
     </div>
   </section>
 
