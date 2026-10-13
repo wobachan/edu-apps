@@ -409,6 +409,8 @@ h1,.shopname{font-family:"Yu Mincho","YuMincho","Hiragino Mincho ProN","MS Minch
           <button data-step="0">けす</button>
         </div>
         <div class="hint">ケーキの1切れをタップ（もう一度タップでとりけし）。指でなぞると、まとめてえらべるよ。</div>
+        <div class="msg ng" id="dPickMsg"></div>
+        <button class="btn" id="dDone">これでけってい！</button>
       </div>
     </div>
     <div class="card" id="dAns" style="display:none">
@@ -533,7 +535,7 @@ let uid=0;
 function rng(seed){ return ()=>{ seed=(seed*16807)%2147483647; return (seed-1)/2147483646; }; }
 const CAKE_W = 1000;
 
-function cakeSVG({type, n=1, H=260, taken=null, marks=true, deco=false}){
+function cakeSVG({type, n=1, H=260, taken=null, marks=true, deco=false, pieces=false}){
   const id="ck"+(++uid), W=CAKE_W, sw=W/n;
   let defs="", art="";
   if(type==="castella"){
@@ -564,12 +566,15 @@ function cakeSVG({type, n=1, H=260, taken=null, marks=true, deco=false}){
   }
   // 帯（えらんだ区画の色）
   const takeSet = taken==null ? new Set() : (typeof taken==="number" ? new Set([...Array(taken).keys()]) : taken);
-  let strips="";
+  let strips="", pclips="";
   if(!deco){
     for(let i=0;i<n;i++){
       const x=i*sw, w=(i===n-1?sw:sw+0.4);
       const on = takeSet.has(i) ? " on" : "";
-      strips+=`<g class="strip${on}" data-i="${i}" style="--d:${(Math.min(i,30)*0.07).toFixed(2)}s"><rect class="ov" x="${x.toFixed(3)}" y="0" width="${w.toFixed(3)}" height="${H}"/><rect class="ea" x="${x.toFixed(3)}" y="0" width="${w.toFixed(3)}" height="${H}"/>${marks?`<rect class="mk" x="${x.toFixed(3)}" y="${H+8}" width="${w.toFixed(3)}" height="14"/>`:""}</g>`;
+      // pieces：帯ごとにケーキの絵を切り出して持たせる（帯を動かすと、その切れのケーキもいっしょに動く）
+      if(pieces) pclips+=`<clipPath id="${id}p${i}"><rect x="${x.toFixed(3)}" y="0" width="${w.toFixed(3)}" height="${H}"/></clipPath>`;
+      const piece = pieces ? `<use href="#${id}art" clip-path="url(#${id}p${i})"/>` : "";
+      strips+=`<g class="strip${on}" data-i="${i}" style="--d:${(Math.min(i,30)*0.07).toFixed(2)}s">${piece}<rect class="ov" x="${x.toFixed(3)}" y="0" width="${w.toFixed(3)}" height="${H}"/><rect class="ea" x="${x.toFixed(3)}" y="0" width="${w.toFixed(3)}" height="${H}"/>${marks?`<rect class="mk" x="${x.toFixed(3)}" y="${H+8}" width="${w.toFixed(3)}" height="14"/>`:""}</g>`;
     }
   }
   // 縦の切れ目（上端から下端まで）
@@ -587,9 +592,9 @@ function cakeSVG({type, n=1, H=260, taken=null, marks=true, deco=false}){
   }
   const vbH = H + (marks&&!deco ? 30 : 6);
   return `<svg class="cake" viewBox="-6 -6 ${W+12} ${vbH+6}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${CAKE_NAME[type]}${n>1?`を${n}等分`:""}">
-    <defs>${defs}<clipPath id="${id}c"><rect x="0" y="0" width="${W}" height="${H}"/></clipPath></defs>
-    <rect x="0" y="0" width="${W}" height="${H}" fill="url(#${id}g)"/>
-    <g clip-path="url(#${id}c)">${art}</g>
+    <defs>${defs}<clipPath id="${id}c"><rect x="0" y="0" width="${W}" height="${H}"/></clipPath>${pclips}
+      <g id="${id}art"><rect x="0" y="0" width="${W}" height="${H}" fill="url(#${id}g)"/><g clip-path="url(#${id}c)">${art}</g></g></defs>
+    <use href="#${id}art"/>
     <g class="strips">${strips}</g>
     <g class="cuts">${cuts}</g>
     <g class="coarse"></g>
@@ -873,7 +878,7 @@ function showD2(){
   $("#dNo").textContent=`${G2.idx+1}問目 / ${total}問　${CAKE_NAME[p.cake]}`;
   $("#dProg").style.width=(G2.idx/total*100)+"%";
   $("#dSay").innerHTML=`今日は ${jpFrac(p.n,p.d)}、食べていいよ！ ${fracHTML(p.n,p.d,"mid")}`;
-  $("#dCake").innerHTML=cakeSVG({type:p.cake, n:p.d, H:300, taken:null});
+  $("#dCake").innerHTML=cakeSVG({type:p.cake, n:p.d, H:300, taken:null, pieces:true});
   G2.svg=$("#dCake svg");
   $("#dAns").style.display="none";
   $("#dPickUI").style.display="";
@@ -890,9 +895,17 @@ function updateD2(){
   G2.svg.querySelectorAll(".strip").forEach(g=>g.classList.toggle("on", G2.sel.has(+g.dataset.i)));
   $$("#dPickUI .helpers button").forEach(b=>{
     const s=+b.dataset.step;
-    b.disabled = G2.locked || (s>0 && c>=p.n) || (s<=0 && c===0);
+    b.disabled = G2.locked || (s>0 && c>=p.d) || (s<=0 && c===0);
   });
-  if(!G2.locked && c===p.n) lockD2();
+  $("#dDone").disabled = G2.locked || c===0;
+  $("#dPickMsg").textContent="";
+}
+// 「これでけってい！」：ちょうど食べていい数なら答える欄へ
+function doneD2(){
+  if(G2.locked) return;
+  const p=DAY2[G2.idx], c=G2.sel.size;
+  if(c===p.n){ lockD2(); return; }
+  $("#dPickMsg").textContent = c>p.n ? `多いよ！ 食べていいのは ${jpFrac(p.n,p.d)} だよ。` : `まだたりないよ！ 食べていいのは ${jpFrac(p.n,p.d)} だよ。`;
 }
 function lockD2(){
   G2.locked=true;
@@ -903,7 +916,7 @@ function lockD2(){
 }
 function setStrip(i, on){
   const p=DAY2[G2.idx];
-  if(on){ if(G2.sel.has(i) || G2.sel.size>=p.n) return false; G2.sel.add(i); }
+  if(on){ if(G2.sel.has(i)) return false; G2.sel.add(i); }
   else { if(!G2.sel.has(i)) return false; G2.sel.delete(i); }
   return true;
 }
@@ -940,7 +953,7 @@ function helperStep(s){
   if(G2.locked) return;
   const p=DAY2[G2.idx];
   if(s===0){ G2.sel.clear(); }
-  else if(s>0){ for(let i=0, k=0; i<p.d && k<s && G2.sel.size<p.n; i++){ if(!G2.sel.has(i)){ G2.sel.add(i); k++; } } }
+  else if(s>0){ for(let i=0, k=0; i<p.d && k<s; i++){ if(!G2.sel.has(i)){ G2.sel.add(i); k++; } } }
   else { const arr=[...G2.sel].sort((a,b)=>b-a).slice(0,-s); arr.forEach(i=>G2.sel.delete(i)); }
   updateD2();
 }
@@ -1000,7 +1013,8 @@ function reduceDiagram(n,d,rn,rd,g){
 function gatherAnimation(p){
   const svg=G2.svg, sw=CAKE_W/p.d, H=300;
   const sel=[...G2.sel].sort((a,b)=>a-b);
-  sel.forEach((i,j)=>{
+  const rest=[...Array(p.d).keys()].filter(i=>!G2.sel.has(i));
+  [...sel, ...rest].forEach((i,j)=>{
     const g=svg.querySelector(`.strip[data-i="${i}"]`);
     g.style.transform=`translateX(${((j-i)*sw).toFixed(3)}px)`;
   });
@@ -1045,6 +1059,7 @@ $$("#stagelist .s").forEach(b=>b.onclick=()=>startDay1(+b.dataset.stage));
 document.addEventListener("keydown",e=>{
   if(e.key!=="Enter" || e.isComposing) return;
   if(document.activeElement && document.activeElement.tagName==="BUTTON") return;   // ボタン自身の Enter と二重にならないように
+  if($("#sc-d2").classList.contains("show") && $("#dPickUI").style.display!=="none"){ e.preventDefault(); doneD2(); return; }
   const btn = $("#sc-r").classList.contains("show") ? $("#rNext")
             : ($("#sc-d2").classList.contains("show") && $("#dNext").style.display!=="none") ? $("#dNext") : null;
   if(btn && !btn.disabled){ e.preventDefault(); btn.click(); }
@@ -1065,6 +1080,7 @@ $$("[data-home]").forEach(b=>b.onclick=()=>show("sc-title"));
 $$("#dPickUI .helpers button").forEach(b=>b.onclick=()=>helperStep(+b.dataset.step));
 $("#dCheck").onclick=checkD2;
 $("#dRedo").onclick=redoD2;
+$("#dDone").onclick=doneD2;
 $("#dNext").onclick=nextD2;
 // 分母 → 分子 の順に入力（Enter で分母から分子へ、分子で Enter なら答える）
 ["#aNum","#aDen"].forEach(s=>$(s).addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); if(s==="#aDen") $("#aNum").focus(); else checkD2(); } }));
