@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>等しい比メーカー</title>
+<style>
+  :root{
+    --bg:#f7f4ec; --panel:#ffffff; --ink:#2b2b2b; --sub:#6b6b6b; --line:#d9d3c4;
+    --a:#d9442b; --aFill:#ec7a5e;     /* 前項（ケチャップ） */
+    --b:#b8860b; --bFill:#f5d77a;     /* 後項（マヨネーズ） */
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:"BIZ UDPGothic","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",sans-serif;
+  }
+  header{
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+    padding:12px 20px; background:#fff; border-bottom:2px solid var(--line);
+  }
+  header h1{margin:0; font-size:26px; letter-spacing:.08em}
+  .spacer{flex:1}
+
+  main{display:grid; grid-template-columns:190px 1fr; gap:18px; padding:18px 20px; min-height:calc(100% - 70px)}
+  @media (max-width:820px){ main{grid-template-columns:1fr} }
+
+  /* 左：入力 */
+  .inputs{display:flex; flex-direction:column; gap:14px}
+  .card{
+    background:var(--panel); border-radius:14px; padding:8px 10px;
+    border:3px solid var(--line);
+  }
+  .stepper{display:flex; align-items:center; justify-content:center; gap:10px}
+  .stepper button{
+    width:44px; height:40px; border-radius:10px; border:2px solid var(--ink); background:#fff;
+    font-size:24px; font-weight:700; cursor:pointer; line-height:1; color:var(--ink);
+  }
+  .stepper button:active{transform:translateY(1px)}
+  .stepper button:disabled{opacity:.3; cursor:default}
+  .colon{text-align:center; font-size:28px; font-weight:700; line-height:1; margin:-6px 0}
+  .note{font-size:13px; color:#b5482b; text-align:center; margin-top:4px}
+  .note:empty{display:none}
+
+  .make{
+    font:inherit; font-size:19px; font-weight:700; padding:14px 10px; border-radius:14px;
+    border:3px solid var(--ink); background:#f2c94c; cursor:pointer; color:var(--ink); line-height:1.3;
+  }
+  .make:disabled{opacity:.4; cursor:default}
+  .make2{background:#9fd3f0}
+  .make-cap{font-size:16px; font-weight:700; text-align:center; margin-bottom:-8px}
+  .make .k{display:block; font-size:15px; margin-top:2px}
+  .sub-btn{
+    font:inherit; font-size:15px; font-weight:700; padding:8px 10px; border-radius:12px;
+    border:2px solid var(--ink); background:#fff; cursor:pointer; color:var(--ink);
+  }
+  .sub-btn:disabled{opacity:.35; cursor:default}
+  .make-msg{font-size:13px; color:#b5482b; text-align:center; margin-top:-6px}
+  .make-msg:empty{display:none}
+
+  .opts{background:var(--panel); border-radius:16px; padding:10px 10px; border:2px dashed var(--line)}
+  .opts h3{margin:0 0 8px; font-size:15px}
+  .opts label{display:flex; align-items:flex-start; gap:6px; font-size:14px; line-height:1.35; padding:4px 0; cursor:pointer}
+  .opts input[type=checkbox]{width:20px; height:20px; flex:none; margin:0}
+
+  /* 右：図 */
+  .stagebox{
+    background:var(--panel); border-radius:18px; border:3px solid var(--line);
+    padding:14px 18px 18px; display:flex; flex-direction:column; gap:10px; min-width:0;
+  }
+  #fig{width:100%; height:auto; display:block; user-select:none}
+  #fig .del, #fig .peek{cursor:pointer}
+  #fig .row.new{animation:rowIn .45s ease}
+  @keyframes rowIn{from{opacity:0; transform:translateY(-10px)}to{opacity:1; transform:none}}
+  .result{
+    display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap;
+    min-height:64px; border-top:2px dashed var(--line); padding-top:12px;
+    font-size:30px; font-weight:700;
+  }
+  .result .cap{font-size:18px; color:var(--sub)}
+  .result .eq{margin:0 4px}
+  .r-a{color:var(--a)} .r-b{color:var(--b)}
+
+  /* ？使い方 */
+  .help-btn{
+    font:inherit; font-size:16px; font-weight:700; padding:8px 14px; border-radius:10px;
+    border:2px solid var(--ink); background:#fff; color:var(--ink); cursor:pointer;
+  }
+  .help-wrap{
+    position:fixed; inset:0; background:rgba(0,0,0,.35); display:none;
+    align-items:center; justify-content:center; padding:16px; z-index:10;
+  }
+  .help-wrap.open{display:flex}
+  .help{
+    background:#fff; border-radius:18px; border:3px solid var(--ink);
+    max-width:640px; width:100%; max-height:90vh; overflow:auto; padding:20px 24px;
+  }
+  .help h2{margin:0 0 12px; font-size:22px}
+  .help h3{margin:16px 0 6px; font-size:17px}
+  .help ul{margin:0; padding-left:1.3em; line-height:1.8; font-size:16px}
+  .help .close{display:block; margin:18px auto 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>等しい比メーカー</h1>
+  <button class="help-btn" id="helpOpen">？使い方</button>
+  <span class="spacer"></span>
+</header>
+
+<main>
+  <section class="inputs">
+    <div class="card" style="border-color:var(--a)">
+      <div class="stepper">
+        <button data-k="a" data-s="-1" aria-label="前の数をへらす">−</button>
+        <button data-k="a" data-s="1" aria-label="前の数をふやす">＋</button>
+      </div>
+    </div>
+    <div class="colon">：</div>
+    <div class="card" style="border-color:var(--b)">
+      <div class="stepper">
+        <button data-k="b" data-s="-1" aria-label="後の数をへらす">−</button>
+        <button data-k="b" data-s="1" aria-label="後の数をふやす">＋</button>
+      </div>
+    </div>
+    <div class="note" id="note"></div>
+
+    <div class="make-cap">等しい比を つくる</div>
+    <button class="make" id="makeBtn">大きい数に<br>する</button>
+    <div class="make-msg" id="makeMsg"></div>
+    <button class="make make2" id="divBtn">簡単に<br>する</button>
+    <div class="make-msg" id="divMsg"></div>
+    <button class="sub-btn" id="clearBtn">ぜんぶ けす</button>
+
+    <div class="opts">
+      <h3>見せかた</h3>
+      <label><input type="checkbox" id="optDiv" checked> <span>めもり（区切り）<br>を 入れる</span></label>
+      <label><input type="checkbox" id="optEnd" checked> <span>色のさかいめに<br>たて線をひく</span></label>
+      <label><input type="checkbox" id="optMul" checked> <span>何倍したかを<br>書く</span></label>
+      <label><input type="checkbox" id="optHide"> <span>あたらしい比の数を<br>かくして出す</span></label>
+    </div>
+  </section>
+
+  <section class="stagebox">
+    <svg id="fig" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="result" id="result"></div>
+  </section>
+</main>
+
+<script>
+const A = {main:'#d9442b', fill:'#ec7a5e'};
+const B = {main:'#b8860b', fill:'#f5d77a'};
+const TERM_MAX = 100;
+const CELL_MAX = 200;   // 図に かける こまの数（前＋後）
+const ROW_MAX = 8;
+
+const state = {
+  a: 2, b: 3,
+  rows: [],           // {op:'×'|'÷', k, hidden}
+};
+let lastAdded = -1;   // ふわっと出す行
+
+function gcd(x,y){ while(y){ [x,y]=[y,x%y]; } return x; }
+function termsOf(r){
+  return r.op==='×' ? {a:state.a*r.k, b:state.b*r.k} : {a:state.a/r.k, b:state.b/r.k};
+}
+function rowOK(r){
+  if(r.op==='÷') return state.a%r.k===0 && state.b%r.k===0;
+  return (state.a+state.b)*r.k <= CELL_MAX;
+}
+function has(op,k){ return state.rows.some(r=>r.op===op && r.k===k); }
+function nextMul(){
+  for(let k=2; (state.a+state.b)*k<=CELL_MAX; k++) if(!has('×',k)) return k;
+  return 0;
+}
+function nextDiv(){
+  const g = gcd(state.a, state.b);
+  for(let k=2; k<=g; k++) if(g%k===0 && !has('÷',k)) return k;
+  return 0;
+}
+
+/* ---------- 左：入力 ---------- */
+let holdTimer = null;
+function stopHold(){ clearTimeout(holdTimer); holdTimer = null; }
+['pointerup','pointercancel','blur'].forEach(ev=>window.addEventListener(ev, stopHold));
+
+document.querySelectorAll('.stepper button').forEach(b=>{
+  const step = ()=>{
+    if(b.disabled) return false;
+    setValue(b.dataset.k, state[b.dataset.k] + (+b.dataset.s));
+    return true;
+  };
+  // おしっぱなしで どんどん かわる（はじめは ゆっくり、だんだん はやく）
+  b.addEventListener('pointerdown', e=>{
+    e.preventDefault();
+    stopHold();
+    if(!step()) return;
+    let times = 0;
+    const again = ()=>{ if(!step()) return; times++; holdTimer = setTimeout(again, times>15 ? 30 : 90); };
+    holdTimer = setTimeout(again, 400);
+  });
+  b.addEventListener('click', e=>{ if(e.detail===0) step(); });   // キーボード用
+});
+
+function setValue(k, v){
+  let note = '';
+  const other = k==='a' ? state.b : state.a;
+  if(v<1) v = 1;
+  if(v>TERM_MAX){ v = TERM_MAX; note = `${TERM_MAX} までにしてね`; }
+  if(v+other>CELL_MAX){ v = CELL_MAX-other; note = `2つの数の 合計は ${CELL_MAX} までにしてね`; }
+  state[k] = v;
+  // 下の比は 同じ倍で つくりなおす（できないものは けす）
+  const before = state.rows.length;
+  state.rows = state.rows.filter(rowOK);
+  if(state.rows.length < before) note = note || '図に かけない比は けしたよ';
+  lastAdded = -1;
+  document.getElementById('note').textContent = note;
+  render();
+}
+
+function syncInputs(){
+  document.querySelectorAll('.stepper button').forEach(b=>{
+    const k=b.dataset.k, s=+b.dataset.s, cur=state[k], other = k==='a'?state.b:state.a;
+    b.disabled = s<0 ? cur<=1 : (cur>=TERM_MAX || cur+other>=CELL_MAX);
+  });
+  const full = state.rows.length >= ROW_MAX;
+  const m = nextMul(), d = nextDiv();
+  const mb = document.getElementById('makeBtn'), db = document.getElementById('divBtn');
+  mb.disabled = full || !m;
+  db.disabled = full || !d;
+  mb.innerHTML = `大きい数に<br>する<span class="k">${m ? '×'+m : ''}</span>`;
+  db.innerHTML = `簡単に<br>する<span class="k">${d ? '÷'+d : ''}</span>`;
+  document.getElementById('clearBtn').disabled = state.rows.length===0;
+  document.getElementById('makeMsg').textContent =
+      full ? `${ROW_MAX}つまで だよ`
+    : !m   ? 'これ以上 大きくすると 図に かけません' : '';
+  document.getElementById('divMsg').textContent =
+      full ? '' : !d ? (gcd(state.a,state.b)===1 ? 'これ以上 簡単に できません' : 'もう ぜんぶ つくったよ') : '';
+}
+
+function addRow(op, k){
+  if(!k || state.rows.length>=ROW_MAX) return;
+  state.rows.push({op, k, hidden: document.getElementById('optHide').checked});
+  lastAdded = state.rows.length - 1;
+  render();
+}
+document.getElementById('makeBtn').onclick  = ()=>addRow('×', nextMul());
+document.getElementById('divBtn').onclick   = ()=>addRow('÷', nextDiv());
+document.getElementById('clearBtn').onclick = ()=>{ state.rows = []; lastAdded = -1; render(); };
+
+/* ---------- 右：図 ---------- */
+const LX = 125;                 // 比の「：」の位置
+const X0 = 250, X1 = 945, W = X1 - X0;
+const H = 58;                   // テープの高さ
+const MUL_H = 26;               // 「×2」を書く ところ
+
+function numW(n, s){ return String(n).length * s * 0.58; }
+
+// 左の比（a：b）。上に ×2 を書く
+function ratioSVG(t, top, r, i){
+  const s = 34, y = top + H/2 + s*0.36;
+  const hid = r && r.hidden;
+  const ta = hid ? '□' : t.a, tb = hid ? '□' : t.b;
+  const ca = LX - 16 - numW(ta, s)/2, cb = LX + 16 + numW(tb, s)/2;
+  let g = `<g font-weight="700" font-size="${s}">
+    <text x="${LX-16}" y="${y}" text-anchor="end" fill="${A.main}">${ta}</text>
+    <text x="${LX}" y="${y-3}" text-anchor="middle" fill="#2b2b2b">：</text>
+    <text x="${LX+16}" y="${y}" text-anchor="start" fill="${B.main}">${tb}</text></g>`;
+  if(r && document.getElementById('optMul').checked){
+    const lab = r.op + r.k;
+    g += `<g font-size="19" font-weight="700" fill="#555" text-anchor="middle">
+      <text x="${ca}" y="${top-6}">${lab}</text><text x="${cb}" y="${top-6}">${lab}</text></g>`;
+  }
+  if(hid){   // タップで 見せる
+    g += `<rect class="peek" data-i="${i}" x="0" y="${top-MUL_H}" width="${X0-10}" height="${H+MUL_H}" fill="transparent"/>`;
+  }
+  return g;
+}
+
+function tapeSVG(t, top, r){
+  const S = t.a + t.b, w = W/S;
+  const showDiv = document.getElementById('optDiv').checked;
+  const k = r && r.op==='×' ? r.k : 1;   // もとの比の 1こ分 = k こ
+  let g = `<rect x="${X0}" y="${top}" width="${w*t.a}" height="${H}" fill="${A.fill}"/>
+           <rect x="${X0 + w*t.a}" y="${top}" width="${w*t.b}" height="${H}" fill="${B.fill}"/>`;
+  if(showDiv){
+    const thin = Math.min(1, w/14);   // こまが せまいときは 線を細く
+    for(let j=1;j<S;j++){
+      if(j===t.a) continue;
+      const orig = j%k===0;          // かけ算で ふえた線は 細く
+      const sw = orig ? 2.2*thin+0.3 : 1.4*thin+0.2;
+      g += `<line x1="${X0+w*j}" x2="${X0+w*j}" y1="${top}" y2="${top+H}" stroke="${orig?'#2b2b2b':'#555'}" stroke-width="${sw}"/>`;
+    }
+  }
+  g += `<line x1="${X0+w*t.a}" x2="${X0+w*t.a}" y1="${top}" y2="${top+H}" stroke="#2b2b2b" stroke-width="3.5"/>`;
+  g += `<rect x="${X0}" y="${top}" width="${W}" height="${H}" fill="none" stroke="#2b2b2b" stroke-width="3.5"/>`;
+  return g;
+}
+
+function delSVG(i, top){
+  const cx = X1 + 30, cy = top + H/2;
+  return `<g class="del" data-i="${i}">
+    <circle cx="${cx}" cy="${cy}" r="16" fill="#fff" stroke="#999" stroke-width="2"/>
+    <path d="M${cx-6} ${cy-6} L${cx+6} ${cy+6} M${cx+6} ${cy-6} L${cx-6} ${cy+6}" stroke="#777" stroke-width="3" stroke-linecap="round"/>
+    <title>この比を けす</title></g>`;
+}
+
+function render(){
+  syncInputs();
+  const svg = document.getElementById('fig');
+  let y = MUL_H + 6, body = '';
+  const base = {a:state.a, b:state.b};
+  body += `<g class="row">${ratioSVG(base, y, null)}${tapeSVG(base, y, null)}</g>`;
+  const firstTop = y;
+  y += H;
+  if(state.rows.length){
+    y += 18;
+    body += `<line x1="20" x2="980" y1="${y}" y2="${y}" stroke="#d9d3c4" stroke-width="2" stroke-dasharray="6 6"/>`;
+    y += 8;
+  }
+  state.rows.forEach((r,i)=>{
+    y += MUL_H + 6;
+    const t = termsOf(r);
+    body += `<g class="row${i===lastAdded?' new':''}">${ratioSVG(t, y, r, i)}${tapeSVG(t, y, r)}${delSVG(i, y)}</g>`;
+    y += H;
+  });
+  const total = y + 20;
+  // 前と後の さかいめ（どの行も 同じところ）
+  if(document.getElementById('optEnd').checked && state.rows.length){
+    const x = X0 + W*state.a/(state.a+state.b);
+    body += `<line x1="${x}" x2="${x}" y1="${firstTop-14}" y2="${total-6}" stroke="#2b2b2b" stroke-width="3" stroke-dasharray="8 6" opacity=".75" pointer-events="none"/>`;
+  }
+  svg.setAttribute('viewBox', `0 0 1000 ${total}`);
+  svg.innerHTML = body;
+  svg.querySelectorAll('.del').forEach(el=>el.addEventListener('click', ()=>{
+    state.rows.splice(+el.dataset.i, 1); lastAdded = -1; render();
+  }));
+  svg.querySelectorAll('.peek').forEach(el=>el.addEventListener('click', ()=>{
+    state.rows[+el.dataset.i].hidden = false; lastAdded = -1; render();
+  }));
+  lastAdded = -1;
+  renderResult();
+}
+
+// 下の しき：2：3 ＝ 4：6 ＝ …
+function renderResult(){
+  const box = document.getElementById('result');
+  if(!state.rows.length){
+    box.innerHTML = `<span class="cap">「大きい数にする」か「簡単にする」を おしてみよう</span>`;
+    return;
+  }
+  const list = [{a:state.a, b:state.b}];
+  state.rows.forEach(r=>list.push(r.hidden ? {a:'□', b:'□'} : termsOf(r)));
+  box.innerHTML = list.map(t=>`<span><span class="r-a">${t.a}</span>：<span class="r-b">${t.b}</span></span>`)
+                      .join('<span class="eq">＝</span>');
+}
+
+['optDiv','optEnd','optMul'].forEach(id=>document.getElementById(id).addEventListener('change', ()=>{ lastAdded=-1; render(); }));
+
+render();
+</script>
+<div class="help-wrap" id="helpWrap">
+  <div class="help" role="dialog" aria-labelledby="helpTitle">
+    <h2 id="helpTitle">？使い方</h2>
+    <h3>もとの比を 入れる</h3>
+    <ul>
+      <li>左の 上の −・＋ で 前の数（赤）、下の −・＋ で 後の数（黄）を かえます。</li>
+      <li>いちばん上の テープは 前と後を あわせた数に 等分されます（20：30 なら 50こ）。</li>
+      <li>−・＋ を おしっぱなしにすると どんどん かわります（2つの数の 合計は 200 まで）。</li>
+    </ul>
+    <h3>等しい比を つくる</h3>
+    <ul>
+      <li>「大きい数にする」を おすたびに、前と後に 同じ数を かけた比が 下に ふえます（×2、×3 …）。</li>
+      <li>「簡単にする」は、前と後を 同じ数で わった比を つくります（20：30 → ÷2、÷5、÷10。われないときは おせません）。</li>
+      <li>ボタンの下の ×2・÷2 は、つぎに できる比です。</li>
+      <li>テープの 長さは そろえてあるので、色の さかいめが どの比も 同じところに なります。かけ算で ふえた線は 細い線です。</li>
+      <li>右の ⊗ で その比を けせます。もとの比を かえると、下の比も 同じ倍で つくりなおします。</li>
+    </ul>
+    <h3>見せかた</h3>
+    <ul>
+      <li>「あたらしい比の数を かくして出す」にすると、数が □ になります。左の比を タップすると 見えます。</li>
+    </ul>
+    <button class="help-btn close" id="helpClose">とじる</button>
+  </div>
+</div>
+<script>
+(function(){
+  const wrap = document.getElementById('helpWrap');
+  document.getElementById('helpOpen').onclick = ()=>wrap.classList.add('open');
+  document.getElementById('helpClose').onclick = ()=>wrap.classList.remove('open');
+  wrap.addEventListener('click', e=>{ if(e.target===wrap) wrap.classList.remove('open'); });
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') wrap.classList.remove('open'); });
+})();
+</script>
+</body>
+</html>
