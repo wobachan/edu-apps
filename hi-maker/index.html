@@ -268,9 +268,13 @@ function ratioSVG(t, top, r, i){
     <text x="${LX}" y="${y-3}" text-anchor="middle" fill="#2b2b2b">：</text>
     <text x="${LX+16}" y="${y}" text-anchor="start" fill="${B.main}">${tb}</text></g>`;
   if(r && document.getElementById('optMul').checked){
-    const lab = r.op + r.k;
-    g += `<g font-size="19" font-weight="700" fill="#555" text-anchor="middle">
-      <text x="${ca}" y="${top-6}">${lab}</text><text x="${cb}" y="${top-6}">${lab}</text></g>`;
+    // もとの比から 何倍したか（すぐ上の行からと まちがえないよう、もとの数も書く）
+    const op = r.op + r.k, fs = 18;
+    const wa = numW(state.a + op, fs), wb = numW(state.b + op, fs);
+    const la = Math.min(ca, LX - 8 - wa/2), lb = Math.max(cb, LX + 8 + wb/2);   // 「：」の上で かさならないように
+    g += `<g font-size="${fs}" font-weight="700" text-anchor="middle">
+      <text x="${la}" y="${top-6}"><tspan fill="${A.main}">${state.a}</tspan><tspan fill="#555">${op}</tspan></text>
+      <text x="${lb}" y="${top-6}"><tspan fill="${B.main}">${state.b}</tspan><tspan fill="#555">${op}</tspan></text></g>`;
   }
   if(hid){   // タップで 見せる
     g += `<rect class="peek" data-i="${i}" x="0" y="${top-MUL_H}" width="${X0-10}" height="${H+MUL_H}" fill="transparent"/>`;
@@ -374,6 +378,7 @@ render();
       <li>「大きい数にする」を おすたびに、前と後に 同じ数を かけた比が 下に ふえます（×2、×3 …）。</li>
       <li>「簡単にする」は、前と後を 同じ数で わった比を つくります（20：30 → ÷2、÷5、÷10。われないときは おせません）。</li>
       <li>ボタンの下の ×2・÷2 は、つぎに できる比です。</li>
+      <li>下の比は どれも いちばん上の もとの比から つくります。数の上の「2×5」は「もとの 2 を 5倍した」という意味です。</li>
       <li>テープの 長さは そろえてあるので、色の さかいめが どの比も 同じところに なります。かけ算で ふえた線は 細い線です。</li>
       <li>右の ⊗ で その比を けせます。もとの比を かえると、下の比も 同じ倍で つくりなおします。</li>
     </ul>
