@@ -562,7 +562,7 @@ function chopAnimation(svg, total){
   const hand = document.createElementNS(svgNS, 'g');
   hand.setAttribute('pointer-events', 'none');
   hand.innerHTML = `<text font-size="140" text-anchor="middle" dominant-baseline="central"
-    transform="rotate(90)" style="font-family:'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',sans-serif">✋</text>`;
+    style="font-family:'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',sans-serif">✋</text>`;
   svg.appendChild(hand);
   const midY = total / 2;
   const move = hand.animate([
@@ -570,8 +570,8 @@ function chopAnimation(svg, total){
     {transform:`translate(${X1-50}px, ${midY}px)`}
   ], {duration: CHOP_MS, easing:'linear', fill:'forwards'});
   hand.firstElementChild.animate([
-    {transform:'rotate(90deg) translateX(-60px)'},
-    {transform:'rotate(90deg) translateX(60px)'}
+    {transform:'translateY(-60px)'},
+    {transform:'translateY(60px)'}
   ], {duration: 90, iterations: Math.ceil(CHOP_MS/90), direction:'alternate', easing:'ease-in'});
   move.onfinish = ()=>{
     playPon();
