@@ -75,6 +75,7 @@
   #fig .cell{transition:fill .4s ease}
   #fig .mark.fadein{animation:markIn .4s ease}
   /* 通分：手刀が通ったところから 線が 上から下へ すっと 入る */
+  #fig{overflow:visible}   /* 大きな手刀が はみ出しても 切れないように */
   #fig .sub.cut{stroke-dasharray:var(--len) var(--len); stroke-dashoffset:var(--len);
     animation:cutDown .12s ease-out forwards; animation-delay:var(--delay)}
   @keyframes cutDown{to{stroke-dashoffset:0}}
@@ -530,7 +531,7 @@ document.getElementById('tsubunBtn').onclick = ()=>{
 };
 
 /* ---------- 通分の演出：手刀で すばやく 切る ＋「ぽん！」 ---------- */
-const CHOP_MS = 550;
+const CHOP_MS = 550, HOLD_MS = 800;   // 切る時間・さいごに 手を 止めて見せる時間
 let audioCtx = null;
 function playPon(){
   try{
@@ -560,21 +561,23 @@ function chopAnimation(svg, total){
   // 手刀（左から右へ、上下に トントン 切りながら 進む）
   const hand = document.createElementNS(svgNS, 'g');
   hand.setAttribute('pointer-events', 'none');
-  hand.innerHTML = `<text font-size="64" text-anchor="middle" dominant-baseline="central"
+  hand.innerHTML = `<text font-size="140" text-anchor="middle" dominant-baseline="central"
     transform="rotate(90)" style="font-family:'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',sans-serif">✋</text>`;
   svg.appendChild(hand);
   const midY = total / 2;
   const move = hand.animate([
-    {transform:`translate(${X0-30}px, ${midY}px)`},
-    {transform:`translate(${X1+30}px, ${midY}px)`}
-  ], {duration: CHOP_MS, easing:'linear'});
+    {transform:`translate(${X0-40}px, ${midY}px)`},
+    {transform:`translate(${X1-50}px, ${midY}px)`}
+  ], {duration: CHOP_MS, easing:'linear', fill:'forwards'});
   hand.firstElementChild.animate([
-    {transform:'rotate(90deg) translateX(-40px)'},
-    {transform:'rotate(90deg) translateX(40px)'}
+    {transform:'rotate(90deg) translateX(-60px)'},
+    {transform:'rotate(90deg) translateX(60px)'}
   ], {duration: 90, iterations: Math.ceil(CHOP_MS/90), direction:'alternate', easing:'ease-in'});
   move.onfinish = ()=>{
-    hand.animate([{opacity:1},{opacity:0}], {duration:150}).onfinish = ()=>hand.remove();
     playPon();
+    // 切りおわった手を 少し 止めて 見せてから きえる
+    hand.animate([{opacity:1},{opacity:1, offset:0.75},{opacity:0}],
+      {duration: HOLD_MS + 250, fill:'forwards'}).onfinish = ()=>hand.remove();
   };
 }
 ['optDiv','optFill','optEnd','optTick','optLabel'].forEach(id=>document.getElementById(id).addEventListener('change',render));
