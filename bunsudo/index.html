@@ -1208,7 +1208,7 @@ const RUBY_WORDS = {
   "大事":"だいじ","両方":"りょうほう","数字":"すうじ","簡単":"かんたん",
   "大":"おお","同":"おな","食":"た","見":"み","出":"で","上":"うえ","下":"した","逆":"ぎゃく","言":"い","考":"かんが",
   "答":"こた","合":"あ","終":"お","使":"つか","切":"き","細":"ほそ","指":"ゆび","方":"ほう","入":"い","次":"つぎ",
-  "年生":"ねんせい","向":"む","屋":"や","今":"いま","量":"りょう","色":"いろ","絵":"え","問":"もん","数":"かず"
+  "年生":"ねんせい","目":"め","通":"つう","多":"おお","通分":"つうぶん","向":"む","屋":"や","今":"いま","量":"りょう","色":"いろ","絵":"え","問":"もん","数":"かず"
 };
 const RUBY_KEYS = Object.keys(RUBY_WORDS).sort((a,b)=>b.length-a.length);
 const KANJI = /[一-鿿々]/;
@@ -1223,7 +1223,8 @@ function rubyHTMLFor(text){
     if(key){ yomi=RUBY_WORDS[key]; }
     else if(ch==="分"){ key="分"; yomi=/[けか]/.test(text[i+1]||"") ? "わ" : "ぶん"; }
     if(key){ out+=`<ruby>${key}<rt>${yomi}</rt></ruby>`; i+=key.length; }
-    else { console.warn("よみが未登録の漢字:", ch, text); out+=esc(ch); i++; }
+    // よみが未登録の字は、印をつけて二度と処理しない（同じ字をくり返し処理して固まるのをふせぐ）
+    else { console.warn("よみが未登録の漢字:", ch, text); out+=`<span class="nr">${esc(ch)}</span>`; i++; }
   }
   return out;
 }
@@ -1232,10 +1233,10 @@ function rubify(root){
   const nodes=[];
   const walk=n=>{
     if(n.nodeType===3){ if(KANJI.test(n.nodeValue)) nodes.push(n); return; }
-    if(n.nodeType!==1 || RUBY_SKIP.has(n.nodeName) || n.closest("svg,ruby")) return;
+    if(n.nodeType!==1 || RUBY_SKIP.has(n.nodeName) || n.closest("svg,ruby,.nr")) return;
     n.childNodes.forEach(walk);
   };
-  if(root.nodeType===3){ const par=root.parentElement; if(par && !par.closest("svg,ruby,script,style,title") && KANJI.test(root.nodeValue)) nodes.push(root); }
+  if(root.nodeType===3){ const par=root.parentElement; if(par && !par.closest("svg,ruby,script,style,title,.nr") && KANJI.test(root.nodeValue)) nodes.push(root); }
   else walk(root);
   nodes.forEach(t=>{
     if(!t.parentNode) return;
