@@ -137,7 +137,7 @@
       <h3>見せかた</h3>
       <label><input type="checkbox" id="optDiv" checked> <span>めもり（区切り）<br>を 入れる</span></label>
       <label><input type="checkbox" id="optEnd" checked> <span>色のさかいめに<br>たて線をひく</span></label>
-      <label><input type="checkbox" id="optMul" checked> <span>何倍したかを<br>書く</span></label>
+      <label><input type="checkbox" id="optMul" checked> <span>何倍したかを<br>矢印で書く</span></label>
       <label><input type="checkbox" id="optHide"> <span>あたらしい比の数を<br>かくして出す</span></label>
     </div>
   </section>
@@ -250,32 +250,23 @@ document.getElementById('divBtn').onclick   = ()=>addRow('÷', nextDiv());
 document.getElementById('clearBtn').onclick = ()=>{ state.rows = []; lastAdded = -1; render(); };
 
 /* ---------- 右：図 ---------- */
-const LX = 125;                 // 比の「：」の位置
-const X0 = 250, X1 = 945, W = X1 - X0;
+const LX = 170;                 // 比の「：」の位置
+const X0 = 350, X1 = 945, W = X1 - X0;
 const H = 58;                   // テープの高さ
-const MUL_H = 26;               // 「×2」を書く ところ
+const MUL_H = 14;               // 行と行の あいだ
+const NUM_S = 34;               // 比の数の 大きさ
 
 function numW(n, s){ return String(n).length * s * 0.58; }
 
-// 左の比（a：b）。上に ×2 を書く
+// 左の比（a：b）
 function ratioSVG(t, top, r, i){
-  const s = 34, y = top + H/2 + s*0.36;
+  const s = NUM_S, y = top + H/2 + s*0.36;
   const hid = r && r.hidden;
   const ta = hid ? '□' : t.a, tb = hid ? '□' : t.b;
-  const ca = LX - 16 - numW(ta, s)/2, cb = LX + 16 + numW(tb, s)/2;
   let g = `<g font-weight="700" font-size="${s}">
     <text x="${LX-16}" y="${y}" text-anchor="end" fill="${A.main}">${ta}</text>
     <text x="${LX}" y="${y-3}" text-anchor="middle" fill="#2b2b2b">：</text>
     <text x="${LX+16}" y="${y}" text-anchor="start" fill="${B.main}">${tb}</text></g>`;
-  if(r && document.getElementById('optMul').checked){
-    // もとの比から 何倍したか（すぐ上の行からと まちがえないよう、もとの数も書く）
-    const op = r.op + r.k, fs = 18;
-    const wa = numW(state.a + op, fs), wb = numW(state.b + op, fs);
-    const la = Math.min(ca, LX - 8 - wa/2), lb = Math.max(cb, LX + 8 + wb/2);   // 「：」の上で かさならないように
-    g += `<g font-size="${fs}" font-weight="700" text-anchor="middle">
-      <text x="${la}" y="${top-6}"><tspan fill="${A.main}">${state.a}</tspan><tspan fill="#555">${op}</tspan></text>
-      <text x="${lb}" y="${top-6}"><tspan fill="${B.main}">${state.b}</tspan><tspan fill="#555">${op}</tspan></text></g>`;
-  }
   if(hid){   // タップで 見せる
     g += `<rect class="peek" data-i="${i}" x="0" y="${top-MUL_H}" width="${X0-10}" height="${H+MUL_H}" fill="transparent"/>`;
   }
@@ -302,6 +293,22 @@ function tapeSVG(t, top, r){
   return g;
 }
 
+// もとの比から その行へ 弧の矢印（前の数は左に、後の数は右に ふくらむ）
+function arcSVG(r, i, y0, y1, ax, bx){
+  // ×2 は 矢じりの 少し手前（t=0.8 の あたり）に書く
+  const b = 24 + 10*i, lab = r.op + r.k, ym = y0 + (y1-y0)*0.9 + 6;
+  let lines = '', labels = '';
+  const one = (x, dir, col) => {
+    const e = x - dir*7;   // 矢じりの ねもと
+    lines += `<path d="M${x} ${y0} C${x-dir*b} ${y0}, ${x-dir*b} ${y1}, ${e} ${y1}" fill="none" stroke="${col}" stroke-width="2.6"/>
+      <path d="M${x+dir*2} ${y1} L${e-dir*4} ${y1-6} L${e-dir*4} ${y1+6} Z" fill="${col}"/>`;
+    labels += `<text x="${x - dir*(b*0.48+5)}" y="${ym}" text-anchor="${dir>0?'end':'start'}" font-size="20" font-weight="700"
+        fill="#333" stroke="#fff" stroke-width="9" stroke-linejoin="round" paint-order="stroke">${lab}</text>`;
+  };
+  one(ax, 1, A.main); one(bx, -1, B.main);
+  return {lines, labels};
+}
+
 function delSVG(i, top){
   const cx = X1 + 30, cy = top + H/2;
   return `<g class="del" data-i="${i}">
@@ -323,12 +330,21 @@ function render(){
     body += `<line x1="20" x2="980" y1="${y}" y2="${y}" stroke="#d9d3c4" stroke-width="2" stroke-dasharray="6 6"/>`;
     y += 8;
   }
+  // 矢印の 出入りする x（いちばん はばの広い数に 合わせる）
+  const all = [base, ...state.rows.map(termsOf)];
+  const ax = LX - 16 - Math.max(...all.map(t=>numW(t.a, NUM_S))) - 8;
+  const bx = LX + 16 + Math.max(...all.map(t=>numW(t.b, NUM_S))) + 8;
+  const showArc = document.getElementById('optMul').checked;
+  let arcLabels = '';   // 文字は ほかの矢印に かくれないよう 最後に書く
   state.rows.forEach((r,i)=>{
     y += MUL_H + 6;
     const t = termsOf(r);
-    body += `<g class="row${i===lastAdded?' new':''}">${ratioSVG(t, y, r, i)}${tapeSVG(t, y, r)}${delSVG(i, y)}</g>`;
+    const arc = showArc ? arcSVG(r, i, firstTop + H/2 + 4, y + H/2, ax, bx) : {lines:'', labels:''};
+    arcLabels += `<g class="row${i===lastAdded?' new':''}">${arc.labels}</g>`;
+    body += `<g class="row${i===lastAdded?' new':''}">${arc.lines}${ratioSVG(t, y, r, i)}${tapeSVG(t, y, r)}${delSVG(i, y)}</g>`;
     y += H;
   });
+  body += arcLabels;
   const total = y + 20;
   // 前と後の さかいめ（どの行も 同じところ）
   if(document.getElementById('optEnd').checked && state.rows.length){
@@ -378,7 +394,7 @@ render();
       <li>「大きい数にする」を おすたびに、前と後に 同じ数を かけた比が 下に ふえます（×2、×3 …）。</li>
       <li>「簡単にする」は、前と後を 同じ数で わった比を つくります（20：30 → ÷2、÷5、÷10。われないときは おせません）。</li>
       <li>ボタンの下の ×2・÷2 は、つぎに できる比です。</li>
-      <li>下の比は どれも いちばん上の もとの比から つくります。数の上の「2×5」は「もとの 2 を 5倍した」という意味です。</li>
+      <li>下の比は どれも いちばん上の もとの比から つくります。矢印は もとの比から のびていて、「×5」は もとの数を 5倍した という意味です。</li>
       <li>テープの 長さは そろえてあるので、色の さかいめが どの比も 同じところに なります。かけ算で ふえた線は 細い線です。</li>
       <li>右の ⊗ で その比を けせます。もとの比を かえると、下の比も 同じ倍で つくりなおします。</li>
     </ul>
