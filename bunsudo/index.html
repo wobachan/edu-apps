@@ -272,6 +272,11 @@ body{
 .hint{color:#e9d6b0}
 .card .hint{color:var(--sub)}
 .result.ok{color:#8fe8c8} .result.ng{color:#ff9fb3}
+.tsubun-line{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:2px 0 6px;padding:4px 10px;background:#efe3f7;border-left:6px solid #6d3a8f;border-radius:8px;font-size:18px}
+.tsubun-line .frac{font-size:22px}
+.tsubun-line .eq{font-weight:bold;font-size:22px}
+.tsubun-line .tl{margin-left:8px}
+.explain .frac{font-size:16px}
 .sadwrap{display:inline-flex;align-items:center;gap:10px;vertical-align:middle}
 .saddog{font-size:64px;line-height:1;display:inline-block;animation:droop 1.6s ease-in-out infinite}
 .oshii{display:inline-block;background:linear-gradient(180deg,#2f6fd6,#1d4fa8);color:#fff;font-size:36px;letter-spacing:2px;
@@ -366,8 +371,9 @@ h1,.shopname{font-family:"Yu Mincho","YuMincho","Hiragino Mincho ProN","MS Minch
       <span class="stars" id="rStars"></span>
     </div>
     <div class="result" id="rResult"></div>
-    <div class="hint">ケーキを見て、たしかめてみよう！（ケーキの大きさは2つとも同じ）<br><b>□にあてはまる数を入れよう。</b></div>
+    <div class="hint"><b>□にあてはまる数を入れよう。</b></div>
     <div class="card reveal" id="rCakes"></div>
+    <button class="btn mint" id="rTsubun" style="display:none">切れ目をそろえて くらべよう（通分）</button>
     <div class="explain" id="rExplain"></div>
     <button class="btn" id="rNext">次の問題へ</button>
   </section>
@@ -485,10 +491,10 @@ const STAGES = [
   { id:1, name:"カステラ", cake:"castella", learn:"分母が同じ分数のくらべっこ", grade:"3年生向き",
     questions:[ {left:[1,4], right:[3,4]}, {left:[2,4], right:[3,4]}, {left:[1,5], right:[4,5]},
                 {left:[2,6], right:[5,6]}, {left:[3,8], right:[5,8]} ] },
-  { id:2, name:"ティラミス", cake:"tiramisu", learn:"分子が1の分数のくらべっこ", grade:"4年生向き",
+  { id:2, name:"ティラミス", cake:"tiramisu", learn:"分子が1の分数のくらべっこ", grade:"", tsubun:true,   // 分子が1・分母ちがいは、学年を言い切れないので書かない
     questions:[ {left:[1,2], right:[1,4]}, {left:[1,3], right:[1,5]}, {left:[1,4], right:[1,6]},
                 {left:[1,3], right:[1,8]}, {left:[1,5], right:[1,7]} ] },
-  { id:3, name:"フルーツパウンドケーキ", cake:"pound", learn:"分母も分子もちがう分数", grade:"5年生向き",
+  { id:3, name:"フルーツパウンドケーキ", cake:"pound", learn:"分母も分子もちがう分数", grade:"5年生向き", tsubun:true,
     questions:[ {left:[2,3], right:[3,5]}, {left:[2,5], right:[3,7]}, {left:[3,4], right:[4,5]},
                 {left:[2,3], right:[3,4]}, {left:[3,8], right:[2,5]} ] }
 ];
@@ -817,6 +823,7 @@ function showReveal(q, side, ok){
     return `<div class="cakebox"><div class="cakehead">${fracHTML(f[0],f[1])}${s===q.answer ? `<span class="fill">1を<input class="blank" data-ans="${f[1]}" type="text" inputmode="numeric" maxlength="2" autocomplete="off" aria-label="分母">等分した<input class="blank" data-ans="${f[0]}" type="text" inputmode="numeric" maxlength="2" autocomplete="off" aria-label="分子">つ分</span>` : `<span class="fill">1を${f[1]}等分した${f[0]}つ分</span>`}</div><div class="cakerow">${cakeSVG({type:st.cake, n:f[1], H:240, taken:f[0]})}<div class="maru">${s!==q.answer ? "" : ok ? `<span>○</span><small>大きい！</small>` : `<em class="here">◀ こちらが<br>大きい</em>`}</div></div></div>`;
   };
   // 2つのケーキは同じ大きさ・左はしをそろえて上下にならべる
+  $("#rCakes").classList.add("reveal");
   $("#rCakes").innerHTML = one(q.left,"L") + one(q.right,"R");
   $("#rExplain").innerHTML = q.explain.map(t=>`<p>${t}</p>`).join("");
   $("#rExplain").style.display = q.explain.length ? "" : "none";
@@ -824,11 +831,28 @@ function showReveal(q, side, ok){
   nb.textContent = G1.qIdx+1<total ? "次の問題へ" : "結果を見る";
   nb.disabled=true;
   show("sc-r");
-  // 次へ進めるのは「□がぜんぶ正しく入った」かつ「食べ終わった（正解のとき）」
-  const gate={blanks:false, eaten:!ok};
-  const tryOpen=()=>{ if(gate.blanks && gate.eaten) nb.disabled=false; };
-  setupBlanks($("#rCakes"), ()=>{ gate.blanks=true; tryOpen(); });
-  if(ok){
+  // 次へ進めるのは「□がぜんぶ正しく入った」かつ「（ステージ3は）通分した」かつ「食べ終わった（正解のとき）」
+  const needT=!!st.tsubun;
+  const gate={blanks:false, tsubun:!needT, eaten:!ok};
+  const tryOpen=()=>{ if(gate.blanks && gate.tsubun && gate.eaten) nb.disabled=false; };
+  const tb=$("#rTsubun");
+  tb.style.display = needT ? "" : "none";
+  tb.disabled = true;
+  setupBlanks($("#rCakes"), ()=>{ gate.blanks=true; if(needT){ tb.disabled=false; tb.focus({preventScroll:true}); } tryOpen(); });
+  if(needT){
+    tb.onclick=()=>{
+      tb.disabled=true; tb.style.display="none";
+      doTsubun(q, st, ()=>{
+        gate.tsubun=true; tryOpen();
+        if(ok){
+          const f = q.answer==="L" ? q.left : q.right, L=lcm(q.left[1],q.right[1]);
+          const box = $$("#rCakes .cakebox")[q.answer==="L"?0:1];
+          const order = [...Array(f[0]*L/f[1]).keys()].reverse();
+          scheduleEat(400, box, box.querySelector("svg"), order, ()=>{ gate.eaten=true; tryOpen(); });
+        }
+      });
+    };
+  }else if(ok){
     // 色がつき終わって○が出たあと、大きい方のケーキを食べる
     const f = q.answer==="L" ? q.left : q.right;
     const box = $$("#rCakes .cakebox")[q.answer==="L"?0:1];
@@ -836,6 +860,69 @@ function showReveal(q, side, ok){
     scheduleEat(1300+Math.min(f[0]-1,30)*70, box, box.querySelector("svg"), order, ()=>{ gate.eaten=true; tryOpen(); });
   }
 }
+// 通分：2つのケーキの切れ目を、分母の最小公倍数の等分にそろえる（縦線だけ）
+const lcm=(a,b)=>a/gcd(a,b)*b;
+function doTsubun(q, st, onDone){
+  const L=lcm(q.left[1], q.right[1]);
+  const wrap=$("#rCakes"), my=eatSeq, H=240;
+  wrap.classList.remove("reveal");          // 色はすぐ見せて、新しい切れ目だけを左から順に入れる
+  const ex=$("#rExplain");
+  ex.innerHTML=`<p>1切れの大きさを そろえるよ。どちらも <b>${L}等分</b> に 切ろう！</p>`;
+  ex.style.display="";
+  const counts=[], jobs=[];
+  [q.left, q.right].forEach((f,idx)=>{
+    const box=$$("#rCakes .cakebox")[idx], k=L/f[1], cnt=f[0]*k;
+    counts.push(cnt);
+    const row=box.querySelector(".cakerow");
+    const tmp=document.createElement("div");
+    tmp.innerHTML=cakeSVG({type:st.cake, n:L, H, taken:cnt});
+    const svg=tmp.firstElementChild;
+    row.replaceChild(svg, row.querySelector("svg"));
+    // もとの切れ目（太い縦線）
+    let co="";
+    for(let j=1;j<f[1];j++){ const x=(j*CAKE_W/f[1]).toFixed(2);
+      co+=`<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="#fff" stroke-width="12" opacity=".85"/><line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="#3b2112" stroke-width="6"/>`; }
+    svg.querySelector(".coarse").innerHTML=co;
+    // 新しい切れ目は、はじめはかくしておき、順番が来たら上から下へ引く
+    const byX=new Map();
+    svg.querySelectorAll(".cuts line").forEach(ln=>{
+      const x=+ln.getAttribute("x1"), j=Math.round(x/CAKE_W*L);
+      if(j%k===0){ ln.remove(); return; }           // もとの切れ目と重なる線は太い線にまかせる
+      ln.style.strokeDasharray=H; ln.style.strokeDashoffset=H;
+      if(!byX.has(j)) byX.set(j,[]);
+      byX.get(j).push(ln);
+    });
+    [...byX.keys()].sort((a,b)=>a-b).forEach(j=>jobs.push({box, svg, j, lines:byX.get(j)}));
+    box.dataset.line = `${f[0]}|${f[1]}|${cnt}`;
+  });
+  // 切れ目は道具を使わず、左から順に ひとりでに 入っていく（上から下へ すっと引く）。2つのケーキは同時に
+  const xs=[...new Set(jobs.map(t=>t.j))].sort((p,q2)=>p-q2);
+  const step=Math.max(60, Math.min(220, Math.round(2400/Math.max(1,xs.length))));
+  let i=0;
+  const finish=()=>{
+    $$("#rCakes .cakebox").forEach(box=>{
+      const [a,b,cnt]=box.dataset.line.split("|").map(Number);
+      const line=document.createElement("div");
+      line.className="tsubun-line";
+      line.innerHTML=`${fracHTML(a,b)}<span class="eq">＝</span>${fracHTML(cnt,L)}<span class="tl">${fracHTML(1,L)} が <b>${cnt}こ</b> 分</span>`;
+      box.insertBefore(line, box.querySelector(".cakerow"));
+    });
+    const big=Math.max(...counts), bigF = counts[0]>counts[1] ? q.left : q.right;
+    ex.innerHTML=`<p>切れ目を そろえて、どちらも <b>${L}等分</b> にしたよ。1切れの大きさが 同じになったね。</p>
+      <p>${fracHTML(1,L)} が <b>${counts[0]}こ</b> と <b>${counts[1]}こ</b>。${fracHTML(1,L)} が ${big}こ の ${fracHTML(bigF[0],bigF[1])} の方が大きいね！</p>`;
+    onDone();
+  };
+  const cut=()=>{
+    if(my!==eatSeq) return;
+    if(i>=xs.length){ setTimeout(()=>{ if(my===eatSeq) finish(); }, 300); return; }
+    const j=xs[i++];
+    jobs.filter(t=>t.j===j).forEach(t=>t.lines.forEach(ln=>{
+      ln.style.transition=`stroke-dashoffset ${Math.round(step*.7)}ms ease-out`; ln.style.strokeDashoffset="0"; }));
+    setTimeout(cut, step);
+  };
+  setTimeout(cut, 500);
+}
+
 // 「1を□等分した□つ分」の穴うめ（大きい方の分数だけ。分母→分子の順に入力）
 function setupBlanks(root, onAllDone){
   const blanks=[...root.querySelectorAll(".blank")];
@@ -1078,13 +1165,14 @@ function nextD2(){
    初期化
    ========================================================= */
 $("#hero").innerHTML=["castella","tiramisu","pound"].map(t=>`<figure>${sweetArt(t)}<figcaption>${CAKE_NAME[t]}</figcaption></figure>`).join("");
-$("#stagelist").innerHTML=STAGES.map((s,i)=>`<button class="s" data-stage="${i}">${decoCake(s.cake,360)}<div><span class="grade">${s.grade}</span><b>${s.id}．${s.name}</b>${s.learn}<span class="go">このステージであそぶ ▶</span></div></button>`).join("");
+$("#stagelist").innerHTML=STAGES.map((s,i)=>`<button class="s" data-stage="${i}">${decoCake(s.cake,360)}<div>${s.grade?`<span class="grade">${s.grade}</span>`:""}<b>${s.id}．${s.name}</b>${s.learn}<span class="go">このステージであそぶ ▶</span></div></button>`).join("");
 $$("#stagelist .s").forEach(b=>b.onclick=()=>startDay1(+b.dataset.stage));
 // Enter キーで「次の問題へ」（押せるようになっているときだけ）
 document.addEventListener("keydown",e=>{
   if(e.key!=="Enter" || e.isComposing) return;
   if(document.activeElement && document.activeElement.tagName==="BUTTON") return;   // ボタン自身の Enter と二重にならないように
   if($("#sc-d2").classList.contains("show") && $("#dPickUI").style.display!=="none"){ e.preventDefault(); doneD2(); return; }
+  if($("#sc-r").classList.contains("show") && $("#rTsubun").style.display!=="none" && !$("#rTsubun").disabled){ e.preventDefault(); $("#rTsubun").click(); return; }
   const btn = $("#sc-r").classList.contains("show") ? $("#rNext")
             : ($("#sc-d2").classList.contains("show") && $("#dNext").style.display!=="none") ? $("#dNext") : null;
   if(btn && !btn.disabled){ e.preventDefault(); btn.click(); }
