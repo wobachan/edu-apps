@@ -74,6 +74,10 @@
   #fig .hit{cursor:pointer}
   #fig .cell{transition:fill .4s ease}
   #fig .mark.fadein{animation:markIn .4s ease}
+  /* 通分：手刀が通ったところから 線が 上から下へ すっと 入る */
+  #fig .sub.cut{stroke-dasharray:var(--len) var(--len); stroke-dashoffset:var(--len);
+    animation:cutDown .12s ease-out forwards; animation-delay:var(--delay)}
+  @keyframes cutDown{to{stroke-dashoffset:0}}
   @keyframes markIn{from{opacity:0}to{opacity:1}}
   .result{
     display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap;
@@ -306,7 +310,8 @@ function tapeSVG(i, f, top, U){
     if(!whole && !document.getElementById('optDiv').checked) continue;   // 区切りなし（1, 2 は のこす）
     const thin = Math.min(1, w/14);   // こまが せまいときは 線を細く
     const sw = whole ? 3.5 : orig ? 2.2*thin+0.3 : 1.6*thin+0.2, col = whole||orig ? '#2b2b2b' : '#444';
-    g += `<line x1="${x}" x2="${x}" y1="${top}" y2="${top+H}" stroke="${col}" stroke-width="${sw}"/>`;
+    const sub = !(whole||orig) ? ` class="sub" data-x="${x}" style="--len:${H}"` : '';
+    g += `<line${sub} x1="${x}" x2="${x}" y1="${top}" y2="${top+H}" stroke="${col}" stroke-width="${sw}"/>`;
   }
   g += `<rect x="${X0}" y="${top}" width="${W}" height="${H}" fill="none" stroke="#2b2b2b" stroke-width="3.5"/>`;
   // 当たり判定（通分中は なし）
@@ -345,7 +350,8 @@ function lineSVG(i, f, top, U){
   for(let k=0;k<=S;k++){
     if(k%f.d!==0 && !document.getElementById('optDiv').checked) continue;   // めもりなし（0, 1, 2 は のこす）
     const x = X0 + w*k, t = tickH(k), thin = Math.min(1, w/14);
-    g += `<line x1="${x}" x2="${x}" y1="${y-t}" y2="${y}" stroke="${t===8?'#444':'#2b2b2b'}" stroke-width="${t===20?3:t===13?2.2*thin+0.3:1.8*thin+0.2}"/>`;
+    const sub = t===8 ? ` class="sub" data-x="${x}" style="--len:${t}"` : '';
+    g += `<line${sub} x1="${x}" x2="${x}" y1="${y-t}" y2="${y}" stroke="${t===8?'#444':'#2b2b2b'}" stroke-width="${t===20?3:t===13?2.2*thin+0.3:1.8*thin+0.2}"/>`;
   }
   g += `<line x1="${X0}" x2="${X1}" y1="${y}" y2="${y}" stroke="#2b2b2b" stroke-width="3"/>`;
   // 分数の点：その目もりを色でなぞり、上から ▼ でさす
@@ -448,6 +454,7 @@ function render(){
   svg.setAttribute('viewBox', `0 0 1000 ${total}`);
   svg.innerHTML = body + ends;
   fadeChanges(svg, rows);
+  if(state.justCut){ state.justCut = false; chopAnimation(svg, total); }
   svg.querySelectorAll('.hit').forEach(r=>{
     r.addEventListener('click',()=>{
       const i=+r.dataset.i, k=+r.dataset.k, f=state.fr[i];
@@ -516,7 +523,60 @@ document.querySelectorAll('#countSeg button').forEach(b=>b.onclick=()=>{
 document.querySelectorAll('#viewSeg button').forEach(b=>b.onclick=()=>{
   state.view=b.dataset.v; syncSeg(); render();
 });
-document.getElementById('tsubunBtn').onclick = ()=>{ state.tsubun = !state.tsubun; render(); };
+document.getElementById('tsubunBtn').onclick = ()=>{
+  state.tsubun = !state.tsubun;
+  state.justCut = state.tsubun;   // 通分するときだけ 手刀で切る
+  render();
+};
+
+/* ---------- 通分の演出：手刀で すばやく 切る ＋「ぽん！」 ---------- */
+const CHOP_MS = 550;
+let audioCtx = null;
+function playPon(){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const t = audioCtx.currentTime;
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(880, t);
+    o.frequency.exponentialRampToValueAtTime(330, t + 0.12);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.6, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(t); o.stop(t + 0.3);
+  }catch(e){}
+}
+function chopAnimation(svg, total){
+  const subs = svg.querySelectorAll('.sub');
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduce || !subs.length){ playPon(); return; }
+  // 手が 通った ときに その線を 入れる
+  subs.forEach(el=>{
+    const d = (+el.dataset.x - X0) / W * CHOP_MS;
+    el.style.setProperty('--delay', `${Math.round(d)}ms`);
+    el.classList.add('cut');
+  });
+  // 手刀（左から右へ、上下に トントン 切りながら 進む）
+  const hand = document.createElementNS(svgNS, 'g');
+  hand.setAttribute('pointer-events', 'none');
+  hand.innerHTML = `<text font-size="64" text-anchor="middle" dominant-baseline="central"
+    transform="rotate(90)" style="font-family:'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',sans-serif">✋</text>`;
+  svg.appendChild(hand);
+  const midY = total / 2;
+  const move = hand.animate([
+    {transform:`translate(${X0-30}px, ${midY}px)`},
+    {transform:`translate(${X1+30}px, ${midY}px)`}
+  ], {duration: CHOP_MS, easing:'linear'});
+  hand.firstElementChild.animate([
+    {transform:'rotate(90deg) translateX(-40px)'},
+    {transform:'rotate(90deg) translateX(40px)'}
+  ], {duration: 90, iterations: Math.ceil(CHOP_MS/90), direction:'alternate', easing:'ease-in'});
+  move.onfinish = ()=>{
+    hand.animate([{opacity:1},{opacity:0}], {duration:150}).onfinish = ()=>hand.remove();
+    playPon();
+  };
+}
 ['optDiv','optFill','optEnd','optTick','optLabel'].forEach(id=>document.getElementById(id).addEventListener('change',render));
 
 syncSeg(); buildCards(); render();
@@ -544,7 +604,7 @@ syncSeg(); buildCards(); render();
     </ul>
     <h3>通分する</h3>
     <ul>
-      <li>「通分する」を おすと 分母を そろえた分数に なり、図の こまが 細かく 分かれます（ふえた線は 細い線）。</li>
+      <li>「通分する」を おすと 手刀で すばやく 切って「ぽん！」。分母を そろえた分数に なり、図の こまが 細かく 分かれます。</li>
       <li>「もとにもどす」か、分子・分母を かえると もとの分数に もどります。</li>
     </ul>
     <button class="help-btn close" id="helpClose">とじる</button>
