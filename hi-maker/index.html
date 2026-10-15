@@ -49,6 +49,8 @@
   }
   .make:disabled{opacity:.4; cursor:default}
   .make2{background:#9fd3f0}
+  .make3{background:#f7dd8e}
+  .make .from{display:block; font-size:13px; margin-top:2px}
   .make-cap{font-size:16px; font-weight:700; text-align:center; margin-bottom:-8px}
   .make .k{display:block; font-size:15px; margin-top:2px}
   .sub-btn{
@@ -129,6 +131,8 @@
     <div class="make-cap">等しい比を つくる</div>
     <button class="make" id="makeBtn">大きい数に<br>する</button>
     <div class="make-msg" id="makeMsg"></div>
+    <button class="make make3" id="chainBtn">大きい数に<br>する</button>
+    <div class="make-msg" id="chainMsg"></div>
     <button class="make make2" id="divBtn">簡単に<br>する</button>
     <div class="make-msg" id="divMsg"></div>
     <button class="sub-btn" id="clearBtn">ぜんぶ けす</button>
@@ -157,26 +161,44 @@ const ROW_MAX = 8;
 
 const state = {
   a: 2, b: 3,
-  rows: [],           // {op:'×'|'÷', k, hidden}
+  rows: [],           // {id, parent: null（いちばん上の比）か 行のid, op:'×'|'÷', k, hidden}
 };
 let lastAdded = -1;   // ふわっと出す行
+let nextId = 1;
 
 function gcd(x,y){ while(y){ [x,y]=[y,x%y]; } return x; }
+function baseTerms(){ return {a:state.a, b:state.b}; }
+function rowById(id){ return state.rows.find(r=>r.id===id); }
+// もとにした比（parent）を ×k か ÷k した比
+function parentTerms(r){ return r.parent==null ? baseTerms() : termsOf(rowById(r.parent)); }
 function termsOf(r){
-  return r.op==='×' ? {a:state.a*r.k, b:state.b*r.k} : {a:state.a/r.k, b:state.b/r.k};
+  const p = parentTerms(r);
+  return r.op==='×' ? {a:p.a*r.k, b:p.b*r.k} : {a:p.a/r.k, b:p.b/r.k};
 }
-function rowOK(r){
-  if(r.op==='÷') return state.a%r.k===0 && state.b%r.k===0;
-  return (state.a+state.b)*r.k <= CELL_MAX;
+// 図に かけない比・もとが なくなった比を けす（もとは かならず 前の行なので 前から しらべる）
+function prune(){
+  const ok = new Set();
+  state.rows = state.rows.filter(r=>{
+    if(r.parent!=null && !ok.has(r.parent)) return false;
+    const t = termsOf(r);
+    if(!Number.isInteger(t.a) || !Number.isInteger(t.b) || t.a+t.b>CELL_MAX) return false;
+    ok.add(r.id); return true;
+  });
 }
-function has(op,k){ return state.rows.some(r=>r.op===op && r.k===k); }
-function nextMul(){
-  for(let k=2; (state.a+state.b)*k<=CELL_MAX; k++) if(!has('×',k)) return k;
+function exists(t){
+  return [baseTerms(), ...state.rows.map(termsOf)].some(u=>u.a===t.a && u.b===t.b);
+}
+// p を ×k して まだない比になる いちばん小さい k
+function nextMulFrom(p){
+  for(let k=2; (p.a+p.b)*k<=CELL_MAX; k++) if(!exists({a:p.a*k, b:p.b*k})) return k;
   return 0;
 }
+function nextMul(){ return nextMulFrom(baseTerms()); }
+function lastTerms(){ const r = state.rows[state.rows.length-1]; return r ? termsOf(r) : baseTerms(); }
+function nextChain(){ return nextMulFrom(lastTerms()); }
 function nextDiv(){
   const g = gcd(state.a, state.b);
-  for(let k=2; k<=g; k++) if(g%k===0 && !has('÷',k)) return k;
+  for(let k=2; k<=g; k++) if(g%k===0 && !exists({a:state.a/k, b:state.b/k})) return k;
   return 0;
 }
 
@@ -212,7 +234,7 @@ function setValue(k, v){
   state[k] = v;
   // 下の比は 同じ倍で つくりなおす（できないものは けす）
   const before = state.rows.length;
-  state.rows = state.rows.filter(rowOK);
+  prune();
   if(state.rows.length < before) note = note || '図に かけない比は けしたよ';
   lastAdded = -1;
   document.getElementById('note').textContent = note;
@@ -225,27 +247,35 @@ function syncInputs(){
     b.disabled = s<0 ? cur<=1 : (cur>=TERM_MAX || cur+other>=CELL_MAX);
   });
   const full = state.rows.length >= ROW_MAX;
-  const m = nextMul(), d = nextDiv();
-  const mb = document.getElementById('makeBtn'), db = document.getElementById('divBtn');
+  const m = nextMul(), c = nextChain(), d = nextDiv();
+  const mb = document.getElementById('makeBtn'), cb = document.getElementById('chainBtn'), db = document.getElementById('divBtn');
   mb.disabled = full || !m;
+  cb.disabled = full || !c;
   db.disabled = full || !d;
-  mb.innerHTML = `大きい数に<br>する<span class="k">${m ? '×'+m : ''}</span>`;
+  mb.innerHTML = `大きい数に<br>する<span class="from">（いちばん上の比から）</span><span class="k">${m ? '×'+m : ''}</span>`;
+  cb.innerHTML = `大きい数に<br>する<span class="from">（すぐ上の比から）</span><span class="k">${c ? '×'+c : ''}</span>`;
   db.innerHTML = `簡単に<br>する<span class="k">${d ? '÷'+d : ''}</span>`;
   document.getElementById('clearBtn').disabled = state.rows.length===0;
   document.getElementById('makeMsg').textContent =
       full ? `${ROW_MAX}つまで だよ`
     : !m   ? 'これ以上 大きくすると 図に かけません' : '';
+  document.getElementById('chainMsg').textContent =
+      full ? '' : !c ? 'これ以上 大きくすると 図に かけません' : '';
   document.getElementById('divMsg').textContent =
       full ? '' : !d ? (gcd(state.a,state.b)===1 ? 'これ以上 簡単に できません' : 'もう ぜんぶ つくったよ') : '';
 }
 
-function addRow(op, k){
+function addRow(op, k, parent){
   if(!k || state.rows.length>=ROW_MAX) return;
-  state.rows.push({op, k, hidden: document.getElementById('optHide').checked});
+  state.rows.push({id: nextId++, parent: parent ?? null, op, k, hidden: document.getElementById('optHide').checked});
   lastAdded = state.rows.length - 1;
   render();
 }
 document.getElementById('makeBtn').onclick  = ()=>addRow('×', nextMul());
+document.getElementById('chainBtn').onclick = ()=>{
+  const last = state.rows[state.rows.length-1];
+  addRow('×', nextChain(), last ? last.id : null);
+};
 document.getElementById('divBtn').onclick   = ()=>addRow('÷', nextDiv());
 document.getElementById('clearBtn').onclick = ()=>{ state.rows = []; lastAdded = -1; render(); };
 
@@ -294,9 +324,10 @@ function tapeSVG(t, top, r){
 }
 
 // もとの比から その行へ 弧の矢印（前の数は左に、後の数は右に ふくらむ）
-function arcSVG(r, i, y0, y1, ax, bx){
+// d = もとの比から 何行 下か（遠いほど 大きく ふくらませる）
+function arcSVG(r, d, y0, y1, ax, bx){
   // ×2 は 矢じりの 少し手前（t=0.8 の あたり）に書く
-  const b = 24 + 10*i, lab = r.op + r.k, ym = y0 + (y1-y0)*0.9 + 6;
+  const b = 24 + 10*(d-1), lab = r.op + r.k, ym = y0 + (y1-y0)*0.9 + 6;
   let lines = '', labels = '';
   const one = (x, dir, col) => {
     const e = x - dir*7;   // 矢じりの ねもと
@@ -335,11 +366,15 @@ function render(){
   const ax = LX - 16 - Math.max(...all.map(t=>numW(t.a, NUM_S))) - 8;
   const bx = LX + 16 + Math.max(...all.map(t=>numW(t.b, NUM_S))) + 8;
   const showArc = document.getElementById('optMul').checked;
-  let arcLabels = '';   // 文字は ほかの矢印に かくれないよう 最後に書く
+  let arcLabels = '';
+  const rowTops = [];   // 文字は ほかの矢印に かくれないよう 最後に書く
   state.rows.forEach((r,i)=>{
     y += MUL_H + 6;
     const t = termsOf(r);
-    const arc = showArc ? arcSVG(r, i, firstTop + H/2 + 4, y + H/2, ax, bx) : {lines:'', labels:''};
+    const pi = r.parent==null ? -1 : state.rows.findIndex(q=>q.id===r.parent);
+    const y0 = (pi<0 ? firstTop : rowTops[pi]) + H/2 + 4;
+    rowTops.push(y);
+    const arc = showArc ? arcSVG(r, i-pi, y0, y + H/2, ax, bx) : {lines:'', labels:''};
     arcLabels += `<g class="row${i===lastAdded?' new':''}">${arc.labels}</g>`;
     body += `<g class="row${i===lastAdded?' new':''}">${arc.lines}${ratioSVG(t, y, r, i)}${tapeSVG(t, y, r)}${delSVG(i, y)}</g>`;
     y += H;
@@ -354,7 +389,7 @@ function render(){
   svg.setAttribute('viewBox', `0 0 1000 ${total}`);
   svg.innerHTML = body;
   svg.querySelectorAll('.del').forEach(el=>el.addEventListener('click', ()=>{
-    state.rows.splice(+el.dataset.i, 1); lastAdded = -1; render();
+    state.rows.splice(+el.dataset.i, 1); prune(); lastAdded = -1; render();   // その比から つくった比も けす
   }));
   svg.querySelectorAll('.peek').forEach(el=>el.addEventListener('click', ()=>{
     state.rows[+el.dataset.i].hidden = false; lastAdded = -1; render();
@@ -391,12 +426,13 @@ render();
     </ul>
     <h3>等しい比を つくる</h3>
     <ul>
-      <li>「大きい数にする」を おすたびに、前と後に 同じ数を かけた比が 下に ふえます（×2、×3 …）。</li>
+      <li>「大きい数にする（いちばん上の比から）」を おすたびに、いちばん上の比の 前と後に 同じ数を かけた比が 下に ふえます（×2、×3 …）。</li>
+      <li>「大きい数にする（すぐ上の比から）」は、いちばん下の比に かけた比を つくります。矢印は すぐ上の比から のびます（2：3 → 4：6 → 8：12 …）。</li>
       <li>「簡単にする」は、前と後を 同じ数で わった比を つくります（20：30 → ÷2、÷5、÷10。われないときは おせません）。</li>
       <li>ボタンの下の ×2・÷2 は、つぎに できる比です。</li>
-      <li>下の比は どれも いちばん上の もとの比から つくります。矢印は もとの比から のびていて、「×5」は もとの数を 5倍した という意味です。</li>
+      <li>矢印は もとにした比から のびています。「×5」は 矢印の もとの数を 5倍した という意味です。</li>
       <li>テープの 長さは そろえてあるので、色の さかいめが どの比も 同じところに なります。かけ算で ふえた線は 細い線です。</li>
-      <li>右の ⊗ で その比を けせます。もとの比を かえると、下の比も 同じ倍で つくりなおします。</li>
+      <li>右の ⊗ で その比を けせます（その比から つくった比も いっしょに きえます）。もとの比を かえると、下の比も 同じ倍で つくりなおします。</li>
     </ul>
     <h3>見せかた</h3>
     <ul>
