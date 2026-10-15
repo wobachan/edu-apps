@@ -274,6 +274,16 @@ body{
 .hint{color:#e9d6b0}
 .card .hint{color:var(--sub)}
 .result.ok{color:#8fe8c8} .result.ng{color:#ff9fb3}
+.hintbtn{width:auto;margin:16px auto 0;padding:10px 34px}
+.hintbox{margin-top:14px}
+.hint-say{font-size:19px;font-weight:bold;text-align:center;margin:4px 0 10px}
+.tape-row{display:flex;align-items:center;gap:10px;margin:8px 0}
+.tape-row .frac{font-size:24px;min-width:3.2em;justify-content:center}
+.tape-row .lab{display:flex;align-items:center;gap:2px;min-width:7.5em;justify-content:flex-end}
+.tape-row svg{flex:1;min-width:0;height:auto;overflow:visible}
+.tape-row .eq{font-weight:bold;font-size:22px}
+.ton{font-size:30px;font-weight:bold;fill:#9a1d2c;animation:tonpop .5s ease-out forwards}
+@keyframes tonpop{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-22px)}}
 .tsubun-line{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:2px 0 6px;padding:4px 10px;background:#efe3f7;border-left:6px solid #6d3a8f;border-radius:8px;font-size:18px}
 .tsubun-line .frac{font-size:22px}
 .tsubun-line .eq{font-weight:bold;font-size:22px}
@@ -363,6 +373,13 @@ h1,.shopname{font-family:"Yu Mincho","YuMincho","Hiragino Mincho ProN","MS Minch
     <div class="choices">
       <button class="choice" data-side="L"><span id="qL"></span><span class="eat">こちらを食べる！</span></button>
       <button class="choice" data-side="R"><span id="qR"></span><span class="eat">こちらを食べる！</span></button>
+    </div>
+    <button class="btn plain hintbtn" id="hintBtn">💡 ヒント</button>
+    <div class="card hintbox" id="hintBox" style="display:none">
+      <p class="hint-say" id="hintSay"></p>
+      <div id="hintTapes"></div>
+      <button class="btn mint" id="hintCut">1切れの大きさを そろえる</button>
+      <p class="hint-say" id="hintMsg"></p>
     </div>
   </section>
 
@@ -801,6 +818,7 @@ function showQuestion(){
   $("#qProg").style.width=(G1.qIdx/total*100)+"%";
   $("#qL").innerHTML=fracHTML(q.left[0],q.left[1],"big");
   $("#qR").innerHTML=fracHTML(q.right[0],q.right[1],"big");
+  resetHint(q);
   $$(".choice").forEach(b=>{ b.classList.remove("picked"); b.setAttribute("aria-label", `${b.dataset.side==="L"?"ひだり":"みぎ"} ${b.dataset.side==="L"?jpFrac(q.left[0],q.left[1]):jpFrac(q.right[0],q.right[1])}`); });
   show("sc-q");
 }
@@ -862,6 +880,89 @@ function showReveal(q, side, ok){
     scheduleEat(1300+Math.min(f[0]-1,30)*70, box, box.querySelector("svg"), order, ()=>{ gate.eaten=true; tryOpen(); });
   }
 }
+/* ---------- 出題画面のヒント（分母がちがうときだけ）----------
+   1切れ（単位分数）のテープ図を上下に出し、「1切れの大きさを そろえる」で
+   最小公倍数の等分に、左から トントン と切っていく（縦線だけ） */
+const TAPE_W=1000, TAPE_H=70;
+function tapeSVG(den){
+  const w=TAPE_W/den;
+  let lines="";
+  for(let j=1;j<den;j++){ const x=(j*w).toFixed(2); lines+=`<line x1="${x}" y1="0" x2="${x}" y2="${TAPE_H}" stroke="#3b2112" stroke-width="5"/>`; }
+  return `<svg viewBox="-6 -40 ${TAPE_W+12} ${TAPE_H+46}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <rect x="0" y="0" width="${TAPE_W}" height="${TAPE_H}" fill="#fffaf0"/>
+    <rect x="0" y="0" width="${w.toFixed(2)}" height="${TAPE_H}" fill="#ff8fa8"/>
+    <g class="fine"></g><g class="pops"></g>${lines}
+    <rect x="0" y="0" width="${TAPE_W}" height="${TAPE_H}" fill="none" stroke="#3b2112" stroke-width="5"/></svg>`;
+}
+function resetHint(q){
+  const diff = q.left[1]!==q.right[1];
+  $("#hintBtn").style.display = diff ? "" : "none";
+  $("#hintBox").style.display = "none";
+  $("#hintBtn").onclick = ()=>openHint(q);
+}
+function openHint(q){
+  $("#hintBtn").style.display="none";
+  $("#hintBox").style.display="";
+  $("#hintSay").textContent="1切れの大きさが ちがうから、比べにくいね";
+  $("#hintMsg").textContent="";
+  // 上は左の分数、下は右の分数の「1切れ」
+  $("#hintTapes").innerHTML=[q.left[1], q.right[1]].map(d=>
+    `<div class="tape-row" data-d="${d}"><span class="lab">${fracHTML(1,d)}</span>${tapeSVG(d)}</div>`).join("");
+  const cb=$("#hintCut"); cb.style.display=""; cb.disabled=false;
+  cb.onclick=()=>{ cb.disabled=true; cb.style.display="none"; hintCut(q); };
+  $("#hintBox").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+// トン（まな板をたたくような短い音。音のファイルは使わず、その場で作る）
+let audioCtx=null;
+function ton(){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    const t=audioCtx.currentTime, o=audioCtx.createOscillator(), g=audioCtx.createGain();
+    o.type="triangle";
+    o.frequency.setValueAtTime(330,t); o.frequency.exponentialRampToValueAtTime(130,t+.09);
+    g.gain.setValueAtTime(.45,t); g.gain.exponentialRampToValueAtTime(.001,t+.14);
+    o.connect(g); g.connect(audioCtx.destination); o.start(t); o.stop(t+.15);
+  }catch(e){}
+}
+function hintCut(q){
+  const L=lcm(q.left[1], q.right[1]), my=eatSeq;
+  const rows=$$("#hintTapes .tape-row");
+  const xs=[];   // 新しく入れる切れ目（左から）
+  for(let j=1;j<L;j++) if(rows.some(r=>j%(L/+r.dataset.d)!==0)) xs.push(j);
+  const step=Math.max(90, Math.min(260, Math.round(3200/Math.max(1,xs.length))));
+  let i=0;
+  const cut=()=>{
+    if(my!==eatSeq) return;
+    if(i>=xs.length){
+      rows.forEach(r=>{ const d=+r.dataset.d;
+        r.querySelector(".lab").innerHTML=`${fracHTML(1,d)}<span class="eq">＝</span>${fracHTML(L/d,L)}`; });
+      $("#hintMsg").innerHTML=`1切れの大きさが そろったね！ どちらも ${fracHTML(1,L)} の いくつ分かで 比べられるよ。`;
+      return;
+    }
+    const j=xs[i++], x=(j*TAPE_W/L).toFixed(2);
+    let any=false;
+    rows.forEach(r=>{
+      const d=+r.dataset.d; if(j%(L/d)===0) return;   // もとの切れ目と同じ場所には入れない
+      any=true;
+      const svg=r.querySelector("svg");
+      const ln=document.createElementNS("http://www.w3.org/2000/svg","line");
+      ln.setAttribute("x1",x); ln.setAttribute("x2",x); ln.setAttribute("y1","0"); ln.setAttribute("y2",TAPE_H);
+      ln.setAttribute("stroke","#5a3a22"); ln.setAttribute("stroke-width","2.5");
+      ln.style.strokeDasharray=TAPE_H; ln.style.strokeDashoffset=TAPE_H;
+      svg.querySelector(".fine").appendChild(ln);
+      requestAnimationFrame(()=>{ ln.style.transition=`stroke-dashoffset ${Math.round(step*.6)}ms ease-out`; ln.style.strokeDashoffset="0"; });
+      const tx=document.createElementNS("http://www.w3.org/2000/svg","text");
+      tx.setAttribute("x",x); tx.setAttribute("y","-8"); tx.setAttribute("text-anchor","middle"); tx.setAttribute("class","ton");
+      tx.textContent="トン";
+      svg.querySelector(".pops").appendChild(tx);
+      setTimeout(()=>tx.remove(), 600);
+    });
+    if(any) ton();
+    setTimeout(cut, step);
+  };
+  setTimeout(cut, 300);
+}
+
 // 通分：2つのケーキの切れ目を、分母の最小公倍数の等分にそろえる（縦線だけ）
 const lcm=(a,b)=>a/gcd(a,b)*b;
 function doTsubun(q, st, onDone){
@@ -1208,7 +1309,7 @@ const RUBY_WORDS = {
   "大事":"だいじ","両方":"りょうほう","数字":"すうじ","簡単":"かんたん",
   "大":"おお","同":"おな","食":"た","見":"み","出":"で","上":"うえ","下":"した","逆":"ぎゃく","言":"い","考":"かんが",
   "答":"こた","合":"あ","終":"お","使":"つか","切":"き","細":"ほそ","指":"ゆび","方":"ほう","入":"い","次":"つぎ",
-  "年生":"ねんせい","目":"め","通":"つう","多":"おお","通分":"つうぶん","向":"む","屋":"や","今":"いま","量":"りょう","色":"いろ","絵":"え","問":"もん","数":"かず"
+  "年生":"ねんせい","目":"め","比":"くら","通":"つう","多":"おお","通分":"つうぶん","向":"む","屋":"や","今":"いま","量":"りょう","色":"いろ","絵":"え","問":"もん","数":"かず"
 };
 const RUBY_KEYS = Object.keys(RUBY_WORDS).sort((a,b)=>b.length-a.length);
 const KANJI = /[一-鿿々]/;
@@ -1221,7 +1322,7 @@ function rubyHTMLFor(text){
     // 「分」は「分ける・分かる」なら わ、それ以外（○分の○、1つ分）は ぶん
     let key=RUBY_KEYS.find(k=>text.startsWith(k,i)), yomi;
     if(key){ yomi=RUBY_WORDS[key]; }
-    else if(ch==="分"){ key="分"; yomi=/[けか]/.test(text[i+1]||"") ? "わ" : "ぶん"; }
+    else if(ch==="分"){ key="分"; const nx=text[i+1]||"", nx2=text[i+2]||""; yomi=(nx==="け" || (nx==="か" && /[るっらりれろ]/.test(nx2))) ? "わ" : "ぶん"; }
     if(key){ out+=`<ruby>${key}<rt>${yomi}</rt></ruby>`; i+=key.length; }
     // よみが未登録の字は、印をつけて二度と処理しない（同じ字をくり返し処理して固まるのをふせぐ）
     else { console.warn("よみが未登録の漢字:", ch, text); out+=`<span class="nr">${esc(ch)}</span>`; i++; }
