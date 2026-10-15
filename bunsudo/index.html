@@ -886,8 +886,8 @@ function showReveal(q, side, ok){
 const TAPE_W=1000, TAPE_H=70;
 function tapeSVG(den){
   const w=TAPE_W/den;
-  let lines="";
-  for(let j=1;j<den;j++){ const x=(j*w).toFixed(2); lines+=`<line x1="${x}" y1="0" x2="${x}" y2="${TAPE_H}" stroke="#3b2112" stroke-width="5"/>`; }
+  // 切れ目は「1切れ分」の右はしだけ。そこから右は切れ目のない白いテープ
+  const lines = den>1 ? `<line x1="${w.toFixed(2)}" y1="0" x2="${w.toFixed(2)}" y2="${TAPE_H}" stroke="#3b2112" stroke-width="5"/>` : "";
   return `<svg viewBox="-6 -40 ${TAPE_W+12} ${TAPE_H+46}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <rect x="0" y="0" width="${TAPE_W}" height="${TAPE_H}" fill="#fffaf0"/>
     <rect x="0" y="0" width="${w.toFixed(2)}" height="${TAPE_H}" fill="#ff8fa8"/>
@@ -928,21 +928,21 @@ function hintCut(q){
   const L=lcm(q.left[1], q.right[1]), my=eatSeq;
   const rows=$$("#hintTapes .tape-row");
   const xs=[];   // 新しく入れる切れ目（左から）
-  for(let j=1;j<L;j++) if(rows.some(r=>j%(L/+r.dataset.d)!==0)) xs.push(j);
+  for(let j=1;j<L;j++) if(rows.some(r=>j!==L/+r.dataset.d)) xs.push(j);
   const step=Math.max(90, Math.min(260, Math.round(3200/Math.max(1,xs.length))));
   let i=0;
   const cut=()=>{
     if(my!==eatSeq) return;
     if(i>=xs.length){
       rows.forEach(r=>{ const d=+r.dataset.d;
-        r.querySelector(".lab").innerHTML=`${fracHTML(1,d)}<span class="eq">＝</span>${fracHTML(L/d,L)}`; });
+        if(L!==d) r.querySelector(".lab").innerHTML=`${fracHTML(1,d)}<span class="eq">＝</span>${fracHTML(L/d,L)}`; });   // もとから L 等分なら そのまま
       $("#hintMsg").innerHTML=`1切れの大きさが そろったね！ どちらも ${fracHTML(1,L)} の いくつ分かで 比べられるよ。`;
       return;
     }
     const j=xs[i++], x=(j*TAPE_W/L).toFixed(2);
     let any=false;
     rows.forEach(r=>{
-      const d=+r.dataset.d; if(j%(L/d)===0) return;   // もとの切れ目と同じ場所には入れない
+      const d=+r.dataset.d; if(j===L/d) return;   // 1切れ分の切れ目と同じ場所には入れない
       any=true;
       const svg=r.querySelector("svg");
       const ln=document.createElementNS("http://www.w3.org/2000/svg","line");
