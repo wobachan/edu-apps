@@ -156,7 +156,8 @@
 const A = {main:'#d9442b', fill:'#ec7a5e'};
 const B = {main:'#b8860b', fill:'#f5d77a'};
 const TERM_MAX = 100;
-const CELL_MAX = 200;   // 図に かける こまの数（前＋後）
+const CELL_MAX = 200;   // もとの比の 前＋後 の 上限（下の比は いくら大きくても よい）
+const LINE_MAX = 1200;  // これより こまが多いと 線は 1本ずつ ひかず、線で うまった色にする
 const ROW_MAX = 8;
 
 const state = {
@@ -181,7 +182,7 @@ function prune(){
   state.rows = state.rows.filter(r=>{
     if(r.parent!=null && !ok.has(r.parent)) return false;
     const t = termsOf(r);
-    if(!Number.isInteger(t.a) || !Number.isInteger(t.b) || t.a+t.b>CELL_MAX) return false;
+    if(!Number.isInteger(t.a) || !Number.isInteger(t.b)) return false;
     ok.add(r.id); return true;
   });
 }
@@ -190,7 +191,7 @@ function exists(t){
 }
 // p を ×k して まだない比になる いちばん小さい k
 function nextMulFrom(p){
-  for(let k=2; (p.a+p.b)*k<=CELL_MAX; k++) if(!exists({a:p.a*k, b:p.b*k})) return k;
+  for(let k=2; k<1000; k++) if(!exists({a:p.a*k, b:p.b*k})) return k;
   return 0;
 }
 function nextMul(){ return nextMulFrom(baseTerms()); }
@@ -256,11 +257,7 @@ function syncInputs(){
   cb.innerHTML = `大きい数に<br>する<span class="from">（すぐ上の比から）</span><span class="k">${c ? '×'+c : ''}</span>`;
   db.innerHTML = `簡単に<br>する<span class="k">${d ? '÷'+d : ''}</span>`;
   document.getElementById('clearBtn').disabled = state.rows.length===0;
-  document.getElementById('makeMsg').textContent =
-      full ? `${ROW_MAX}つまで だよ`
-    : !m   ? 'これ以上 大きくすると 図に かけません' : '';
-  document.getElementById('chainMsg').textContent =
-      full ? '' : !c ? 'これ以上 大きくすると 図に かけません' : '';
+  document.getElementById('makeMsg').textContent = full ? `${ROW_MAX}つまで だよ` : '';
   document.getElementById('divMsg').textContent =
       full ? '' : !d ? (gcd(state.a,state.b)===1 ? 'これ以上 簡単に できません' : 'もう ぜんぶ つくったよ') : '';
 }
@@ -280,13 +277,14 @@ document.getElementById('divBtn').onclick   = ()=>addRow('÷', nextDiv());
 document.getElementById('clearBtn').onclick = ()=>{ state.rows = []; lastAdded = -1; render(); };
 
 /* ---------- 右：図 ---------- */
-const LX = 170;                 // 比の「：」の位置
-const X0 = 350, X1 = 945, W = X1 - X0;
+// LX＝比の「：」の位置、X0〜X1＝テープ、NUM_S＝比の数の大きさ（数の けた数に 合わせて render で きめる）
+let LX = 170, X0 = 350, NUM_S = 34;
+const X1 = 945;
+let W = X1 - X0;
 const H = 58;                   // テープの高さ
 const MUL_H = 14;               // 行と行の あいだ
-const NUM_S = 34;               // 比の数の 大きさ
 
-function numW(n, s){ return String(n).length * s * 0.58; }
+function numW(n, s){ return String(n).length * s * 0.62; }
 
 // 左の比（a：b）
 function ratioSVG(t, top, r, i){
@@ -309,7 +307,9 @@ function tapeSVG(t, top, r){
   const k = r && r.op==='×' ? r.k : 1;   // もとの比の 1こ分 = k こ
   let g = `<rect x="${X0}" y="${top}" width="${w*t.a}" height="${H}" fill="${A.fill}"/>
            <rect x="${X0 + w*t.a}" y="${top}" width="${w*t.b}" height="${H}" fill="${B.fill}"/>`;
-  if(showDiv){
+  if(showDiv && S > LINE_MAX){   // 線で うまる ほど こまかい
+    g += `<rect x="${X0}" y="${top}" width="${W}" height="${H}" fill="#2b2b2b" opacity=".35"/>`;
+  }else if(showDiv){
     const thin = Math.min(1, w/14);   // こまが せまいときは 線を細く
     for(let j=1;j<S;j++){
       if(j===t.a) continue;
@@ -351,8 +351,20 @@ function delSVG(i, top){
 function render(){
   syncInputs();
   const svg = document.getElementById('fig');
-  let y = MUL_H + 6, body = '';
   const base = {a:state.a, b:state.b};
+  // 数の けた数と 矢印の ふくらみに 合わせて、比と テープの 位置を きめる
+  const all = [base, ...state.rows.map(termsOf)];
+  const digits = Math.max(...all.map(t=>Math.max(String(t.a).length, String(t.b).length)));
+  NUM_S = digits<=3 ? 34 : digits===4 ? 30 : digits===5 ? 26 : 22;
+  const maxWa = Math.max(...all.map(t=>numW(t.a, NUM_S))), maxWb = Math.max(...all.map(t=>numW(t.b, NUM_S)));
+  let maxD = 1;
+  state.rows.forEach((r,i)=>{ const pi = r.parent==null ? -1 : state.rows.findIndex(q=>q.id===r.parent); maxD = Math.max(maxD, i-pi); });
+  const side = 0.48*(24 + 10*(maxD-1)) + 50;   // 矢印と ×2 の はば
+  LX = Math.max(170, side + 8 + maxWa + 16);
+  const ax = LX - 16 - maxWa - 8;
+  const bx = LX + 16 + maxWb + 8;
+  X0 = Math.max(350, bx + side); W = X1 - X0;
+  let y = MUL_H + 6, body = '';
   body += `<g class="row">${ratioSVG(base, y, null)}${tapeSVG(base, y, null)}</g>`;
   const firstTop = y;
   y += H;
@@ -361,10 +373,6 @@ function render(){
     body += `<line x1="20" x2="980" y1="${y}" y2="${y}" stroke="#d9d3c4" stroke-width="2" stroke-dasharray="6 6"/>`;
     y += 8;
   }
-  // 矢印の 出入りする x（いちばん はばの広い数に 合わせる）
-  const all = [base, ...state.rows.map(termsOf)];
-  const ax = LX - 16 - Math.max(...all.map(t=>numW(t.a, NUM_S))) - 8;
-  const bx = LX + 16 + Math.max(...all.map(t=>numW(t.b, NUM_S))) + 8;
   const showArc = document.getElementById('optMul').checked;
   let arcLabels = '';
   const rowTops = [];   // 文字は ほかの矢印に かくれないよう 最後に書く
@@ -422,7 +430,7 @@ render();
     <ul>
       <li>左の 上の −・＋ で 前の数（赤）、下の −・＋ で 後の数（黄）を かえます。</li>
       <li>いちばん上の テープは 前と後を あわせた数に 等分されます（20：30 なら 50こ）。</li>
-      <li>−・＋ を おしっぱなしにすると どんどん かわります（2つの数の 合計は 200 まで）。</li>
+      <li>−・＋ を おしっぱなしにすると どんどん かわります（もとの比は 2つの数の 合計が 200 まで。下に つくる比は いくら大きくても かまいません）。</li>
     </ul>
     <h3>等しい比を つくる</h3>
     <ul>
