@@ -392,7 +392,7 @@ h1,.shopname{font-family:"Yu Mincho","YuMincho","Hiragino Mincho ProN","MS Minch
       <span class="stars" id="rStars"></span>
     </div>
     <div class="result" id="rResult"></div>
-    <div class="hint"><b>□にあてはまる数を入れよう。</b></div>
+    <div class="hint" id="rBlankHint"><b>□にあてはまる数を入れよう。</b></div>
     <div class="card reveal" id="rCakes"></div>
     <button class="btn mint" id="rTsubun" style="display:none">切れ目をそろえて くらべよう（通分）</button>
     <div class="explain" id="rExplain"></div>
@@ -515,7 +515,7 @@ const STAGES = [
   { id:2, name:"ティラミス", cake:"tiramisu", learn:"分子が1の分数のくらべっこ", grade:"", tsubun:true,   // 分子が1・分母ちがいは、学年を言い切れないので書かない
     questions:[ {left:[1,2], right:[1,4]}, {left:[1,3], right:[1,5]}, {left:[1,4], right:[1,6]},
                 {left:[1,3], right:[1,8]}, {left:[1,5], right:[1,7]} ] },
-  { id:3, name:"フルーツパウンドケーキ", cake:"pound", learn:"分母も分子もちがう分数", grade:"5年生向き", tsubun:true,
+  { id:3, name:"フルーツパウンドケーキ", cake:"pound", learn:"分母も分子もちがう分数", grade:"5年生向き", tsubun:true, noBlanks:true,   // ステージ3は穴うめなし
     questions:[ {left:[2,3], right:[3,5]}, {left:[2,5], right:[3,7]}, {left:[3,4], right:[4,5]},
                 {left:[2,3], right:[3,4]}, {left:[3,8], right:[2,5]} ] }
 ];
@@ -842,7 +842,7 @@ function showReveal(q, side, ok){
     : `<span class="sadwrap"><span class="saddog">${DOG_SAD_SVG}</span><span class="oshii">おしい！</span></span>`;
   const one = (f, s) => {
     // 右がわの○欄は両方のケーキに同じ幅でとり、ケーキの大きさをそろえる
-    return `<div class="cakebox"><div class="cakehead">${fracHTML(f[0],f[1])}${s===q.answer ? `<span class="fill">1を<input class="blank" data-ans="${f[1]}" type="text" inputmode="numeric" maxlength="2" autocomplete="off" aria-label="分母">等分した<input class="blank" data-ans="${f[0]}" type="text" inputmode="numeric" maxlength="2" autocomplete="off" aria-label="分子">つ分</span>` : `<span class="fill">1を${f[1]}等分した${f[0]}つ分</span>`}</div><div class="cakerow">${cakeSVG({type:st.cake, n:f[1], H:240, taken:f[0]})}<div class="maru">${s!==q.answer ? "" : ok ? `<span>○</span><small>大きい！</small>` : `<em class="here">◀ こちらが<br>大きい</em>`}</div></div></div>`;
+    return `<div class="cakebox"><div class="cakehead">${fracHTML(f[0],f[1])}${(s===q.answer && !st.noBlanks) ? `<span class="fill">1を<input class="blank" data-ans="${f[1]}" type="text" inputmode="numeric" maxlength="2" autocomplete="off" aria-label="分母">等分した<input class="blank" data-ans="${f[0]}" type="text" inputmode="numeric" maxlength="2" autocomplete="off" aria-label="分子">つ分</span>` : `<span class="fill">1を${f[1]}等分した${f[0]}つ分</span>`}</div><div class="cakerow">${cakeSVG({type:st.cake, n:f[1], H:240, taken:f[0]})}<div class="maru">${s!==q.answer ? "" : ok ? `<span>○</span><small>大きい！</small>` : `<em class="here">◀ こちらが<br>大きい</em>`}</div></div></div>`;
   };
   // 2つのケーキは同じ大きさ・左はしをそろえて上下にならべる
   $("#rCakes").classList.add("reveal");
@@ -860,6 +860,7 @@ function showReveal(q, side, ok){
   const tb=$("#rTsubun");
   tb.style.display = needT ? "" : "none";
   tb.disabled = true;
+  $("#rBlankHint").style.display = st.noBlanks ? "none" : "";
   setupBlanks($("#rCakes"), ()=>{ gate.blanks=true; if(needT){ tb.disabled=false; tb.focus({preventScroll:true}); } tryOpen(); });
   if(needT){
     tb.onclick=()=>{
@@ -1036,6 +1037,7 @@ function doTsubun(q, st, onDone){
 // 「1を□等分した□つ分」の穴うめ（大きい方の分数だけ。分母→分子の順に入力）
 function setupBlanks(root, onAllDone){
   const blanks=[...root.querySelectorAll(".blank")];
+  if(!blanks.length){ setTimeout(onAllDone, 0); return; }   // 穴うめのないステージ
   const toHalf=v=>v.trim().replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0));
   const next=()=>blanks.find(b=>!b.classList.contains("ok"));
   blanks.forEach(b=>{
