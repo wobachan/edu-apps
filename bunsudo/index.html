@@ -277,6 +277,8 @@ body{
 .hintbtn{width:auto;margin:16px auto 0;padding:10px 34px}
 .hintbox{margin-top:14px}
 .hint-say{font-size:19px;font-weight:bold;text-align:center;margin:4px 0 10px}
+.tape-cap{font-size:17px;font-weight:bold;margin:10px 0 -4px;padding-left:2px}
+.tape-cap .frac{font-size:18px}
 .tape-row{display:flex;align-items:center;gap:10px;margin:8px 0}
 .tape-row .frac{font-size:24px;margin:0 .25em}
 .tape-row .lab{display:flex;align-items:center;gap:2px;min-width:7.5em;justify-content:flex-end}
@@ -890,7 +892,7 @@ function tapeSVG(den){
   const lines = den>1 ? `<line x1="${w.toFixed(2)}" y1="0" x2="${w.toFixed(2)}" y2="${TAPE_H}" stroke="#3b2112" stroke-width="5"/>` : "";
   return `<svg viewBox="-6 -40 ${TAPE_W+12} ${TAPE_H+46}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <rect x="0" y="0" width="${TAPE_W}" height="${TAPE_H}" fill="#fffaf0"/>
-    <rect x="0" y="0" width="${w.toFixed(2)}" height="${TAPE_H}" fill="#ff8fa8"/>
+    <rect class="unit" x="0" y="0" width="${w.toFixed(2)}" height="${TAPE_H}" fill="#ff8fa8" style="transition:fill .8s"/>
     <g class="fine"></g><g class="pops"></g>${lines}
     <rect x="0" y="0" width="${TAPE_W}" height="${TAPE_H}" fill="none" stroke="#3b2112" stroke-width="5"/></svg>`;
 }
@@ -906,8 +908,10 @@ function openHint(q){
   $("#hintSay").textContent="1切れの大きさが ちがうから、比べにくいね";
   $("#hintMsg").textContent="";
   // 上は左の分数、下は右の分数の「1切れ」
-  $("#hintTapes").innerHTML=[q.left[1], q.right[1]].map(d=>
-    `<div class="tape-row" data-d="${d}"><span class="lab">${fracHTML(1,d)}</span>${tapeSVG(d)}</div>`).join("");
+  // 色は「1切れ」のものさし。出題の分数との関係を上に書く（出題の分数そのものは塗らない）
+  $("#hintTapes").innerHTML=[q.left, q.right].map(([a,d])=>
+    `${a>1?`<div class="tape-cap">${fracHTML(a,d)} は、${fracHTML(1,d)} の ${a}こ分</div>`:""}
+     <div class="tape-row" data-d="${d}" data-a="${a}"><span class="lab">${fracHTML(1,d)}</span>${tapeSVG(d)}</div>`).join("");
   const cb=$("#hintCut"); cb.style.display=""; cb.disabled=false;
   cb.onclick=()=>{ cb.disabled=true; cb.style.display="none"; hintCut(q); };
   $("#hintBox").scrollIntoView({behavior:"smooth",block:"nearest"});
@@ -934,8 +938,11 @@ function hintCut(q){
   const cut=()=>{
     if(my!==eatSeq) return;
     if(i>=xs.length){
-      rows.forEach(r=>{ const d=+r.dataset.d;
-        if(L!==d) r.querySelector(".lab").innerHTML=`${fracHTML(1,d)}<span class="eq">＝</span>${fracHTML(L/d,L)}`; });   // もとから L 等分なら そのまま
+      // 切り終わったら、ものさしの色は消して白いテープに。横の分数は出題の分数にもどす
+      rows.forEach(r=>{ const d=+r.dataset.d, a=+r.dataset.a;
+        r.querySelector(".unit").setAttribute("fill","#fffaf0");
+        r.querySelector(".lab").innerHTML=fracHTML(a,d); });
+      $$("#hintTapes .tape-cap").forEach(c=>c.remove());
       $("#hintMsg").innerHTML=`1切れの大きさが そろったね！ どちらも ${fracHTML(1,L)} の いくつ分かで 比べられるよ。`;
       return;
     }
