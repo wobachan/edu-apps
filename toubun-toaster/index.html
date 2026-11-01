@@ -40,6 +40,8 @@ button{font-family:inherit;color:inherit}
 .mixed{display:inline-flex;align-items:center;vertical-align:middle}
 
 /* ---------- タイトル ---------- */
+/* タイトルの 音 オン・オフ（右上） */
+.tsnd{position:absolute;top:calc(env(safe-area-inset-top) + .8rem);right:calc(env(safe-area-inset-right) + .8rem);font-size:1.6rem;padding:.5rem .8rem}
 #scTitle{flex-direction:column;align-items:center;justify-content:center;gap:2.2vmin;text-align:center;
   background:radial-gradient(circle at 50% 40%,#fff 0,#fff7ea 55%,#f8e6c8 100%)}
 .logo{font-size:clamp(2.2rem,9vmin,4.6rem);font-weight:900;margin:0;letter-spacing:.06em;color:var(--ink);
@@ -283,6 +285,7 @@ svg#toaster{width:100%;height:100%;max-width:640px;display:block;overflow:visibl
 
 <!-- タイトル -->
 <section class="screen on" id="scTitle">
+  <button class="btn ico tsnd" id="sndBtnT" title="おと オン・オフ"></button>
   <h1 class="logo"><ruby>等分<rt>とうぶん</rt></ruby>トースター</h1>
   <p class="catch">🍞パンや 🍕ピザを 同じ 大きさに 分けて、分数マスターに なろう！</p>
   <svg id="titleArt" viewBox="0 0 320 250" aria-hidden="true">
@@ -495,6 +498,13 @@ const sfx={
   tap(){this.t(620+Math.random()*120,.07,'triangle',.1)},
   click(){this.t(1300,.03,'square',.04)},
   ding(){this.t(1760,1.4,'sine',.22);this.t(2637,.9,'sine',.08)},
+  // タイトルの BGM（5拍）：1〜4拍 トースターの チチチチ（ひかえめな ベースつき）、5拍目 チン！
+  titleJingle(){
+    const b=.3;
+    for(let i=0;i<8;i++) this.t(i%2?2500:3200,.035,'square',.05,i*b/2);
+    [262,262,196,196].forEach((f,i)=>this.t(f,b*.9,'triangle',.12,i*b));
+    this.t(1760,1.5,'sine',.24,4*b); this.t(2637,1,'sine',.09,4*b); this.t(3520,.6,'sine',.04,4*b);
+  },
   pop(){this.t(260,.2,'sine',.22,0,760)},
   lever(){this.t(180,.14,'square',.07,0,80)},
   ok(){[784,1047].forEach((f,i)=>this.t(f,.18,'triangle',.12,i*.07))},
@@ -518,7 +528,21 @@ const sfx={
   bite(){this.t(200+Math.random()*60,.07,'square',.06,0,90);this.t(150,.08,'square',.05,.09,70)},
   door(){this.t(140,.12,'square',.06,0,90);this.t(420,.2,'sine',.15,.15,620)},
 };
-function syncSound(){ ['#sndBtn','#sndBtn2'].forEach(s=>$(s).textContent=SAVE.sound?'🔊':'🔇'); }
+function syncSound(){ ['#sndBtn','#sndBtn2','#sndBtnT'].forEach(s=>$(s).textContent=SAVE.sound?'🔊':'🔇'); }
+// タイトルを ひらいたら BGM。ブラウザが まだ 音を 出させて くれない ときは、さいしょに タップした ときに ならす
+let titleWait=false;
+function playTitle(){
+  if(!SAVE.sound||!$('#scTitle').classList.contains('on')) return;
+  const c=sfx.c(); if(!c) return;
+  if(c.state==='running'){ titleWait=false; sfx.titleJingle(); }
+  else titleWait=true;
+}
+['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev,e=>{
+  if(!titleWait) return;
+  titleWait=false;
+  if(e.target.closest&&e.target.closest('button')) return;
+  const c=sfx.c(); if(c) c.resume().then(()=>playTitle());
+},true));
 
 /* ---------- がめん切りかえ ---------- */
 function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id)); }
@@ -526,6 +550,7 @@ function goTitle(){
   const t=totalStars();
   $('#rankline').innerHTML=`⭐ ${t} / ${MAXSTARS}　いまの ランク：<b>${rankName(t)}</b>`;
   show('scTitle');
+  syncSound(); playTitle();
 }
 function goSelect(){
   S.running=false; S.mode='none'; S.food=SAVE.food;
@@ -1645,7 +1670,8 @@ $('#foods').addEventListener('click',e=>{
   SAVE.food=b.dataset.food; save(); sfx.tap(); goSelect();
 });
 $('#timerBtn').onclick=()=>{ SAVE.timer=!SAVE.timer; save(); goSelect(); };
-const toggleSound=()=>{ SAVE.sound=!SAVE.sound; save(); syncSound(); };
+const toggleSound=()=>{ SAVE.sound=!SAVE.sound; save(); syncSound(); if(SAVE.sound&&$('#scTitle').classList.contains('on')) sfx.titleJingle(); };
+$('#sndBtnT').onclick=toggleSound;
 $('#sndBtn').onclick=toggleSound; $('#sndBtn2').onclick=toggleSound;
 $('#scSelect').addEventListener('click',e=>{ const b=e.target.closest('.cell'); if(b){ sfx.tap(); openIntro(b.dataset.m,+b.dataset.l); } });
 $('#inBack').onclick=()=>{ $('#ovIntro').hidden=true; S.mode='none'; };
