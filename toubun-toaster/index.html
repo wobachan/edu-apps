@@ -41,7 +41,8 @@ button{font-family:inherit;color:inherit}
 
 /* ---------- タイトル ---------- */
 /* タイトルの 音 オン・オフ（右上） */
-.tsnd{position:absolute;top:calc(env(safe-area-inset-top) + .8rem);right:calc(env(safe-area-inset-right) + .8rem);font-size:1.6rem;padding:.5rem .8rem}
+.tsnd{font-size:1.2rem;padding:.55rem 1.4rem}
+.tsnd.off{background:#e9e1d4;color:var(--sub);box-shadow:0 .25rem 0 #cfc4b2}
 #scTitle{flex-direction:column;align-items:center;justify-content:center;gap:2.2vmin;text-align:center;
   background:radial-gradient(circle at 50% 40%,#fff 0,#fff7ea 55%,#f8e6c8 100%)}
 .logo{font-size:clamp(2.2rem,9vmin,4.6rem);font-weight:900;margin:0;letter-spacing:.06em;color:var(--ink);
@@ -285,7 +286,6 @@ svg#toaster{width:100%;height:100%;max-width:640px;display:block;overflow:visibl
 
 <!-- タイトル -->
 <section class="screen on" id="scTitle">
-  <button class="btn ico tsnd" id="sndBtnT" title="おと オン・オフ"></button>
   <h1 class="logo"><ruby>等分<rt>とうぶん</rt></ruby>トースター</h1>
   <p class="catch">🍞パンや 🍕ピザを 同じ 大きさに 分けて、分数マスターに なろう！</p>
   <svg id="titleArt" viewBox="0 0 320 250" aria-hidden="true">
@@ -311,6 +311,7 @@ svg#toaster{width:100%;height:100%;max-width:640px;display:block;overflow:visibl
     <button class="btn hot big" id="goSelect">▶ あそぶ</button>
     <button class="btn" data-help>？ あそびかた</button>
   </div>
+  <button class="btn tsnd" id="sndBtnT"></button>
 </section>
 
 <!-- ステージえらび -->
@@ -528,7 +529,10 @@ const sfx={
   bite(){this.t(200+Math.random()*60,.07,'square',.06,0,90);this.t(150,.08,'square',.05,.09,70)},
   door(){this.t(140,.12,'square',.06,0,90);this.t(420,.2,'sine',.15,.15,620)},
 };
-function syncSound(){ ['#sndBtn','#sndBtn2','#sndBtnT'].forEach(s=>$(s).textContent=SAVE.sound?'🔊':'🔇'); }
+function syncSound(){
+  ['#sndBtn','#sndBtn2'].forEach(s=>$(s).textContent=SAVE.sound?'🔊':'🔇');
+  const t=$('#sndBtnT'); t.textContent=SAVE.sound?'🔊 おと：オン':'🔇 おと：オフ'; t.classList.toggle('off',!SAVE.sound);
+}
 // タイトルを ひらいたら BGM。ブラウザが まだ 音を 出させて くれない ときは、さいしょに タップした ときに ならす
 let titleWait=false;
 function playTitle(){
