@@ -100,6 +100,13 @@ canvas { display:block; position:fixed; top:0; left:0; visibility:hidden; }
   .snd-btn .snd-nm{font-size:15px;}
   .snd-btn .snd-st{font-size:11px;padding:1px 6px;}
 }
+.howto-btn{position:relative;z-index:2;background:rgba(255,255,255,.1);color:#fff;
+  border:2px solid rgba(255,255,255,.45);border-radius:20px;padding:5px 16px;font-size:14px;font-weight:900;
+  font-family:inherit;cursor:pointer;letter-spacing:1px;}
+.howto-btn:active{transform:translateY(2px);}
+.howto-steps{text-align:left;margin:4px 0 14px;display:flex;flex-direction:column;gap:8px;}
+.howto-steps div{background:rgba(255,255,255,.08);border-radius:12px;padding:8px 12px;color:#fff;font-size:15px;font-weight:700;line-height:1.5;}
+.howto-steps b{color:#FFD93D;}
 .tbst{color:rgba(255,255,255,.4);font-size:12px;position:relative;z-index:2;letter-spacing:1px;}
 .ov{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);
   display:none;flex-direction:column;align-items:center;justify-content:safe center;
@@ -344,6 +351,7 @@ canvas { display:block; position:fixed; top:0; left:0; visibility:hidden; }
     <button class="tb tbn ts-btn" onclick="showCollection()" style="font-size:16px;padding:12px 28px;margin-top:6px">🎁 ごほうびコレクション <span id="newBadge" style="display:none;background:#ff3fa4;color:#fff;font-size:11px;padding:2px 7px;border-radius:10px;margin-left:4px">NEW!</span></button>
     <button class="tb tbn ts-btn" onclick="showMonsterList()" style="font-size:15px;padding:10px 24px;margin-top:4px">👾 モンスターずかん</button>
     <button class="tb tbn ts-btn" onclick="showRangerList()" style="font-size:15px;padding:10px 24px;margin-top:4px">🦸 レンジャーずかん</button>
+    <button class="howto-btn" onclick="G.startTutorial()">❓ あそびかた</button>
     <div class="tbst" id="tbst">ベストスコア: ---</div>
   </div>
 </div>
@@ -370,6 +378,20 @@ canvas { display:block; position:fixed; top:0; left:0; visibility:hidden; }
     <button class="ovb" style="background:rgba(255,255,255,.12);color:#fff;border:2px solid rgba(255,255,255,.3)" onclick="G.nextStage()">📋 ステージえらびへ</button>
     <button class="ovb bh" onclick="showCollection()">🎁 コレクションをみる</button>
     <button class="ovb" style="background:rgba(255,255,255,.12);color:#fff;border:2px solid rgba(255,255,255,.2)" onclick="G.home()">🏠 タイトルへ</button></div></div>
+
+<div class="ov" id="ovHowto">
+  <div class="ovc">
+    <div class="ovt">⭐ ばっちり！</div>
+    <div class="howto-steps">
+      <div>① <b>「10」と「のこり」</b>の モンスターを えらぶ</div>
+      <div>② ○を うごかして ひだりの パックを <b>10</b>に する</div>
+      <div>③ ○を タップして えらぶと <b>まとめて</b> うごかせる</div>
+    </div>
+    <button class="ovb bn" onclick="G._skipTutOnce=true;G.startStage(0)">⚡ ステージ１を はじめる</button>
+    <button class="ovb" style="background:rgba(255,255,255,.12);color:#fff;border:2px solid rgba(255,255,255,.3)" onclick="G.startTutorial()">🔄 もういちど みる</button>
+    <button class="ovb bh" onclick="G.home()">🏠 タイトルへ</button>
+  </div>
+</div>
 
 <div class="ov" id="ovStage">
   <div class="ovc">
@@ -2367,6 +2389,13 @@ function puzzleDone(){
     nextPuzzle();
     return;
   }
+  // あそびかた モードは ①が おわったら おしまい
+  if(G.tutorialOnly){
+    G.running=false; G.tutorialOnly=false; BGM.stop();
+    SFX.full();
+    setTimeout(()=>document.getElementById('ovHowto').classList.add('show'),300);
+    return;
+  }
   // 全滅: ラウンドカウントを進める
   G.battleRoundIdx++;
   if(G.battleRoundIdx<3){
@@ -2636,6 +2665,7 @@ const G={
     const _rNum=_circ[this.battleRoundIdx]||`${this.battleRoundIdx+1}`;
     this.bannerTxt=`ステージ${_sNum}の${_rNum}`;
     this.bannerSub=cfg.msg;
+    if(this.tutorialOnly){ this.bannerTxt='あそびかた'; this.bannerSub='いっしょに やってみよう！'; }
     this.bannerT=150;
     document.getElementById('hst').textContent=`${_sNum}の${_rNum}`;
     if(this.stageIdx===5&&this.battleRoundIdx===2){ setTimeout(_showLastBanner,600); }
@@ -2658,7 +2688,7 @@ const G={
 
   home(){
     this.running=false;P=null;BGM.stop();
-    ['ovP','ovO','ovC','ovStage'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('show');});
+    ['ovP','ovO','ovC','ovStage','ovHowto'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('show');});
     cx.clearRect(0,0,W,H);
     document.getElementById('c').style.visibility='hidden';
     document.getElementById('ts').style.display='';
@@ -2698,8 +2728,17 @@ const G={
     document.getElementById('ovStage').classList.add('show');
   },
 
+  // あそびかた：ステージ1の①（チュートリアル2問）だけ あそぶ
+  startTutorial(){
+    document.getElementById('ts').style.display='none';
+    this._tutReq=true;
+    this.startStage(0);
+  },
   startStage(idx){
+    this.tutorialOnly=!!this._tutReq; this._tutReq=false;
+    this.skipTut=!!this._skipTutOnce; this._skipTutOnce=false; // あそびかたを みた すぐあとは チュートリアルなし
     document.getElementById('ovStage').classList.remove('show');
+    document.getElementById('ovHowto').classList.remove('show');
     document.getElementById('c').style.visibility='visible';
     this.stageIdx=idx; this.score=0; this.lives=2; this.combo=0; this.running=true; this._gameOverTriggered=false;
     this.loadStage();
@@ -2712,7 +2751,7 @@ const G={
 
   pause(){if(!this.running)return;this.running=false;BGM.stop();if(this._rafId!==null){cancelAnimationFrame(this._rafId);this._rafId=null;}document.getElementById('ovP').classList.add('show');},
   resume(){document.getElementById('ovP').classList.remove('show');this.running=true;BGM.start();if(this._rafId!==null){cancelAnimationFrame(this._rafId);this._rafId=null;}this._rafId=requestAnimationFrame(ts=>this._loop(ts,ts));},
-  retry(){['ovP','ovO','ovC'].forEach(id=>document.getElementById(id).classList.remove('show'));this._gameOverTriggered=false;this.start();},
+  retry(){['ovP','ovO','ovC'].forEach(id=>document.getElementById(id).classList.remove('show'));this._gameOverTriggered=false;this.startStage(this.stageIdx);},
 
   saveBest(){
     const p=Number(localStorage.getItem('10h_best')||0);
@@ -2800,7 +2839,7 @@ function nextPuzzle(){
   // 倒す非10モンスターをランダムに1体選ぶ
   // チュートリアル: ステージ1の①の1・2問目（1問目は 8＋□ でお手本つき、2問目は 9＋□）
   const _solved=G.enemies.filter(e=>!e.alive).length;
-  const tutIdx=(G.stageIdx===0&&G.battleRoundIdx===0&&aliveTens.length>0)?(_solved===0?0:_solved===2?1:-1):-1;
+  const tutIdx=(G.stageIdx===0&&G.battleRoundIdx===0&&aliveTens.length>0&&!G.skipTut)?(_solved===0?0:_solved===2?1:-1):-1;
   let pool=aliveNonTen;
   if(tutIdx>=0){ const p7=aliveNonTen.filter(e=>e.n<=7); if(p7.length>0) pool=p7; }
   const targetNonTen=pool[Math.floor(Math.random()*pool.length)];
