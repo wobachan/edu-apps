@@ -256,6 +256,8 @@ rt{font-family:var(--body);font-size:.45em;font-weight:700;letter-spacing:0}
 .t-tray{background:#fbfbf8;border:2px solid #d8d6cf;border-radius:6px;box-shadow:inset 0 0 0 4px #efede6}
 .lay-tray{background:#fbfbf8;border:2px solid #d8d6cf}
 @media (min-width:601px){ .farm .last-d{grid-column:1/-1} }
+.yearline{text-align:center;margin:0;font-weight:900;color:var(--wood-dark);font-size:17px;line-height:1.9}
+.yearline b{font-size:1.4em;color:var(--shu);font-variant-numeric:tabular-nums}
 .seasons{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
 .season{border:2px solid var(--ai);background:var(--white);color:var(--ai);border-radius:999px;padding:6px 16px;font-size:17px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .season small{font-size:11px;background:var(--shu);color:var(--white);border-radius:6px;padding:0 5px;line-height:1.6}
@@ -354,6 +356,7 @@ rt{font-family:var(--body);font-size:.45em;font-weight:700;letter-spacing:0}
 <main>
   <section id="farmView" class="farmview">
     <h2 class="farm-q"><ruby>今日<rt>きょう</rt></ruby>は <ruby>何<rt>なに</rt></ruby>を お<ruby>店<rt>みせ</rt></ruby>で <ruby>売<rt>う</rt></ruby>ろうかな？</h2>
+    <p class="yearline" id="yearLine"></p>
     <div class="seasons" id="seasons" aria-label="きせつ"></div>
     <div class="farm" id="farm"></div>
     <div class="farm-bar"><p class="farm-hint" id="farmHint"></p><span class="farm-btns"><button type="button" class="btn sub shopbtn" id="zukanBtn"></button><button type="button" class="btn shopbtn" id="shopBtn">🛒 <ruby>農園<rt>のうえん</rt></ruby>を <ruby>広<rt>ひろ</rt></ruby>げる</button></span></div>
@@ -502,7 +505,8 @@ let land = LAND_START, pond = false;
 let giftReady = new Set(), giftShown = new Set();
 const YAMA_AT = 40; let yamaShown = false;
 let tutorialDone = false;
-let zukan = {}, zukanShown = false;   // 直売店図かん：{key: 売った 回数}
+let zukan = {}, zukanShown = false;
+let year = 1, yearNew = false;   // 冬から 春へ すすむと 1年 ふえる   // 直売店図かん：{key: 売った 回数}
 const byKey = k => STAGES.find(x=>x.key===k);
 const plotOf = s => s.plot || s.key;
 const landCost = () => 10 + (land - LAND_START) * 5;
@@ -518,7 +522,7 @@ function addCoins(d){ coins += d; $("coins").textContent = coins; }
 const SAVE_KEY = "ikutsubun-yaoya-v1";
 function save(){
   try{ localStorage.setItem(SAVE_KEY, JSON.stringify({coins, earned, stars, season, land, pond,
-    yamaShown, tutorialDone, zukan, zukanShown, owned:[...owned], done:[...done], giftReady:[...giftReady], giftShown:[...giftShown]})); }catch(e){}
+    yamaShown, tutorialDone, zukan, zukanShown, year, yearNew, owned:[...owned], done:[...done], giftReady:[...giftReady], giftShown:[...giftShown]})); }catch(e){}
 }
 function load(){
   try{
@@ -526,7 +530,7 @@ function load(){
     coins=d.coins||0; earned=d.earned||0; stars=d.stars||0; season=d.season||season; land=d.land||LAND_START; pond=!!d.pond;
     owned=new Set(d.owned||[]); (d.done||[]).forEach(x=>done.add(x));
     yamaShown=!!d.yamaShown; tutorialDone=!!d.tutorialDone; giftReady=new Set(d.giftReady||[]); giftShown=new Set(d.giftShown||[]);
-    zukan=d.zukan||{}; zukanShown=!!d.zukanShown;
+    zukan=d.zukan||{}; zukanShown=!!d.zukanShown; year=d.year||1; yearNew=!!d.yearNew;
     if(!d.zukan) (d.done||[]).forEach(x=>{ const k=x.split(":")[1]; zukan[k]=zukan[k]||1; });   // まえの セーブから ひきつぐ
   }catch(e){}
 }
@@ -649,6 +653,7 @@ function renderFarm(){
   document.querySelectorAll('.spot.done').forEach(el=>{ if(!el.querySelector('.stamp')) el.insertAdjacentHTML('beforeend', '<span class="stamp"><span style="white-space:nowrap"><ruby>売<rt>う</rt></ruby>り<ruby>切<rt>き</rt></ruby>れ</span></span>'); });
   fresh.clear();
   const lb = seasonOf(season).label;
+  $("yearLine").innerHTML = `🗓 <b>${year}</b><ruby>年目<rt>ねんめ</rt></ruby>の ${lb}`;
   $("farmHint").innerHTML = sold ? `${lb}の <ruby>売<rt>う</rt></ruby>り<ruby>切<rt>き</rt></ruby>れ ${sold} / ${playable}` : `${lb}に とれる ものを タップしてね`;
   $("shopBtn").classList.toggle("gift", giftReady.size>0);
   $("zukanBtn").innerHTML = `📖 <ruby>直売店<rt>ちょくばいてん</rt></ruby><ruby>図<rt>ず</rt></ruby>かん ${zkCount()}/${STAGES.length}`;
@@ -692,6 +697,7 @@ function showFarm(){
   if(earned >= YAMA_AT && !yamaShown){ yamaShown = true; save(); showYamaOpen(); }
   else if(gifts.length) showGift(gifts[0]);
   else if(zkCount()===STAGES.length && !zukanShown){ zukanShown = true; save(); showZukanComplete(); }
+  else if(yearNew){ yearNew = false; save(); showNewYear(); }
   else if(r.total && r.n === r.total) showFinal();
 }
 function showYamaOpen(){
@@ -1197,19 +1203,29 @@ function renderShop(){
   $("shopClose").onclick = closeCard;
   $("tutAgain").onclick = () => { tutorialDone = false; save(); closeCard(); };
   $("resetAll").onclick = () => {
-    coins=0; earned=0; stars=0; updateRank(); land=LAND_START; pond=false; owned=new Set(["egg", ...STARTER[NOW_SEASON]]); zukan={}; zukanShown=false;
+    coins=0; earned=0; stars=0; updateRank(); land=LAND_START; pond=false; owned=new Set(["egg", ...STARTER[NOW_SEASON]]); zukan={}; zukanShown=false; year=1; yearNew=false;
     giftReady.clear(); giftShown.clear(); done.clear(); yamaShown=false; tutorialDone=false; season=NOW_SEASON; $("coins").textContent=0; showFarm();
   };
 }
 
+function showNewYear(){
+  card(`
+    <div class="big" aria-hidden="true">🎍🌸</div>
+    <h2><b class="got-n">${year}</b><ruby>年目<rt>ねんめ</rt></ruby>に なった！</h2>
+    <p>${year}<ruby>年目<rt>ねんめ</rt></ruby>の <ruby>春<rt>はる</rt></ruby>が きたよ。ことしも たくさん <ruby>売<rt>う</rt></ruby>ろう！</p>
+    <div style="margin-top:14px"><button type="button" class="btn" id="nyOk"><ruby>農園<rt>のうえん</rt></ruby>へ</button></div>
+  `);
+  [523,659,784,659,784,1047].forEach((f,i)=>tone(f,.2,"sine",.12,i*.12));
+  $("nyOk").onclick = closeCard;
+}
 function showFinal(){
   const cur = seasonOf(season), idx = SEASONS.indexOf(cur), nx = SEASONS[(idx+1) % SEASONS.length];
   card(`
     <div class="big" aria-hidden="true">${cur.mark}🏮</div>
-    <h2>${cur.label}の ものを<br>ぜんぶ <ruby>売<rt>う</rt></ruby>り<ruby>切<rt>き</rt></ruby>った！</h2>
+    <h2>${year}<ruby>年目<rt>ねんめ</rt></ruby>の ${cur.label}の ものを<br>ぜんぶ <ruby>売<rt>う</rt></ruby>り<ruby>切<rt>き</rt></ruby>った！</h2>
     <p>あつめた コイン：<b>${coins}まい</b></p>
     <p class="star">1<ruby>回<rt>かい</rt></ruby>で <ruby>正<rt>せい</rt></ruby>かい：★ ${stars}こ</p>
-    <p class="note">${nx.label}に なると、ちがう ものが とれるよ。</p>
+    <p class="note">${nx.id==="haru" ? `つぎは ${year+1}<ruby>年目<rt>ねんめ</rt></ruby>の ${nx.label}！ ` : ""}${nx.label}に なると、ちがう ものが とれるよ。</p>
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px">
       <button type="button" class="btn sub" id="stay"><ruby>農園<rt>のうえん</rt></ruby>を <ruby>見<rt>み</rt></ruby>る</button>
       <button type="button" class="btn" id="nextSeason">${nx.mark} ${nx.label}へ すすむ</button>
@@ -1217,7 +1233,7 @@ function showFinal(){
   `);
   [523,659,784,1047].forEach((f,i)=>tone(f,.25,"sine",.12,i*.12));
   $("stay").onclick = closeCard;
-  $("nextSeason").onclick = () => { season = nx.id; [...done].forEach(k=>{ if(k.startsWith(nx.id+":")) done.delete(k); }); showFarm(); };
+  $("nextSeason").onclick = () => { if(nx.id==="haru"){ year++; yearNew = true; } season = nx.id; [...done].forEach(k=>{ if(k.startsWith(nx.id+":")) done.delete(k); }); showFarm(); };
 }
 
 load(); $("coins").textContent = coins; updateRank();
