@@ -570,6 +570,45 @@ const sPop = n => tone(520 + n*55, .09);
 const sFull = () => [660,830,990].forEach((f,i)=>tone(f,.18,"sine",.16,i*.09));
 const sCoin = () => { tone(1320,.08,"square",.06); tone(1760,.16,"square",.06,.07); };
 const sNo = () => tone(180,.15,"sawtooth",.06);
+/* ---- きせつ・生長・収穫の 音 ---- */
+let noiseBuf = null;
+function noise(d, ftype, f, vol=.1, delay=0, q=1, fEnd){
+  const a = ac(); if(!a || muted) return;
+  if(!noiseBuf){ noiseBuf = a.createBuffer(1, a.sampleRate*2, a.sampleRate); const ch = noiseBuf.getChannelData(0); for(let i=0;i<ch.length;i++) ch[i] = Math.random()*2-1; }
+  const t = a.currentTime + delay, src = a.createBufferSource(), fl = a.createBiquadFilter(), g = a.createGain();
+  src.buffer = noiseBuf; fl.type = ftype; fl.frequency.setValueAtTime(f, t); fl.Q.value = q;
+  if(fEnd) fl.frequency.exponentialRampToValueAtTime(fEnd, t+d);
+  g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vol, t+d*.3); g.gain.exponentialRampToValueAtTime(.0001, t+d);
+  src.connect(fl).connect(g).connect(a.destination); src.start(t); src.stop(t+d+.05);
+}
+function glide(f1, f2, d, type="sine", vol=.12, delay=0){
+  const a = ac(); if(!a || muted) return;
+  const t = a.currentTime + delay, o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t+d);
+  g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vol, t+.015); g.gain.exponentialRampToValueAtTime(.0001, t+d);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t+d+.05);
+}
+const bell = (f, delay=0, vol=.08) => { tone(f, 1.2, "sine", vol, delay); tone(f*2.76, .6, "sine", vol*.3, delay); };
+function sSeason(id){
+  if(id==="haru"){        // 小鳥の さえずり
+    [0, .16, .32].forEach(d=>glide(2600, 3600, .09, "sine", .11, d));
+    [.75, .87].forEach(d=>glide(3400, 2400, .12, "sine", .11, d));
+    noise(1.2, "lowpass", 900, .03, 0);
+  } else if(id==="natsu"){ // セミと 風鈴
+    for(let k=0;k<10;k++) noise(.07, "bandpass", 5200, .05, k*.06, 6);
+    bell(2093, .3); bell(2637, .65, .06);
+  } else if(id==="aki"){   // スズムシ
+    [0, .5].forEach(b=>{ for(let k=0;k<4;k++) tone(4200, .05, "sine", .09, b + k*.065); });
+    noise(.5, "bandpass", 1200, .02, .2, 2);
+  } else {                 // 木枯らしと 鈴
+    noise(1.4, "bandpass", 400, .08, 0, 3, 1100);
+    bell(1568, .5); bell(2093, .7, .06);
+  }
+}
+const sGrow = () => { glide(260, 880, .35, "triangle", .12); [1319, 1760, 2093].forEach((f,i)=>tone(f, .12, "sine", .06, .32 + i*.07)); };   // にょきっ
+const sHarvest = () => { noise(.22, "bandpass", 1800, .08, 0, 1.2); [392, 494, 587].forEach((f,i)=>glide(f*1.5, f, .1, "triangle", .14, .12 + i*.1)); };   // ガサッ → ぽん ぽん ぽん
+const sDig = () => { [0, .22].forEach(d=>{ noise(.14, "lowpass", 700, .14, d, 1); tone(110, .1, "sine", .1, d); }); };   // ザクッ ザクッ
+const sWater = () => { glide(900, 300, .18, "sine", .12); glide(1200, 500, .14, "sine", .07, .15); noise(.3, "highpass", 3000, .03, .05); };   // ぽちゃん
 $("mute").onclick = () => { muted = !muted; $("mute").innerHTML = muted ? "<ruby>音<rt>おと</rt></ruby>：なし" : "<ruby>音<rt>おと</rt></ruby>：あり"; };
 
 function say(t, nudge){ bubble.innerHTML = t; if(nudge){ bubble.classList.remove("nudge"); void bubble.offsetWidth; bubble.classList.add("nudge"); } }
@@ -584,7 +623,7 @@ function renderSeasons(){
     b.type = "button"; b.className = "season" + (x.id===season ? " on" : "");
     b.setAttribute("aria-pressed", x.id===season);
     b.innerHTML = `<span aria-hidden="true">${x.mark}</span> ${x.label}` + (x.id===NOW_SEASON ? '<small><ruby>今<rt>いま</rt></ruby></small>' : "");
-    b.onclick = () => { if(season===x.id) return; season = x.id; tone(600,.08); renderFarm(); };
+    b.onclick = () => { if(season===x.id) return; season = x.id; sSeason(x.id); renderFarm(); };
     box.appendChild(b);
   });
 }
@@ -637,7 +676,7 @@ function renderFarm(){
       el.className = "spot" + extra + (isDone ? " done" : "");
       el.setAttribute("aria-label", plain(`${t.s.name}を うる`));
       el.innerHTML = `<span class="art" aria-hidden="true">${t.s.art}</span><span class="sign">${t.s.sign}</span>`;
-      el.onclick = () => { tone(520,.08); tone(780,.12,"triangle",.12,.08); startStage(t.i); };
+      el.onclick = () => { sHarvest(); startStage(t.i); };
     } else if(t.kind==="off"){
       el = document.createElement("div");
       el.className = "spot off" + extra;
@@ -665,7 +704,7 @@ function renderFarm(){
     if(owned.has("trout")){
       el.type="button"; playable++; if(done.has(doneKey(trout))) sold++;
       el.innerHTML = `<span class="art" aria-hidden="true">${trout.art}</span><span class="sign">${trout.sign}</span>`;
-      el.onclick = () => { tone(520,.08); startStage(STAGES.indexOf(trout)); };
+      el.onclick = () => { sWater(); startStage(STAGES.indexOf(trout)); };
     } else {
       el.innerHTML = `<span class="art" aria-hidden="true">${trout.art.replace(/<span style="left[^>]*>🐟<\/span>/g,"")}</span><span class="sign">いけ（まだ <ruby>魚<rt>さかな</rt></ruby>は いないよ）</span>`;
     }
@@ -708,7 +747,7 @@ function renderYama(){
     b.className = "spot" + (isDone ? " done" : "") + (last && lastD ? " last-d" : "") + (last && lastM ? " last-m" : "");
     b.setAttribute("aria-label", plain(`${s.name}を うる`));
     b.innerHTML = `<span class="art" aria-hidden="true">${s.art}</span><span class="sign">${s.sign}</span>`;
-    b.onclick = () => { tone(520,.08); tone(780,.12,"triangle",.12,.08); startStage(i); };
+    b.onclick = () => { sHarvest(); startStage(i); };
     $("yamaGrid").appendChild(b); p++; if(isDone) sd++;
   });
   return {p, s:sd};
@@ -1299,17 +1338,17 @@ function renderShop(){
   cardEl.querySelectorAll("[data-buy]").forEach(b=>b.onclick=()=>{
     const s = byKey(b.dataset.buy); if(coins < s.price) return;
     addCoins(-s.price); owned.add(s.key); (s.also||[]).forEach(k=>owned.add(k)); fresh.add(s.key);
-    sCoin(); tone(392,.15,"sine",.12,.1); renderShop(); renderFarm();
+    sCoin(); sGrow(); renderShop(); renderFarm();
   });
   cardEl.querySelectorAll("[data-gift]").forEach(b=>b.onclick=()=>{
     const s = byKey(b.dataset.gift); giftReady.delete(s.key); owned.add(s.key); fresh.add(s.key);
-    sFull(); renderShop(); renderFarm();
+    sGrow(); renderShop(); renderFarm();
   });
   cardEl.querySelectorAll("[data-land]").forEach(b=>b.onclick=()=>{
-    const c = landCost(); if(coins < c) return; addCoins(-c); land++; tone(220,.12,"square",.06); tone(330,.12,"square",.06,.12); renderShop(); renderFarm();
+    const c = landCost(); if(coins < c) return; addCoins(-c); land++; sDig(); renderShop(); renderFarm();
   });
   cardEl.querySelectorAll("[data-pond]").forEach(b=>b.onclick=()=>{
-    if(coins < POND_PRICE) return; addCoins(-POND_PRICE); pond = true; fresh.add("pond"); sFull(); renderShop(); renderFarm();
+    if(coins < POND_PRICE) return; addCoins(-POND_PRICE); pond = true; fresh.add("pond"); sWater(); renderShop(); renderFarm();
   });
   $("shopClose").onclick = closeCard;
   $("tutAgain").onclick = () => { tutorialDone = false; save(); closeCard(); };
@@ -1344,7 +1383,7 @@ function showFinal(){
   `);
   [523,659,784,1047].forEach((f,i)=>tone(f,.25,"sine",.12,i*.12));
   $("stay").onclick = closeCard;
-  $("nextSeason").onclick = () => { if(nx.id==="haru"){ year++; yearNew = true; } season = nx.id; [...done].forEach(k=>{ if(k.startsWith(nx.id+":")) done.delete(k); }); showFarm(); };
+  $("nextSeason").onclick = () => { sSeason(nx.id); if(nx.id==="haru"){ year++; yearNew = true; } season = nx.id; [...done].forEach(k=>{ if(k.startsWith(nx.id+":")) done.delete(k); }); showFarm(); };
 }
 
 load(); $("coins").textContent = coins; updateRank();
