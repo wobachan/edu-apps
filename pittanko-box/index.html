@@ -1,0 +1,1219 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>ぴったんこボックス</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
+<style>
+/* Layout: one toy-box column — score bar, playfield, big chunky buttons. Single bright daytime look by choice. */
+:root{
+  --sky:#E4F1FA;
+  --paper:#FBFDFF;
+  --ink:#27344F;
+  --ink-soft:#5B6A86;
+  --wood:#C98A4E;
+  --wood-dark:#9C6533;
+  --sun:#FFC93C;
+  --font:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Rounded Mplus 1c","Meiryo",system-ui,sans-serif;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{background:var(--sky);color:var(--ink);font-family:var(--font);-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:1000px;margin:0 auto;padding-block:12px 20px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:10px}
+header{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+h1{font-size:1.45rem;font-weight:900;margin:0;letter-spacing:.04em;flex:0 1 auto;text-wrap:balance}
+.homebtn{margin-right:auto;background:var(--paper);white-space:nowrap}
+h1 span{color:var(--wood-dark)}
+.stats{display:flex;gap:8px;align-items:stretch}
+.stat{background:var(--paper);border-radius:14px;padding:4px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:64px;box-shadow:0 2px 0 rgba(39,52,79,.12)}
+.stat small{font-size:.72rem;color:var(--ink-soft);font-weight:700;letter-spacing:.08em}
+.stat b{font-size:1.4rem;font-weight:900;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat canvas{display:block}
+.lvbar{display:block;width:40px;height:5px;border-radius:3px;background:#E3E6EC;margin-top:3px;overflow:hidden}
+.lvbar i{display:block;height:100%;width:0;background:#F7922F;border-radius:3px}
+#next{width:60px;height:72px}
+.sky{background:var(--paper);border-radius:14px;padding:6px;box-shadow:0 2px 0 rgba(39,52,79,.12)}
+#shelf{display:block;width:100%;height:84px;border-radius:10px}
+.skycap{font-size:.8rem;font-weight:900;text-align:center;color:var(--ink);margin-top:4px;line-height:1.4}
+.story{color:var(--ink)!important}
+.later{display:flex;flex-direction:column;align-items:center;gap:10px;animation:pop .45s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+.result .r0{font-size:1.5rem;font-weight:900;color:#E0457B}
+.result .rs{font-size:1rem;font-weight:700;color:var(--ink-soft)}
+.confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:18px}
+.confetti i{position:absolute;top:-6%;width:9px;height:14px;border-radius:2px;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(115vh) rotate(720deg)}}
+.stage{position:relative;align-self:center;max-width:100%}
+#field{display:block;border-radius:18px;background:var(--paper);box-shadow:0 4px 0 rgba(39,52,79,.14);touch-action:manipulation}
+.overlay{position:absolute;top:0;left:0;right:0;min-height:100%;box-sizing:border-box;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:rgba(251,253,255,.88);border-radius:18px;text-align:center;padding:16px}
+.overlay h2{margin:0;font-size:2rem;font-weight:900}
+.overlay p{margin:0;font-size:1.05rem;font-weight:700;color:var(--ink-soft);line-height:1.6;max-width:22em}
+.big{font-family:var(--font);font-weight:900;font-size:1.5rem;color:var(--ink);background:var(--sun);border:0;border-radius:999px;padding:12px 36px;box-shadow:0 5px 0 #D69E12;cursor:pointer}
+#againBtn{font-size:1.15rem;padding:8px 28px}
+.recline{font-size:1.05rem;font-weight:900;color:var(--wood-dark)}
+.reclist{background:#fff;border:3px solid var(--wood);border-radius:14px;padding:6px 12px;width:min(340px,92%);max-height:55%;overflow:auto}
+.reclist table{width:100%;border-collapse:collapse;font-size:.9rem}
+.reclist th{font-size:.75rem;color:var(--ink-soft);font-weight:700;text-align:left;padding:2px 4px;border-bottom:2px solid #F0E2CC}
+.reclist td{padding:4px;border-bottom:1px solid #F3E9DA;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+.reclist td.pt{text-align:right;font-weight:900;color:var(--wood-dark)}
+.reclist tr.top td{background:#FFF6D6}
+.reclist .none{padding:14px 4px;text-align:center;color:var(--ink-soft);font-weight:700}
+.result .rn{font-size:1rem;font-weight:900;color:#fff;background:#E0457B;border-radius:999px;padding:2px 12px}
+.result{margin:14px 0 2px;border:3px solid var(--wood);border-radius:16px;background:#fff;padding:10px 22px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.result .r1{font-size:1.15rem;font-weight:900;color:var(--ink)}
+.result .r2{font-size:2rem;font-weight:900;color:var(--wood-dark);line-height:1.3}
+ruby rt{font-size:.5em;font-weight:700}
+.big:active{transform:translateY(3px);box-shadow:0 2px 0 #D69E12}
+.pad{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%;max-width:560px;align-self:center}
+.pad button{font-family:var(--font);color:var(--ink);background:var(--paper);border:0;border-radius:18px;padding:10px 4px 8px;font-size:1.7rem;font-weight:900;line-height:1;box-shadow:0 4px 0 rgba(39,52,79,.18);cursor:pointer;touch-action:manipulation;display:flex;flex-direction:column;align-items:center;gap:4px}
+.pad button small{font-size:.8rem;font-weight:700;color:var(--ink-soft)}
+.pad button:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(39,52,79,.18)}
+.pad .drop{grid-column:2/-1;background:var(--wood);color:#fff;box-shadow:0 5px 0 var(--wood-dark);font-size:1.5rem;flex-direction:row;justify-content:center;gap:10px;padding:14px}
+.pad .drop small{color:#FFE9D2}
+.pad .swap{background:#DCEBFF;font-size:1.3rem;flex-direction:column}
+.pad .swap:disabled{opacity:.4;cursor:default}
+.pad .drop:active{box-shadow:0 2px 0 var(--wood-dark)}
+button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.body,.col,.side{display:flex;flex-direction:column;gap:10px;min-width:0}
+.col{flex:1}
+#keys{justify-content:flex-start;column-gap:14px;row-gap:4px}
+/* よこに ひろい がめんでは、ヒントと キーボードの せつめいを みぎに たてに ならべる */
+/* あそぶ ばしょの よこに あきが ある ときは(JS が .beside を つける)、たなと せつめいを よこに ならべる */
+.body.beside{flex-direction:row;align-items:flex-start;gap:16px}
+.beside .side{flex:none;padding-top:4px}
+.beside #keys{display:grid;grid-template-columns:auto auto;column-gap:8px;row-gap:4px}
+.beside #keys b{grid-column:1/-1}
+.beside .side .foot{flex-direction:column;align-items:flex-start;gap:8px}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:.8rem;color:var(--ink-soft);font-weight:500}
+.foot label{display:flex;align-items:center;gap:6px;font-weight:700;cursor:pointer}
+.foot input{width:20px;height:20px;accent-color:var(--wood)}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center}
+#startBox{background:linear-gradient(#FFF4DC,#E4F1FA);overflow:hidden;padding:10px}
+.titleart{position:absolute;inset:0;width:100%;height:100%;border-radius:18px}
+.titlecard{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;background:rgba(255,255,255,.86);border-radius:22px;padding:12px 20px 14px;box-shadow:0 6px 0 rgba(39,52,79,.12)}
+.logo{font-size:2.3rem!important;line-height:1.05;letter-spacing:.06em;text-shadow:0 3px 0 rgba(39,52,79,.15)}
+.howbtn{font-family:var(--font);font-weight:900;font-size:1.05rem;color:#fff;background:#16A394;border:0;border-radius:999px;padding:8px 20px;box-shadow:0 4px 0 #0E7A6F;cursor:pointer}
+.howbtn:active{transform:translateY(2px);box-shadow:0 2px 0 #0E7A6F}
+.how p{margin:4px 0 8px;font-weight:700;line-height:1.8;color:var(--ink)}
+.exrow{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin:6px 0}
+.exrow figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:4px}
+.exrow figcaption{font-weight:900;font-size:.9rem}
+.howtable{border-collapse:collapse;width:100%;font-weight:700;font-size:.92rem}
+.howtable th{text-align:left;font-size:.78rem;color:var(--ink-soft);border-bottom:2px solid #F0E2CC;padding:4px 6px}
+.howtable td{border-bottom:1px solid #F3E9DA;padding:6px;vertical-align:top}
+.songbtn{font-family:var(--font);font-weight:900;font-size:1.05rem;color:#fff;background:#8E6CEF;border:0;border-radius:999px;padding:8px 20px;box-shadow:0 4px 0 #6A4BC4;cursor:pointer}
+.songbtn:active{transform:translateY(2px);box-shadow:0 2px 0 #6A4BC4}
+.songpage{position:fixed;inset:0;z-index:50;background:var(--sky);overflow:auto;-webkit-user-select:text;user-select:text}
+.songwrap{max-width:1200px;margin:0 auto;padding:16px max(16px,env(safe-area-inset-left,0px)) 40px}
+.songwrap h2{margin:4px 0 6px;font-size:1.6rem;font-weight:900}
+.songlead,.songnote{margin:0 0 8px;font-weight:700;color:var(--ink-soft);line-height:1.7}
+.songctl{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0}
+.phrase{background:var(--paper);border-radius:16px;padding:10px 12px 6px;margin:10px 0;box-shadow:0 3px 0 rgba(39,52,79,.12)}
+.phrase h3{margin:0 0 4px;font-size:1.1rem;font-weight:900}
+.phrase .pn{display:inline-block;background:var(--wood);color:#fff;border-radius:999px;padding:0 10px;margin-right:4px}
+.bars{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:4px 0}
+.bar{border-left:3px solid #D8C3A2;padding:0 3px}
+.roll{position:relative;height:84px;background:repeating-linear-gradient(to right,transparent 0 calc(12.5% - 1px),#F1E6D4 calc(12.5% - 1px) 12.5%)}
+.nt{position:absolute;height:20px;border-radius:6px;color:#fff;font-weight:900;font-size:.78rem;display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:visible;box-shadow:0 2px 0 rgba(0,0,0,.15);transition:transform .1s}
+.nt.hi::before{content:'・';position:absolute;top:-15px;left:50%;transform:translateX(-50%);color:var(--ink);font-size:1rem}
+/* 16分音符の みじかい ますは もじを ちいさく(ファが おりかえさない ように) */
+.nt.short{font-size:.6rem;letter-spacing:-.12em;border-radius:5px}
+.nt.now{transform:scale(1.18);outline:3px solid var(--ink);z-index:2}
+.lyr{position:relative;height:24px}
+.ly{position:absolute;top:2px;font-weight:900;font-size:.85rem;white-space:nowrap;overflow:visible;padding-left:2px}
+.ly.now{color:#E0457B}
+.pline{margin:6px 0 4px;font-weight:900;line-height:1.8;color:var(--ink);font-size:1rem}
+.ghostbtn{font-family:var(--font);font-weight:700;font-size:.85rem;background:transparent;border:2px solid rgba(39,52,79,.2);color:var(--ink);border-radius:999px;padding:4px 12px;cursor:pointer}
+.musicbtn{font-family:var(--font);font-weight:900;font-size:1rem;color:var(--ink);background:#FFD9EC;border:0;border-radius:999px;padding:8px 18px;box-shadow:0 3px 0 #E79BC2;cursor:pointer}
+.musicbtn.off{background:#E3E6EC;color:var(--ink-soft);box-shadow:0 3px 0 #C3C8D2}
+.musicbtn:active{transform:translateY(2px);box-shadow:0 1px 0 #E79BC2}
+.stat.musicbtn{border-radius:14px;padding:4px 10px;font-size:1.5rem;min-width:56px}
+.stat.musicbtn small{display:block;font-size:.72rem;letter-spacing:.04em}
+/* ひくい がめん(11インチPC など)・スマホでは ぜんたいを こぢんまりと */
+@media (max-height:820px), (max-width:520px){
+  .logo{font-size:1.8rem!important}
+  .titlecard{gap:6px;padding:10px 14px 12px}
+  .howbtn,.songbtn{font-size:.92rem;padding:6px 16px}
+  .wrap{gap:6px;padding-block:6px 8px}
+  h1{font-size:1.1rem}
+  .stats{gap:5px}
+  .stat{padding:2px 8px;min-width:46px;border-radius:12px}
+  .stat b{font-size:1.1rem}
+  .stat small{font-size:.62rem}
+  #next{width:46px;height:56px}
+  .result .r0{font-size:1.2rem}
+  .result .rs{font-size:.85rem}
+  .stat.musicbtn{font-size:1.1rem;min-width:44px;padding:2px 8px}
+  .pad{gap:6px}
+  .pad button{font-size:1.25rem;padding:6px 4px 5px;border-radius:14px;gap:2px}
+  .pad button small{font-size:.7rem}
+  .pad .drop{font-size:1.15rem;padding:8px}
+  .overlay{gap:8px;padding:10px}
+  .overlay h2{font-size:1.4rem}
+  .overlay p{font-size:.88rem;line-height:1.5}
+  .big{font-size:1.2rem;padding:8px 26px}
+  #againBtn{font-size:1rem;padding:6px 22px}
+  .musicbtn{font-size:.85rem;padding:5px 14px}
+  .result{margin-top:8px;padding:6px 16px}
+  .result .r1{font-size:.95rem}
+  .result .r2{font-size:1.5rem}
+  .foot{font-size:.72rem}
+}
+@media (max-width:600px), (hover:none){ #keys{display:none} }
+kbd{font-family:var(--font);background:var(--paper);border-radius:6px;padding:0 5px;border:1px solid rgba(39,52,79,.15)}
+</style>
+
+<main class="wrap">
+  <header>
+    <h1>ぴったんこ<span>ボックス</span></h1>
+    <button class="ghostbtn homebtn" id="homeBtn" hidden>🏠 タイトルへ</button>
+    <div class="stats">
+      <div class="stat"><small>ぴったり</small><b id="score">0</b></div>
+      <div class="stat"><small><ruby>点<rt>てん</rt></ruby></small><b id="pts">0</b></div>
+      <div class="stat"><small>レベル</small><b id="level">1</b><i class="lvbar" title="つぎの レベルまで"><i id="lvFill"></i></i></div>
+      <div class="stat"><small>さいこう</small><b id="best">0</b></div>
+      <div class="stat"><small>つぎ</small><canvas id="next"></canvas></div>
+      <button class="stat musicbtn bgmToggle" aria-label="音楽の オン・オフ">♪<small>ON</small></button>
+    </div>
+  </header>
+
+  <div class="body"><div class="col">
+  <div class="stage" id="stage">
+    <canvas id="field"></canvas>
+    <div class="overlay" id="startBox">
+      <canvas class="titleart" id="titleArt"></canvas>
+      <div class="titlecard">
+        <h2 class="logo"><span style="color:#F2545B">ぴ</span><span style="color:#F7922F">っ</span><span style="color:#E8A800">た</span><span style="color:#4FA83A">ん</span><span style="color:#16A394">こ</span><br><span style="color:#9C6533">ボックス</span></h2>
+        <div class="recline" id="recLine"></div>
+        <button class="big" id="startBtn">はじめる</button>
+        <button class="howbtn" id="howOpen">❓ あそびかた</button>
+        <button class="songbtn" id="songOpen">🎵 ぴったんこボックスの <ruby>歌<rt>うた</rt></ruby></button>
+        <div class="btnrow"><button class="ghostbtn recOpen">📜 きろく</button><button class="musicbtn bgmToggle">♪ <ruby>音楽<rt>おんがく</rt></ruby> ON</button></div>
+      </div>
+    </div>
+    <div class="overlay" id="recBox" hidden>
+      <h2>📜 きろく</h2>
+      <div class="recline" id="recBest"></div>
+      <div class="reclist" id="recList"></div>
+      <button class="big" id="recBack">もどる</button>
+      <button class="ghostbtn" id="recClear">きろくを ぜんぶ けす</button>
+    </div>
+    <div class="overlay" id="overBox" hidden>
+      <div class="confetti" id="confetti"></div>
+      <h2>ゲームオーバー</h2>
+      <p id="overMsg"></p>
+      <div class="later" id="overLater" hidden>
+        <div class="result" id="overResult"></div>
+        <button class="big" id="againBtn">もう<ruby>一<rt>いち</rt></ruby>ど</button>
+        <button class="ghostbtn" id="overHome">🏠 タイトルへ</button>
+        <button class="ghostbtn recOpen">📜 きろくを みる</button>
+        <button class="musicbtn bgmToggle">♪ <ruby>音楽<rt>おんがく</rt></ruby> ON</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pad">
+    <button id="bLeft" aria-label="ひだりへ">◀<small><ruby>左<rt>ひだり</rt></ruby></small></button>
+    <button id="bRot" aria-label="さかさまにする">↻<small>さかさま</small></button>
+    <button id="bFlip" aria-label="うらがえす">⇋<small>うらがえし</small></button>
+    <button id="bRight" aria-label="みぎへ">▶<small><ruby>右<rt>みぎ</rt></ruby></small></button>
+    <button id="bSwap" class="swap" aria-label="つぎの ブロックと とりかえる">⇄<small>とりかえ</small></button>
+    <button id="bDrop" class="drop" aria-label="すとんと おとす">▼ すとん<small><ruby>一気<rt>いっき</rt></ruby>に おとす</small></button>
+  </div>
+  </div>
+  <aside class="side">
+  <div class="sky"><canvas id="shelf"></canvas><div class="skycap" id="skyCap"></div></div>
+
+  <div class="foot">
+    <label><input type="checkbox" id="hint" checked> ヒント(○ だいじょうぶ・× ぴったりに できなく なる)</label>
+    <button class="ghostbtn" id="pauseBtn"><ruby>止<rt>と</rt></ruby>める</button>
+  </div>
+  <div class="foot" id="keys"><b>キーボード</b><span><kbd>←</kbd><kbd>→</kbd> いどう</span><span><kbd>↑</kbd> さかさま</span><span><kbd>X</kbd> うらがえし</span><span><kbd>C</kbd> とりかえ</span><span><kbd>↓</kbd> ゆっくり おろす</span><span><kbd>Space</kbd> すとん</span><span><kbd>P</kbd> <ruby>止<rt>と</rt></ruby>める</span><span><kbd>M</kbd> <ruby>音楽<rt>おんがく</rt></ruby></span></div>
+  </aside></div>
+</main>
+
+<div class="songpage" id="howPage" hidden>
+  <div class="songwrap">
+    <h2>❓ あそびかた</h2>
+    <div class="songctl"><button class="big" id="howStart">はじめる</button><button class="ghostbtn" id="howBack">もどる</button></div>
+    <section class="phrase how">
+      <h3>🎯 はこを ぴったり いっぱいに しよう</h3>
+      <p>おちて <ruby>来<rt>く</rt></ruby>る ブロックを はこに <ruby>入<rt>い</rt></ruby>れて、すきま なく ちょうど いっぱいに しよう。<br>ぴったりの はこは「ぴったんこボックス」に なって、<ruby>中<rt>なか</rt></ruby>み（あめ・みかん・びっくりばこ…）が もらえるよ。</p>
+      <p>おちて <ruby>来<rt>く</rt></ruby>るのは、2〜9この <ruby>正方形<rt>せいほうけい</rt></ruby>が つながった ブロックだよ。<br><b>1マスだけの ブロックは おちて こないよ。</b>だから、のこりが 1マスに なると もう うまらないよ。</p>
+    </section>
+    <section class="phrase how">
+      <h3>➕ ブロックは いくつ <ruby>組<rt>く</rt></ruby>み<ruby>合<rt>あ</rt></ruby>わせても いいよ</h3>
+      <p>10の はこなら、こんな ぴったりが あるよ。</p>
+      <div class="exrow">
+        <figure><canvas class="ex" data-cap="10" data-p="2 2 2 2 2"></canvas><figcaption>2＋2＋2＋2＋2</figcaption></figure>
+        <figure><canvas class="ex" data-cap="10" data-p="3a 3b 4"></canvas><figcaption>3＋3＋4</figcaption></figure>
+        <figure><canvas class="ex" data-cap="10" data-p="4 6"></canvas><figcaption>4＋6</figcaption></figure>
+        <figure><canvas class="ex" data-cap="8" data-p="8"></canvas><figcaption>8の はこに 8</figcaption></figure>
+      </div>
+      <p>3・5・7・9の ブロックは でっぱりが あるよ。「さかさま」「うらがえし」で むきを かえて、でこと ぼこを <ruby>組<rt>く</rt></ruby>み<ruby>合<rt>あ</rt></ruby>わせよう。</p>
+    </section>
+    <section class="phrase how">
+      <h3>✖ こんな <ruby>時<rt>とき</rt></ruby>は、その はこは もう ぴったりに できないよ</h3>
+      <div class="exrow">
+        <figure><canvas class="ex" data-cap="6" data-p="3a 2" data-x="1"></canvas><figcaption>すきまが できた</figcaption></figure>
+        <figure><canvas class="ex" data-cap="6" data-p="5a" data-x="1"></canvas><figcaption>のこりが 1マス</figcaption></figure>
+        <figure><canvas class="ex" data-cap="4" data-p="6" data-x="1"></canvas><figcaption>はみ<ruby>出<rt>で</rt></ruby>した</figcaption></figure>
+      </div>
+      <p><b style="color:#D64545"><ruby>赤<rt>あか</rt></ruby>い <ruby>線<rt>せん</rt></ruby></b>を こえたら ゲームオーバー。</p>
+    </section>
+    <section class="phrase how">
+      <h3>📈 レベル ・ 🪨 <ruby>石<rt>いし</rt></ruby> ・ ✨ ボーナス</h3>
+      <p>30びょう ごとに レベルが 1つ <ruby>上<rt>あ</rt></ruby>がるよ（「レベル」の <ruby>下<rt>した</rt></ruby>の オレンジの ぼうが いっぱいに なったら つぎの レベル）。レベルが <ruby>上<rt>あ</rt></ruby>がると、ブロックが おちるのが はやく なるよ。</p>
+      <p>レベル2から、はこに「<ruby>石<rt>いし</rt></ruby>」が おちて <ruby>来<rt>く</rt></ruby>るよ。その はこを ぴったりに すると、<ruby>石<rt>いし</rt></ruby>も いっしょに きえるよ。<br>つかえる はこを ぜんぶ からっぽに すると「ぜんぶ からっぽ ボーナス」！</p>
+    </section>
+    <section class="phrase how">
+      <h3>🎮 うごかしかた</h3>
+      <table class="howtable">
+        <tr><th>ボタン</th><th>キーボード</th><th>すること</th></tr>
+        <tr><td>◀ <ruby>左<rt>ひだり</rt></ruby> ／ ▶ <ruby>右<rt>みぎ</rt></ruby></td><td>← →</td><td>となりの はこへ うごかす（はこを タッチしても いいよ）</td></tr>
+        <tr><td>↻ さかさま</td><td>↑</td><td>でっぱりを <ruby>上<rt>うえ</rt></ruby>・<ruby>下<rt>した</rt></ruby>に する</td></tr>
+        <tr><td>⇋ うらがえし</td><td>X</td><td>でっぱりを <ruby>左<rt>ひだり</rt></ruby>・<ruby>右<rt>みぎ</rt></ruby>に する</td></tr>
+        <tr><td>⇄ とりかえ</td><td>C</td><td>「つぎ」の ブロックと 1<ruby>回<rt>かい</rt></ruby>だけ とりかえる</td></tr>
+        <tr><td>▼ すとん</td><td>Space</td><td><ruby>一気<rt>いっき</rt></ruby>に おとす（↓ は 1マスずつ）</td></tr>
+        <tr><td><ruby>止<rt>と</rt></ruby>める</td><td>P</td><td><ruby>一<rt>ひと</rt></ruby><ruby>休<rt>やす</rt></ruby>み</td></tr>
+      </table>
+    </section>
+    <div class="songctl"><button class="big" id="howStart2">はじめる</button><button class="ghostbtn" id="howBack2">もどる</button></div>
+  </div>
+</div>
+
+<div class="songpage" id="songPage" hidden>
+  <div class="songwrap">
+    <h2>🎵 ぴったんこボックスの <ruby>歌<rt>うた</rt></ruby></h2>
+    <p class="songlead">ゲームの <ruby>音楽<rt>おんがく</rt></ruby>に <ruby>言<rt>こと</rt></ruby>ばを つけたよ。4<ruby>小節<rt>しょうせつ</rt></ruby>ずつの まとまりが 4つ（①〜④）で できて いるよ。</p>
+    <div class="songctl"><button class="big" id="songPlay">▶ <ruby>聞<rt>き</rt></ruby>く</button><button class="ghostbtn" id="songBack">もどる</button></div>
+    <div id="songScore"></div>
+    <p class="songnote">● <ruby>色<rt>いろ</rt></ruby>の ついた ますが 1つの <ruby>音<rt>おと</rt></ruby>。<ruby>長<rt>なが</rt></ruby>い ますほど <ruby>長<rt>なが</rt></ruby>く のばすよ。<br>● <ruby>上<rt>うえ</rt></ruby>に あるほど <ruby>高<rt>たか</rt></ruby>い <ruby>音<rt>おと</rt></ruby>。<ruby>文字<rt>もじ</rt></ruby>の <ruby>上<rt>うえ</rt></ruby>に「・」が ある <ruby>音<rt>おと</rt></ruby>は 1オクターブ <ruby>高<rt>たか</rt></ruby>い <ruby>音<rt>おと</rt></ruby>。</p>
+    <div class="songctl"><button class="ghostbtn" id="songBack2">もどる</button></div>
+  </div>
+</div>
+
+<script>
+(() => {
+const CAPS = [4, 6, 8, 10, 12, 12, 10, 8, 6, 4];
+const GAP = 0.7;   // はこと はこの あいだ(マス)。せまくして スマホでも おおきく みせる
+const COLS = GAP + CAPS.length*(2+GAP), ROWS = 18;   // play rows; one extra row below for labels
+const LIMIT = 5;   // じょうげんせん: ここより うえに はみ出したら おしまい
+const COLORS = {S:'#8C8F99',2:'#F2545B',3:'#F7922F',4:'#F2B705',5:'#6DBE45',6:'#22B5A6',7:'#3A86FF',8:'#8E6CEF',9:'#E05FAE'};
+const field = document.getElementById('field');
+const ctx = field.getContext('2d');
+const nextCv = document.getElementById('next');
+const nctx = nextCv.getContext('2d');
+const $ = id => document.getElementById(id);
+
+let cs = 30, boxes, cur, nextN, score = 0, pts = 0, best = 0, state = 'title';
+let lastOver = false, lastN = 0, overTimer = 0;
+// ---------- おはなし: ぴったりの はこは なにかが つまった「ぴったんこボックス」に なる ----------
+const TREATS = {
+  ame:     {n:'あめ'},
+  caramel: {n:'キャラメル'},
+  soft:    {n:'ソフトキャンディ'},
+  mikan:   {n:'みかん'},
+  toy:     {n:'おもちゃの ブロック'},
+  origami: {n:'おりがみ'},
+  bikkuri: {n:'びっくりばこ'}
+};
+// はこの おおきさで はいって いる ものが かわる(びっくりばこは 12の はこだけ)
+const TREAT_POOL = {4:['ame','caramel'], 6:['caramel','soft','ame'], 8:['soft','origami','mikan'],
+                    10:['mikan','toy','origami'], 12:['toy','mikan','bikkuri']};
+let got = [], gotPop = 1;
+// ぜんぶ からっぽ ボーナス: まえに からっぽに なってから ぴったりに した はこの かず × 10てん
+let sinceEmpty = 0, emptyBonus = 0, banner = null;
+const shelfCv = document.getElementById('shelf'), shctx = shelfCv.getContext('2d');
+let fallMs = 650, level = 1, acc = 0, flashes = [], msg = null, audio = null;
+try { best = +localStorage.getItem('pittanko-best-pt') || 0; } catch(e) {}   // さいこうは てんで きろく
+// ---------- きろく: あそんだ ひ・てん・ぴったりの かずを この パソコン(ブラウザ)に のこす ----------
+const T_STOP = '<ruby>止<rt>と</rt></ruby>める';   // 2年生までの 漢字は ルビつき
+const REC_KEY = 'pittanko-records', REC_MAX = 30;
+let bestAtStart = 0, recFrom = null;
+function loadRecords(){ try { return JSON.parse(localStorage.getItem(REC_KEY)) || []; } catch(e) { return []; } }
+function saveRecord(r){
+  const list = [r, ...loadRecords()].slice(0, REC_MAX);
+  try { localStorage.setItem(REC_KEY, JSON.stringify(list)); } catch(e) {}
+}
+function fmtDate(t){ const d = new Date(t), z = v => String(v).padStart(2,'0'); return `${d.getMonth()+1}/${d.getDate()} ${z(d.getHours())}:${z(d.getMinutes())}`; }
+function showRecLine(){ $('recLine').innerHTML = best ? `🏆 さいこう ${best}<ruby>点<rt>てん</rt></ruby>` : ''; }
+function openRecords(from){
+  recFrom = from; const list = loadRecords();
+  $('recBest').innerHTML = `🏆 さいこう ${best}<ruby>点<rt>てん</rt></ruby>`;
+  $('recList').innerHTML = list.length
+    ? `<table><tr><th><ruby>日<rt>ひ</rt></ruby>にち</th><th>ぴったり</th><th>レベル</th><th style="text-align:right"><ruby>点<rt>てん</rt></ruby></th></tr>` +
+      list.map(r => `<tr class="${r.pts===best && best ? 'top' : ''}"><td>${fmtDate(r.t)}</td><td>${r.n}こ</td><td>${r.lv}</td><td class="pt">${r.pts}点</td></tr>`).join('') + `</table>`
+    : `<div class="none">まだ きろくが ないよ。あそんでみよう！</div>`;
+  $(from).hidden = true; $('recBox').hidden = false;
+}
+function closeRecords(){ $('recBox').hidden = true; if (recFrom) $(recFrom).hidden = false; showRecLine(); }
+$('best').textContent = best;
+
+function mkGrid(h){ return Array.from({length:h}, () => [0,0]); }
+function reset(){
+  boxes = CAPS.map((cap,i) => ({cap, h:cap/2, x:GAP+i*(2+GAP), top:ROWS-cap/2, grid:mkGrid(cap/2), count:0, filled:0, stone:0, over:[], shake:0}));
+  score = 0; pts = 0; level = 1; playMs = 0; got = []; gotPop = 1; sinceEmpty = 0; emptyBonus = 0; banner = null; fallMs = 650; acc = 0; flashes = []; msg = null; cur = null;
+  $('score').textContent = 0; $('pts').textContent = 0; $('level').textContent = 1;
+  nextN = rnd();
+}
+// つぎの ブロックは はこの ようすを みて きめる。
+// ぴったりに できる かず・まだ だいじょうぶな かずが でやすく、どこにも はいらない かずは でにくい
+function rnd(){
+  const w = [];
+  for (let n=2; n<=9; n++){
+    let best = 0;
+    for (let s=0; s<boxes.length; s++) for (const bt of [true,false]) for (const bl of [true,false]){
+      const cells = shape(n,bt,bl), r = classify(s,n,cells,landY(s,cells,0));
+      if (r.fit) best = Math.max(best, r.result==='clear' ? 4 : r.result==='good' ? 2 : r.result==='lock' ? 0.3 : 0.2);
+    }
+    w.push(best);
+  }
+  let sum = w.reduce((a,b)=>a+b,0);
+  if (!sum){ w.fill(1); sum = w.length; }
+  let x = Math.random()*sum;
+  for (let i=0; i<w.length; i++){ x -= w[i]; if (x < 0) return 2+i; }
+  return 9;
+}
+
+// bt: bump on top, bl: bump on left (odd pieces only)
+function shape(n, bt, bl){
+  const rows = Math.ceil(n/2), out = [];
+  for (let r=0; r<rows; r++){
+    const single = n%2 && ((bt && r===0) || (!bt && r===rows-1));
+    if (single) out.push({c: bl?0:1, r}); else out.push({c:0,r},{c:1,r});
+  }
+  return out;
+}
+const rowsOf = n => Math.ceil(n/2);
+function occupied(b,row,col){ if(row>=ROWS) return true; if(b.over.some(o => o.r===row && o.c===col)) return true; if(row<b.top) return false; return !!b.grid[row-b.top][col]; }
+function hits(slot,cells,y){ const b=boxes[slot]; return cells.some(k => occupied(b,y+k.r,k.c)); }
+function landY(slot,cells,y){ while(!hits(slot,cells,y+1)) y++; return y; }
+
+// result: 'clear' (ぴったり), 'good' (まだ だいじょうぶ), 'lock' (はこが うまって つかえなくなる), or fit:false (はいらない)
+function classify(slot,n,cells,y){
+  const b = boxes[slot];
+  // つかえない はこの うえは「おきば」。せんまでなら つみかさねて おける
+  // もう ぴったりに できない はこ(locked)には、そのまま つみかさねる(×は ださない)
+  if (b.locked) return {fit:true, result:'stack'};
+  // はいりきらない ときは、はみ出した まま つみかさなって その はこは つかえなくなる
+  if (cells.some(k => y+k.r < b.top)) return {fit:true, result:'lock', over:true, why:'はみ出ちゃった…'};
+  const g = b.grid.map(r => r.slice());
+  cells.forEach(k => { g[y+k.r-b.top][k.c] = 1; });
+  let holes = false;
+  for (let c=0;c<2;c++){ let seen=false; for (let r=0;r<b.h;r++){ if(g[r][c]) seen=true; else if(seen) holes=true; } }
+  // いくつ くみあわせても よい(1こだけでも よい)。すきま なく ちょうど いっぱいに なれば ぴったり
+  const count = b.count+1, filled = b.filled+n, rest = b.cap-filled;
+  if (!holes && rest===0) return {fit:true, result:'clear'};
+  if (!holes && rest>=2) return {fit:true, result:'good'};
+  let why = 'ぴったりに ならなかった…';
+  if (holes) why = 'すきまが できちゃった…';
+  else if (rest===1) why = '1マスだけの ブロックは おちて こない…';
+  return {fit:true, result:'lock', why};
+}
+function anyFits(n){
+  for (let s=0;s<boxes.length;s++) for (const bt of [true,false]) for (const bl of [true,false]){
+    const cells = shape(n,bt,bl); if (classify(s,n,cells,landY(s,cells,0)).fit) return true;
+  }
+  return false;
+}
+
+function spawn(){
+  cur = {n:nextN, bt:true, bl:true, slot: cur ? cur.slot : Math.floor(CAPS.length/2), y:0, wob:0, swapped:false};
+  nextN = rnd(); drawNext();
+  $('bSwap').disabled = false;
+  acc = 0;
+}
+const curCells = () => shape(cur.n,cur.bt,cur.bl);
+
+function move(d){
+  if (state!=='play') return;
+  const s = cur.slot+d; if (s<0||s>boxes.length-1) return;
+  const bottom = cur.y + rowsOf(cur.n) - 1;
+  if (bottom < boxes[cur.slot].top && bottom < boxes[s].top && !hits(s,curCells(),cur.y)){ cur.slot = s; tone(520,.05); }
+}
+function moveTo(s){ if(state!=='play') return; const d = Math.sign(s-cur.slot); while(cur.slot!==s){ const before=cur.slot; move(d); if(cur.slot===before) break; } }
+function turn(kind){
+  if (state!=='play' || cur.n%2===0) { if(state==='play') tone(440,.05); return; }
+  const bt = kind==='rot' ? !cur.bt : cur.bt, bl = !cur.bl;
+  const cells = shape(cur.n,bt,bl);
+  for (const dy of [0,-1,-2]){ const y=cur.y+dy; if (y>=0 && !hits(cur.slot,cells,y)){ cur.bt=bt; cur.bl=bl; cur.y=y; tone(660,.06); return; } }
+}
+// とりかえ: いまの ブロックと「つぎ」を 1かいだけ いれかえる
+function swap(){
+  if (state!=='play' || cur.swapped) { if(state==='play') tone(440,.05); return; }
+  const n = cur.n; cur.n = nextN; nextN = n; cur.bt = true; cur.bl = true; cur.swapped = true;
+  if (hits(cur.slot,curCells(),cur.y)) cur.y = 0;
+  drawNext(); tone(780,.06); $('bSwap').disabled = true;
+}
+function drop(){ if(state!=='play') return; cur.y = landY(cur.slot,curCells(),cur.y); land(); }
+// ↓キー: 1マスずつ おろす(おしっぱなしで はやく おちる)
+function softDrop(){ if(state!=='play') return; acc = 0; if (!hits(cur.slot,curCells(),cur.y+1)) cur.y++; else land(); }
+
+function land(){
+  const cells = curCells(), b = boxes[cur.slot];
+  const res = classify(cur.slot,cur.n,cells,cur.y);
+  if (!res.fit && !anyFits(cur.n)){
+    // どこにも はいらない: おちた ところで とまって、すこし みせてから おしまい
+    state = 'ending'; b.shake = 1; bgmStop(); tone(180,.18,'square');
+    msg = {text: boxes.some(x => !x.locked) ? `「${cur.n}」が はいる はこが ない…` : 'ぜんぶの はこが うまった…', t:0};
+    setTimeout(gameOver, 1400);
+    return;
+  }
+  if (!res.fit){
+    msg = {text:res.why, t:0}; b.shake = 1; cur.y = 0; cur.wob = 1; tone(180,.18,'square');
+    return;
+  }
+  cells.forEach(k => { const r = cur.y+k.r;
+    if (r < b.top) b.over.push({r, c:k.c, v:cur.n}); else b.grid[r-b.top][k.c] = cur.n; });
+  if (res.result==='stack'){
+    b.shake = .5; tone(330,.1,'triangle');
+  } else {
+    b.count++; b.filled += cur.n;
+    if (res.result==='lock'){
+      b.locked = true; b.shake = 1; msg = {text:res.why, t:0};
+      tone(260,.15,'triangle'); setTimeout(()=>tone(196,.25,'triangle'),130);
+    } else tone(700,.08);
+    if (res.result==='clear'){
+      flashes.push({x:b.x, top:b.top, h:b.h, cap:b.cap, grid:b.grid, t:0});
+      const hadStone = b.stone;
+      b.grid = mkGrid(b.h); b.count = 0; b.filled = 0; b.stone = 0;   // いしも いっしょに きえる
+      score++; $('score').textContent = score;
+      pts += b.cap; $('pts').textContent = pts;   // はこの かずが そのまま てんに なる
+      gainBox(b.cap, hadStone);
+      checkAllEmpty();
+      afterClear(b);
+      if (pts>best){ best=pts; $('best').textContent=best; try{localStorage.setItem('pittanko-best-pt',best);}catch(e){} }
+      setTimeout(()=>{tone(880,.1);setTimeout(()=>tone(1175,.16),90);},40);
+    }
+  }
+  // じょうげんせんを こえた・ぜんぶの はこが つかえなくなった → すこし みせてから おしまい
+  const overLine = cells.some(k => cur.y+k.r < LIMIT);
+  if (overLine){
+    lastOver = overLine; lastN = cur.n; cur = null;
+    if (overLine){ msg = {text:'せんを こえちゃった…', t:0}; b.shake = 1; }
+    state = 'ending'; bgmStop();
+    setTimeout(gameOver, 1400);
+    return;
+  }
+  spawn();
+}
+
+// ---------- むずかしさ ----------
+// レベルは あそんで いる じかんで あがる(30びょう ごと。とめて いる あいだは かぞえない)。
+// レベルが あがると おちる はやさが はやくなる。
+// レベル2から、ぴったりの あと からっぽの はこに「いし」が おちてくる(はこの なかが へるので ひきざんが いる)。
+const LEVEL_MS = 30000;
+let playMs = 0;
+function tickLevel(dt){
+  playMs += dt;
+  const lv = 1 + Math.floor(playMs / LEVEL_MS);
+  if (lv > level){
+    level = lv; $('level').textContent = level;
+    fallMs = Math.max(160, Math.round(650*Math.pow(0.85, level-1)));
+    const show = () => { msg = {text:`レベル ${level}! はやくなるよ`, t:0}; };
+    if (msg) setTimeout(show, 1300); else show();
+    tone(660,.08); setTimeout(()=>tone(990,.12),80);
+  }
+  $('lvFill').style.width = ((playMs % LEVEL_MS) / LEVEL_MS * 100) + '%';
+}
+// ぴったりの あと: レベル2からは いしが おちて くる ことが ある
+function afterClear(cleared){
+  if (level >= 2 && Math.random() < (level>=4 ? .7 : .45) && placeStone(cleared)){
+    // 「いしも きえた！」などを みせて いる ときは、おわってから だす
+    const show = () => { msg = {text:'いしが おちてきた!', t:0}; };
+    if (msg) setTimeout(show, 1300); else show();
+  }
+}
+// cleared: いま ぴったりに した はこ。そこには すぐに いしを おとさない
+function placeStone(cleared){
+  const max = Math.min(level-1, 4);
+  if (boxes.filter(b => b.stone).length >= max) return false;
+  const cand = boxes.filter(b => b !== cleared && !b.locked && !b.stone && b.count===0 && b.cap>=6);
+  if (!cand.length) return false;
+  const b = cand[Math.floor(Math.random()*cand.length)];
+  const size = (level>=4 && b.cap>=8 && Math.random()<.5) ? 4 : 2;   // のこりが 4マス いじょうに なるように
+  for (let r=b.h-size/2; r<b.h; r++) b.grid[r] = ['S','S'];
+  b.stone = size; b.filled = size; b.shake = 1;
+  setTimeout(()=>tone(150,.2,'square'),500);
+  return true;
+}
+
+// なかみの つまった ぴったんこボックス(ちょくほうたい)を かく。
+// ゲームの はこと おなじ 2れつ × (cap/2) で、なかみも cap こ ならぶ。u = 1マスの おおきさ
+const PACK_DEPTH = 0.55;   // おくゆき(マス)
+const packSize = cap => ({w: (cap/2 + PACK_DEPTH), h: (2 + PACK_DEPTH)});
+function drawPack(c, cx, cy, u, cap, kind, alpha = 1){
+  const cols = cap/2, w = cols*u, h = 2*u, d = PACK_DEPTH*u;
+  const x = cx - (w+d)/2, y = cy - (h+d)/2 + d;   // まえの めんの ひだりうえ
+  c.save(); c.globalAlpha = alpha; c.lineJoin = 'round';
+  const poly = (pts, fill) => { c.beginPath(); pts.forEach(([a,b],i) => i ? c.lineTo(a,b) : c.moveTo(a,b)); c.closePath(); c.fillStyle = fill; c.fill();
+    c.strokeStyle = '#8A5A2B'; c.lineWidth = Math.max(1, u*0.06); c.stroke(); };
+  poly([[x,y],[x+d,y-d],[x+w+d,y-d],[x+w,y]], '#EBC48C');          // うえの めん
+  poly([[x+w,y],[x+w+d,y-d],[x+w+d,y+h-d],[x+w,y+h]], '#B47E45');  // よこの めん
+  poly([[x,y],[x+w,y],[x+w,y+h],[x,y+h]], '#D9A15E');              // まえの めん
+  // まどから なかみが みえる
+  const m = u*0.14, ix = x+m, iy = y+m, iw = w-2*m, ih = h-2*m, q = Math.min(iw/cols, ih/2);
+  c.fillStyle = kind==='bikkuri' ? '#7B4FD6' : '#FFF5E2'; c.fillRect(ix, iy, iw, ih);
+  c.beginPath(); c.rect(ix, iy, iw, ih); c.clip();
+  const dot = (a,b,r,col) => { c.fillStyle = col; c.beginPath(); c.arc(a,b,r,0,7); c.fill(); };
+  const COLS4 = ['#F2545B','#F2B705','#6DBE45','#3A86FF','#E05FAE'];
+  if (kind==='bikkuri'){
+    const fx = ix+iw/2, fy = iy+ih/2, r = ih*0.36;
+    dot(fx, fy, r, '#FFD23F');
+    dot(fx-r*.35, fy-r*.2, r*.13, '#27344F'); dot(fx+r*.35, fy-r*.2, r*.13, '#27344F');
+    c.strokeStyle = '#27344F'; c.lineWidth = Math.max(1, r*.12);
+    c.beginPath(); c.arc(fx, fy+r*.15, r*.38, .2, Math.PI-.2); c.stroke();
+    c.font = `900 ${ih*.45}px ${getComputedStyle(document.body).fontFamily}`;
+    c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('!', ix+iw*.12, iy+ih*.5); c.fillText('?', ix+iw*.88, iy+ih*.5);
+  } else {
+    for (let r=0; r<2; r++) for (let k=0; k<cols; k++){
+      const a = ix + (iw/cols)*(k+.5), b = iy + (ih/2)*(r+.5), i = r*cols+k;
+      if (kind==='ame'){
+        const col = COLS4[i % 5]; c.fillStyle = col;
+        c.beginPath(); c.moveTo(a-q*.44,b-q*.18); c.lineTo(a-q*.2,b); c.lineTo(a-q*.44,b+q*.18); c.fill();
+        c.beginPath(); c.moveTo(a+q*.44,b-q*.18); c.lineTo(a+q*.2,b); c.lineTo(a+q*.44,b+q*.18); c.fill();
+        dot(a,b,q*.25,col); dot(a-q*.08,b-q*.08,q*.07,'rgba(255,255,255,.7)');
+      } else if (kind==='caramel'){
+        c.fillStyle = '#B06A2A'; rr(c,a-q*.38,b-q*.38,q*.76,q*.76,q*.12); c.fill();
+        c.fillStyle = '#D9944F'; c.fillRect(a-q*.28,b-q*.3,q*.56,q*.13);
+      } else if (kind==='soft'){
+        // パステルいろの ソフトキャンディ(しろい つつみがみの はしっこつき)
+        const sc = ['#FFB3C7','#FFE08A','#B8E6A0','#B9D7FF'][i % 4];
+        c.fillStyle = '#FFFFFF'; rr(c,a-q*.46,b-q*.22,q*.92,q*.44,q*.08); c.fill();
+        c.fillStyle = sc; rr(c,a-q*.3,b-q*.3,q*.6,q*.6,q*.16); c.fill();
+        c.fillStyle = 'rgba(255,255,255,.6)'; rr(c,a-q*.2,b-q*.22,q*.22,q*.1,q*.05); c.fill();
+      } else if (kind==='mikan'){
+        dot(a,b,q*.38,'#F7922F'); dot(a-q*.12,b-q*.12,q*.1,'rgba(255,255,255,.45)');
+        c.fillStyle = '#4C9A2A'; c.beginPath(); c.ellipse(a+q*.12,b-q*.34,q*.14,q*.07,-.5,0,7); c.fill();
+      } else if (kind==='toy'){
+        c.fillStyle = COLS4[(i + r) % 4 === 2 ? 3 : (i + r) % 4]; rr(c,a-q*.42,b-q*.42,q*.84,q*.84,q*.1); c.fill();
+        [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([e,f]) => dot(a+e*q*.18,b+f*q*.18,q*.11,'rgba(255,255,255,.45)'));
+      } else if (kind==='origami'){
+        c.save(); c.translate(a,b); c.rotate(.3 + (i%3)*.25);
+        c.fillStyle = COLS4[i % 5]; c.fillRect(-q*.32,-q*.32,q*.64,q*.64);
+        c.strokeStyle = 'rgba(255,255,255,.65)'; c.lineWidth = Math.max(1,q*.05);
+        c.beginPath(); c.moveTo(-q*.32,-q*.32); c.lineTo(q*.32,q*.32); c.stroke(); c.restore();
+      }
+    }
+  }
+  c.restore();
+}
+// つかえる はこ(×で ない はこ)が ぜんぶ からっぽ(ブロックも いしも ない)に なったら ボーナス
+function checkAllEmpty(){
+  sinceEmpty++;
+  if (!boxes.every(x => x.locked || (x.count===0 && !x.stone))) return;
+  const bonus = sinceEmpty * 10;
+  pts += bonus; $('pts').textContent = pts; emptyBonus++; sinceEmpty = 0;
+  banner = {text:'ぜんぶ からっぽ！', sub:`ボーナス +${bonus}てん`, t:0};
+  [523,659,784,1047,1319,1568].forEach((f,i) => setTimeout(() => tone(f,.1,'square'), 380 + i*70));
+}
+// ぴったりが できたら、なにかが つまった ぴったんこボックスが 1こ もらえる
+function gainBox(cap, hadStone){
+  const pool = TREAT_POOL[cap];
+  let kind = pool[Math.floor(Math.random()*pool.length)];
+  if (kind==='bikkuri' && Math.random() < .5) kind = pool[0];   // びっくりばこは すこし めずらしい
+  got.push({kind, cap}); gotPop = 0;
+  if (flashes.length) flashes[flashes.length-1].kind = kind;
+  msg = {text: (hadStone ? 'いしも きえた！ ' : '') + `${TREATS[kind].n}が ${cap}こ つまってた！`.replace('びっくりばこが '+cap+'こ', 'びっくりばこが'), t:0};
+  setTimeout(() => { tone(1319,.08,'triangle'); setTimeout(() => tone(1760,.12,'triangle'), 70); }, 260);
+}
+// たなに ならべる(おおきさの ちがう はこを ひだりから つめて、ぜんぶ はいる おおきさに する)
+function layoutShelf(W, H, u, pad, gap){
+  let x = pad, y = pad, rowH = (2+PACK_DEPTH)*u, out = [];
+  for (const g of got){
+    const bw = packSize(g.cap).w*u;
+    if (x + bw > W - pad && x > pad){ x = pad; y += rowH + gap; }
+    out.push({x: x + bw/2, y: y + rowH/2}); x += bw + gap;
+  }
+  return {pos: out, bottom: y + rowH + pad};
+}
+function drawShelf(dt){
+  const W = shelfCv.clientWidth, H = shelfCv.clientHeight;
+  if (!W || !H) return;
+  const c = shctx, n = got.length;
+  c.fillStyle = '#F3E3C8'; c.fillRect(0,0,W,H);   // たな
+  const pad = 6, gap = 5;
+  let u = Math.min(16, (H - pad*2)/(2+PACK_DEPTH)), L = layoutShelf(W, H, u, pad, gap);
+  while (u > 3 && L.bottom > H){ u -= 0.5; L = layoutShelf(W, H, u, pad, gap); }
+  if (!n){
+    c.font = `700 ${Math.min(13, H*0.2)}px ${getComputedStyle(document.body).fontFamily}`;
+    c.fillStyle = 'rgba(156,101,51,.75)'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('ぴったんこボックス おきば', W/2, H/2);
+  }
+  gotPop = Math.min(1, gotPop + dt/420);
+  got.forEach((g, k) => {
+    const sc = k === n-1 ? 0.4 + 0.6*Math.min(1, gotPop*1.3) + Math.sin(Math.PI*gotPop)*0.25 : 1;
+    drawPack(c, L.pos[k].x, L.pos[k].y, u*sc, g.cap, g.kind);
+  });
+  const cap = n ? `🎁 あつめた ぴったんこボックス ${n}こ` : 'ぴったりの はこを あつめよう';
+  if ($('skyCap').textContent !== cap) $('skyCap').textContent = cap;
+}
+function gotSummary(){
+  return Object.keys(TREATS).filter(k => got.some(g => g.kind===k)).map(k => `${TREATS[k].n} ${got.filter(g => g.kind===k).length}`).join('・');
+}
+
+// ゲームオーバーの あとの「おめでとう」
+function winJingle(){
+  if (!audio || !bgmOn) return;
+  [[523,0],[659,.12],[784,.24],[1047,.36],[784,.6],[1047,.72]].forEach(([f,d],i) =>
+    setTimeout(() => tone(f, i>=4 ? .28 : .12, 'square'), d*1000));
+}
+function confetti(){
+  const box = $('confetti'), cols = ['#F2545B','#F7922F','#F2B705','#6DBE45','#22B5A6','#3A86FF','#8E6CEF','#E05FAE'];
+  box.innerHTML = '';
+  for (let i=0;i<70;i++){
+    const p = document.createElement('i');
+    p.style.left = Math.random()*100+'%';
+    p.style.background = cols[i%cols.length];
+    p.style.animationDuration = (1.8+Math.random()*1.6)+'s';
+    p.style.animationDelay = (Math.random()*0.6)+'s';
+    box.appendChild(p);
+  }
+}
+
+function gameOver(){
+  state = 'over';
+  const left = boxes.filter(b => !b.locked).length;
+  const n = cur ? cur.n : lastN;
+  $('overMsg').innerHTML = lastOver ? `「${n}」の ブロックが <ruby>線<rt>せん</rt></ruby>から はみ<ruby>出<rt>で</rt></ruby>て しまった` : `ぜんぶの はこが うまって しまった`;
+  saveRecord({t: Date.now(), pts, n: score, lv: level});
+  const isNew = pts > 0 && pts > bestAtStart;
+  const story = got.length ? `🎁 ぴったんこボックスが ${got.length}こ あつまったよ！<br>（${gotSummary()}）` : `つぎは ぴったりの はこを つくって、<ruby>中<rt>なか</rt></ruby>みを <ruby>見<rt>み</rt></ruby>て みよう！`;
+  $('overResult').innerHTML = (score ? `<span class="r0">🎉 おめでとう！ 🎉</span>` : '') + (isNew ? `<span class="rn">🏆 さいこう きろく！</span>` : '') +
+    `<span class="r1">ぴったりの はこが ${score}こ できたよ！</span><span class="rs">${story}</span>` + (emptyBonus ? `<span class="rs">✨ ぜんぶ からっぽ ボーナス ${emptyBonus}<ruby>回<rt>かい</rt></ruby></span>` : '') + `<span class="r2">${pts}<ruby>点<rt>てん</rt></ruby></span>`;
+  $('overLater').hidden = true; $('confetti').innerHTML = '';
+  $('overBox').hidden = false;
+  loseJingle();
+  // ガガ～ンが おわってから(2びょうご) けっかと おいわい
+  overTimer = setTimeout(() => {
+    $('overLater').hidden = false;
+    if (score){ confetti(); winJingle(); }
+  }, 2000);
+}
+
+function start(){
+  if (!audio){ try { audio = new (window.AudioContext||window.webkitAudioContext)(); } catch(e) {} }
+  clearTimeout(overTimer); $('confetti').innerHTML = ''; bestAtStart = best; $('recBox').hidden = true;
+  reset(); state='play'; $('startBox').hidden=true; $('overBox').hidden=true; $('homeBtn').hidden=false; $('pauseBtn').innerHTML=T_STOP; spawn();
+  bgmStart();
+}
+
+// ---------- BGM: 「ぴったんこボックスの うた」(オリジナル・ハ長調) ----------
+// 4しょうせつずつ 4つの まとまり。1しょうせつ = 8分音符 8こ。
+// 「おと:かし」、'-' は のばす、'.' は やすみ。この データから BGM と うたの ページの がくふを つくる
+const SONG = [
+  {name:'ぴったんこ', bars:[
+    'G5:ぴ . G5:た E5:ん C5:こ - - - G5:ぴ . G5:た E5:ん C5:こ - - -', 'C6:ぴっ - - - A5:た - A5:ん - G5:こ～～～～ - - - - - - -',
+    'A5:ぴ . A5:た F5:ん D5:こ - - - A5:ぴ . A5:た F5:ん D5:こ - - -', 'D6:ぴっ - - - B5:た - B5:ん - C6:こ～～～～ - - - - - - -']},
+  {name:'<ruby>組<rt>く</rt></ruby>み<ruby>合<rt>あ</rt></ruby>わせ', bars:[
+    'E5:で - G5:こ - A5:と～ - - - A5:ぼ - G5:こ - E5:と - G5:を -', 'A5:く - G5:み - E5:あ - D5:わ - C5:せ～ - - - - - - -',
+    'F5:で - A5:こ - C6:と～ - - - C6:ぼ - A5:こ - F5:と - A5:を -', 'B5:く - A5:み - G5:あ - F5:わ - G5:せ～ - - - - - - -']},
+  {name:'けそう！', bars:[
+    'C6:け - C6:そ - G5:う！ - . . C6:け - C6:そ - G5:う！ - . .', 'E5:ぴ . E5:た G5:ん C6:こ！ - - - . . . . C6:ポン - . .',
+    'A5:け - A5:そ - F5:う！ - . . A5:け - A5:そ - F5:う！ - . .', 'D5:ぴ . D5:た F5:ん B5:こ！ - - - . . . . G5:ポン - . .']},
+  {name:'ぴったんこボックス', bars:[
+    'G5:ぴ . G5:た E5:ん C5:こ - - - G5:ぴ . G5:た E5:ん C5:こ - - -', 'C6:ぴっ - - - A5:た - A5:ん - G5:こ～～～～ - - - - - - -',
+    'E5:ぴ . E5:た G5:ん C6:こー - - - - - - - . . . .', 'B5:ボッ - . . B5:ク - C6:ス！ - - - - - . . . .']}
+];
+const SONG_LINES = [   // うたの ページに のせる かし(1ぎょう = 2しょうせつ)
+  ['ぴったんこ ぴったんこ ぴったんこ～～～～', 'ぴったんこ ぴったんこ ぴったんこ～～～～'],
+  ['でこと～ ぼことを <ruby>組<rt>く</rt></ruby>み<ruby>合<rt>あ</rt></ruby>わせ～', 'でこと～ ぼことを <ruby>組<rt>く</rt></ruby>み<ruby>合<rt>あ</rt></ruby>わせ～'],
+  ['けそう！ けそう！ ぴったんこ！（ポン）', 'けそう！ けそう！ ぴったんこ！（ポン）'],
+  ['ぴったんこ ぴったんこ ぴったんこ～～～～', 'ぴったんこー ボックス！']
+];
+const SONG_TOK = SONG.flatMap(ph => ph.bars).join(' ').split(' ');
+const MEL = SONG_TOK.map(t => t.split(':')[0]);
+const LYR = SONG_TOK.map(t => t.split(':')[1] || '');
+const ROOTS = ['C3','A2','D2','G2', 'A2','C3','F2','G2', 'C3','C3','F2','G2', 'C3','A2','F2','G2'];
+const NOTE_I = {C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11};
+const hz = s => { const m = s.match(/^([A-G]#?)(\d)$/); return 440*Math.pow(2,(NOTE_I[m[1]] + 12*(+m[2]+1) - 69)/12); };
+let bgmOn = true, bgmGain = null, bgmTimer = null, bgmStep = 0, bgmNext = 0;
+try { bgmOn = localStorage.getItem('pittanko-bgm') !== '0'; } catch(e) {}
+
+function bgmVoice(type,f,t,d,vol){
+  const o = audio.createOscillator(), g = audio.createGain();
+  o.type = type; o.frequency.value = f;
+  g.gain.setValueAtTime(vol,t); g.gain.setValueAtTime(vol,t+d*0.7); g.gain.exponentialRampToValueAtTime(.0005,t+d);
+  o.connect(g).connect(bgmGain); o.start(t); o.stop(t+d+.02);
+}
+function bgmNoise(t,d,vol,hp){
+  const len = Math.floor(audio.sampleRate*d), buf = audio.createBuffer(1,len,audio.sampleRate), ch = buf.getChannelData(0);
+  for (let i=0;i<len;i++) ch[i] = Math.random()*2-1;
+  const s = audio.createBufferSource(), f = audio.createBiquadFilter(), g = audio.createGain();
+  s.buffer = buf; f.type = 'highpass'; f.frequency.value = hp;
+  g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(.0005,t+d);
+  s.connect(f).connect(g).connect(bgmGain); s.start(t);
+}
+function bgmKick(t){
+  const o = audio.createOscillator(), g = audio.createGain();
+  o.frequency.setValueAtTime(140,t); o.frequency.exponentialRampToValueAtTime(45,t+.12);
+  g.gain.setValueAtTime(.5,t); g.gain.exponentialRampToValueAtTime(.001,t+.14);
+  o.connect(g).connect(bgmGain); o.start(t); o.stop(t+.15);
+}
+function bgmTick(){
+  // ぴったりが ふえるほど すこしずつ はやくなる
+  const step = 60 / Math.min(176, 150 + (level-1)*3) / 4;   // 16分音符 1つ。レベルが あがると すこし はやく
+  while (bgmNext < audio.currentTime + 0.15){
+    const i = bgmStep % MEL.length, t = bgmNext, pos = i % 16, bar = Math.floor(i/16);
+    const n = MEL[i];
+    if (n !== '-' && n !== '.'){
+      let len = 1; while (MEL[(i+len) % MEL.length] === '-') len++;
+      bgmVoice('square', hz(n), t, step*len*0.92, .07);
+    }
+    const r = hz(ROOTS[bar]);
+    if (pos%2===0) bgmVoice('triangle', (pos/2)%2 ? r*2 : r, t, step*1.8, .22);   // ベースは 8分音符で
+    if (pos===0 || pos===8) bgmKick(t);
+    if (pos===4 || pos===12) bgmNoise(t,.12,.18,1500);
+    if (pos%4===2) bgmNoise(t,.04,.08,6000);
+    bgmStep++; bgmNext += step;
+  }
+}
+// おしまいの「ガガ～ン」: 4はくの くらい ジングル(ガ・ガ・～ン～ン)。おんがく OFF なら ならさない
+function loseJingle(){
+  if (!audio || !bgmOn) return;
+  if (audio.state==='suspended') audio.resume();
+  const out = audio.createGain(); out.gain.value = .5; out.connect(audio.destination);
+  const beat = 0.42, t0 = audio.currentTime + .05;
+  const hit = (t, notes, bass, d, fall) => {
+    notes.forEach(n => {
+      const o = audio.createOscillator(), g = audio.createGain();
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(hz(n), t);
+      if (fall) o.frequency.exponentialRampToValueAtTime(hz(n)*0.94, t+d);   // ～ンと さがる
+      g.gain.setValueAtTime(.07, t); g.gain.setValueAtTime(.07, t+d*0.35); g.gain.exponentialRampToValueAtTime(.0005, t+d);
+      o.connect(g).connect(out); o.start(t); o.stop(t+d+.05);
+    });
+    const b = audio.createOscillator(), bg = audio.createGain();
+    b.type = 'square'; b.frequency.setValueAtTime(hz(bass), t);
+    if (fall) b.frequency.exponentialRampToValueAtTime(hz(bass)*0.94, t+d);
+    bg.gain.setValueAtTime(.18, t); bg.gain.exponentialRampToValueAtTime(.0005, t+d);
+    b.connect(bg).connect(out); b.start(t); b.stop(t+d+.05);
+  };
+  hit(t0,          ['C4','D#4','F#4'], 'C2', beat*0.8);          // ガ
+  hit(t0+beat,     ['C4','D#4','F#4'], 'C2', beat*0.8);          // ガ
+  hit(t0+beat*2,   ['B3','D4','F4','G#4'], 'B1', beat*2.2, true); // ～ン(2はく)
+  setTimeout(() => out.disconnect(), (beat*4.5)*1000);
+}
+function bgmStart(){
+  if (!audio || !bgmOn || bgmTimer || state!=='play') return;
+  if (audio.state==='suspended') audio.resume();
+  bgmGain = audio.createGain(); bgmGain.gain.value = .5; bgmGain.connect(audio.destination);
+  bgmNext = audio.currentTime + .05;
+  bgmTimer = setInterval(bgmTick, 25); bgmTick();
+}
+function bgmStop(){
+  if (bgmTimer){ clearInterval(bgmTimer); bgmTimer = null; }
+  if (bgmGain){ const g = bgmGain; g.gain.setTargetAtTime(0,audio.currentTime,.03); setTimeout(()=>g.disconnect(),300); bgmGain = null; }
+}
+function bgmToggle(){
+  bgmOn = !bgmOn;
+  try { localStorage.setItem('pittanko-bgm', bgmOn ? '1' : '0'); } catch(e) {}
+  if (bgmOn) bgmStart(); else bgmStop();
+  bgmLabels();
+}
+function bgmLabels(){
+  document.querySelectorAll('.bgmToggle').forEach(b => {
+    b.classList.toggle('off', !bgmOn);
+    b.setAttribute('aria-pressed', bgmOn);
+    if (b.classList.contains('stat')) b.innerHTML = `♪<small>${bgmOn?'ON':'OFF'}</small>`;
+    else b.innerHTML = `♪ <ruby>音楽<rt>おんがく</rt></ruby> ${bgmOn?'ON':'OFF'}`;
+  });
+}
+
+// ---------- うたの ページ ----------
+const SOLFA = {C:'ド',D:'レ',E:'ミ',F:'ファ',G:'ソ',A:'ラ',B:'シ'};
+const SOLFA_COL = {C:'#F2545B',D:'#F7922F',E:'#E8A800',F:'#4FA83A',G:'#16A394',A:'#3A86FF',B:'#8E6CEF'};
+const degOf = n => (+n[n.length-1] - 5)*7 + 'CDEFGAB'.indexOf(n[0]);   // ド(C5)=0 … ミ(E6)=9
+let songBuilt = false, songTimers = [], songGain = null, songIdx = -1;
+function buildSong(){
+  if (songBuilt) return; songBuilt = true;
+  let step = 0, html = '';
+  SONG.forEach((ph, pi) => {
+    html += `<section class="phrase"><h3><span class="pn">${'①②③④'[pi]}</span> ${ph.name}</h3><div class="bars">`;
+    ph.bars.forEach(bar => {
+      const tk = bar.split(' ');
+      let notes = '', lyr = '';
+      tk.forEach((t, k) => {
+        const [n, l] = t.split(':');
+        if (n === '-' || n === '.') return;
+        let len = 1; while (tk[k+len] === '-') len++;
+        const d = degOf(n), hi = +n[n.length-1] >= 6;
+        const pos = `left:calc(${k/16*100}% + 1px);width:calc(${len/16*100}% - 2px)`;
+        notes += `<div class="nt${hi ? ' hi' : ''}${len === 1 ? ' short' : ''}" data-s="${step+k}" style="${pos};top:${(9-d)*7}px;background:${SOLFA_COL[n[0]]}">${SOLFA[n[0]]}</div>`;
+        lyr += `<div class="ly" data-s="${step+k}" style="${pos}">${l || ''}</div>`;
+      });
+      html += `<div class="bar"><div class="roll">${notes}</div><div class="lyr">${lyr}</div></div>`;
+      step += 16;
+    });
+    html += `</div><p class="pline">${SONG_LINES[pi].join('<br>')}</p></section>`;
+  });
+  $('songScore').innerHTML = html;
+}
+function openSong(){ buildSong(); $('songPage').hidden = false; $('songPage').scrollTop = 0; }
+function closeSong(){ stopSong(); $('songPage').hidden = true; }
+function markSong(i){
+  document.querySelectorAll('#songScore .now').forEach(e => e.classList.remove('now'));
+  document.querySelectorAll(`#songScore [data-s="${i}"]`).forEach(e => { e.classList.add('now'); if (e.classList.contains('nt')) e.scrollIntoView({block:'nearest', behavior:'smooth'}); });
+}
+function stopSong(){
+  songTimers.forEach(clearTimeout); songTimers = [];
+  if (songGain){ try { songGain.disconnect(); } catch(e) {} songGain = null; }
+  markSong(-1); $('songPlay').innerHTML = '▶ <ruby>聞<rt>き</rt></ruby>く';
+}
+// うたいやすい はやさ(1ぷんに 112はく)で 1かい とおして ならす
+function playSong(){
+  if (songGain){ stopSong(); return; }
+  if (!audio){ try { audio = new (window.AudioContext||window.webkitAudioContext)(); } catch(e) { return; } }
+  if (audio.state === 'suspended') audio.resume();
+  songGain = audio.createGain(); songGain.gain.value = .5; songGain.connect(audio.destination);
+  const g = songGain, step = 60/112/4, t0 = audio.currentTime + .1;
+  const voice = (type, f, t, d, vol) => { const o = audio.createOscillator(), v = audio.createGain();
+    o.type = type; o.frequency.value = f; v.gain.setValueAtTime(vol,t); v.gain.setValueAtTime(vol,t+d*0.75); v.gain.exponentialRampToValueAtTime(.0005,t+d);
+    o.connect(v).connect(g); o.start(t); o.stop(t+d+.02); };
+  MEL.forEach((n, i) => {
+    const t = t0 + i*step, bar = Math.floor(i/16), r = hz(ROOTS[bar]);
+    if (n !== '-' && n !== '.'){
+      let len = 1; while (MEL[i+len] === '-') len++;
+      voice('square', hz(n), t, step*len*0.92, .08);
+      songTimers.push(setTimeout(() => markSong(i), (t - audio.currentTime)*1000));
+    }
+    if (i%2===0) voice('triangle', (i/2)%2 ? r*2 : r, t, step*1.8, .2);
+  });
+  songTimers.push(setTimeout(stopSong, (t0 - audio.currentTime + MEL.length*step)*1000 + 300));
+  $('songPlay').innerHTML = '■ <ruby>止<rt>と</rt></ruby>める';
+}
+
+function tone(f,d,type='sine'){
+  if(!audio) return;
+  try { const o=audio.createOscillator(), g=audio.createGain(); o.type=type; o.frequency.value=f;
+    g.gain.setValueAtTime(.12,audio.currentTime); g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);
+    o.connect(g).connect(audio.destination); o.start(); o.stop(audio.currentTime+d); } catch(e) {}
+}
+
+// ---------- drawing ----------
+function size(){
+  // あそぶ ばしょは、たなと せつめい(.side)を かぞえずに、よこはばと たかさに おさまる いちばん おおきい おおきさに する。
+  // そのあと、よこに あきが あれば .side を よこへ、なければ したの あいた ところへ おく
+  const body = document.querySelector('.body'), side = document.querySelector('.side');
+  body.classList.remove('beside'); side.style.width = '';
+  field.style.width = '0px'; field.style.height = '0px';
+  side.style.display = 'none';
+  const used = document.querySelector('.wrap').offsetHeight, bw = body.clientWidth;
+  side.style.display = '';
+  const hFit = Math.floor((window.innerHeight - used - 4) / (ROWS+1.1));
+  cs = Math.max(9, Math.min(Math.floor(Math.min(bw, 760)/COLS), hFit));
+  const free = bw - cs*COLS - 16;
+  if (free >= 170){ body.classList.add('beside'); side.style.width = Math.min(240, free) + 'px'; }
+  const dpr = window.devicePixelRatio||1;
+  field.style.width = cs*COLS+'px'; field.style.height = cs*(ROWS+1.1)+'px';
+  field.width = Math.round(cs*COLS*dpr); field.height = Math.round(cs*(ROWS+1.1)*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  // たなの たかさは、のこりの あいた ところに あわせる
+  shelfCv.style.height = '0px';
+  const beside = body.classList.contains('beside');
+  const room = beside ? window.innerHeight - (side.getBoundingClientRect().top + window.scrollY) - side.offsetHeight - 12
+                      : window.innerHeight - document.querySelector('.wrap').offsetHeight - 4;
+  shelfCv.style.height = Math.round(Math.max(beside ? 90 : 64, Math.min(beside ? 280 : 200, room))) + 'px';
+  nextCv.width = Math.round(nextCv.clientWidth*dpr); nextCv.height = Math.round(nextCv.clientHeight*dpr);
+  nctx.setTransform(dpr,0,0,dpr,0,0);
+  shelfCv.width = Math.round(shelfCv.clientWidth*dpr); shelfCv.height = Math.round(shelfCv.clientHeight*dpr);
+  shctx.setTransform(dpr,0,0,dpr,0,0);
+  drawNext();
+}
+function rr(c,x,y,w,h,r){ c.beginPath(); c.roundRect ? c.roundRect(x,y,w,h,r) : c.rect(x,y,w,h); }
+function cell(c,x,y,s,col,alpha=1){
+  c.globalAlpha = alpha;
+  const p = s*0.06;
+  c.fillStyle = col; rr(c,x+p,y+p,s-2*p,s-2*p,s*0.22); c.fill();
+  c.fillStyle = 'rgba(255,255,255,.35)'; rr(c,x+s*0.18,y+s*0.14,s*0.4,s*0.16,s*0.08); c.fill();
+  c.globalAlpha = 1;
+}
+function numLabel(c,text,x,y,s){
+  c.font = `900 ${s}px ${getComputedStyle(document.body).fontFamily}`;
+  c.textAlign='center'; c.textBaseline='middle';
+  c.lineWidth = s*0.22; c.strokeStyle='rgba(39,52,79,.85)'; c.lineJoin='round';
+  c.strokeText(text,x,y); c.fillStyle='#fff'; c.fillText(text,x,y);
+}
+function drawPiece(c,n,bt,bl,px,py,s,alpha=1){
+  shape(n,bt,bl).forEach(k => cell(c,px+k.c*s,py+k.r*s,s,COLORS[n],alpha));
+  if (alpha>0.5) numLabel(c,String(n),px+s,py+rowsOf(n)*s/2,s*0.95);
+}
+function drawNext(){
+  // つぎの ブロックは わくいっぱいに おおきく かく
+  const W = nextCv.clientWidth, H = nextCv.clientHeight;
+  nctx.clearRect(0,0,W,H);
+  if (nextN==null || state==='title') return;
+  const s = Math.floor(Math.min(W/2.2, H/(rowsOf(nextN)+0.2))), h = rowsOf(nextN)*s;
+  drawPiece(nctx,nextN,true,true,W/2-s,H/2-h/2,s);
+}
+
+function render(dt){
+  const W = cs*COLS, H = cs*(ROWS+1.1);
+  ctx.clearRect(0,0,W,H);
+  // lanes
+  boxes.forEach((b,i) => {
+    ctx.fillStyle = (state==='play' && cur && cur.slot===i) ? 'rgba(255,201,60,.18)' : 'rgba(39,52,79,.035)';
+    ctx.fillRect(b.x*cs, 0, 2*cs, b.top*cs);
+  });
+  // じょうげんせん
+  ctx.save(); ctx.strokeStyle = 'rgba(214,69,69,.75)'; ctx.lineWidth = Math.max(2, cs*0.1);
+  ctx.setLineDash([cs*0.4, cs*0.25]); ctx.beginPath(); ctx.moveTo(0, LIMIT*cs); ctx.lineTo(W, LIMIT*cs); ctx.stroke();
+  ctx.restore();
+  ctx.font = `900 ${cs*0.55}px ${getComputedStyle(document.body).fontFamily}`; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+  ctx.fillStyle = 'rgba(214,69,69,.9)'; ctx.fillText('ここまで', W - cs*0.2, LIMIT*cs - cs*0.08);
+  // boxes
+  boxes.forEach(b => {
+    b.shake = Math.max(0, b.shake - dt/400);
+    const sx = Math.sin(performance.now()/25)*b.shake*cs*0.15;
+    const x0 = b.x*cs + sx, y0 = b.top*cs, w = 2*cs, h = b.h*cs, t = cs*0.22;
+    ctx.fillStyle = '#FFF8EF'; ctx.fillRect(x0,y0,w,h);
+    for (let r=0;r<b.h;r++) for (let c=0;c<2;c++){
+      const v = b.grid[r][c];
+      if (v) cell(ctx,x0+c*cs,y0+r*cs,cs,COLORS[v]);
+      else { ctx.fillStyle='rgba(201,138,78,.35)'; ctx.beginPath(); ctx.arc(x0+c*cs+cs/2,y0+r*cs+cs/2,cs*0.09,0,7); ctx.fill(); }
+    }
+    b.over.forEach(o => cell(ctx, b.x*cs+sx+o.c*cs, o.r*cs, cs, COLORS[o.v], .8));
+    if (b.stone) numLabel(ctx, String(b.stone), x0+w/2, y0+h-b.stone/4*cs, cs*0.85);
+    ctx.fillStyle = b.shake>0 ? '#E0574F' : '#C98A4E';
+    rr(ctx,x0-t,y0-t*0.4,t,h+t*1.4,t*0.4); ctx.fill();
+    rr(ctx,x0+w,y0-t*0.4,t,h+t*1.4,t*0.4); ctx.fill();
+    rr(ctx,x0-t,y0+h,w+2*t,t,t*0.4); ctx.fill();
+    // label
+    ctx.fillStyle = '#27344F';
+    ctx.font = `900 ${cs*0.62}px ${getComputedStyle(document.body).fontFamily}`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(String(b.cap), x0+w/2, (ROWS+0.62)*cs);
+  });
+  // flashes
+  flashes = flashes.filter(f => (f.t += dt) < 1000);
+  flashes.forEach(f => {
+    const p = f.t/1000, a = 1-p;
+    for (let r=0;r<f.grid.length;r++) for (let c=0;c<2;c++){
+      const v=f.grid[r][c]; if(!v) continue;
+      cell(ctx,f.x*cs+c*cs,(f.top+r)*cs - p*cs*0.6,cs,p<.25?'#fff':COLORS[v],a);
+    }
+    const gp = Math.min(1, f.t/350);
+    if (f.kind) drawPack(ctx, (f.x+1)*cs, (f.top + f.h/2 - p*2)*cs, cs*(0.2 + 0.4*gp), f.cap, f.kind, p < .8 ? 1 : (1-p)*5);
+    ctx.globalAlpha = a;
+    numLabel(ctx,'ぴったり!', (f.x+1)*cs, (f.top-0.8-p*1.5)*cs, cs*0.62);
+    ctx.globalAlpha = 1;
+  });
+  // ghost + piece
+  if (cur && state!=='title'){
+    const cells = curCells(), gy = landY(cur.slot,cells,cur.y);
+    if (state==='play'){
+      const res = classify(cur.slot,cur.n,cells,gy), hint = $('hint').checked;
+      const kind = !res.fit ? 'no' : (res.result==='clear' || res.result==='good') ? 'ok' : 'bad';
+      const col = {ok:'#2E9E5B', bad:'#D64545', no:'rgba(39,52,79,.4)'}[kind];
+      ctx.setLineDash([cs*0.15,cs*0.12]); ctx.lineWidth = 2;
+      ctx.strokeStyle = hint ? col : 'rgba(39,52,79,.45)';
+      cells.forEach(k => { const x=(boxes[cur.slot].x+k.c)*cs, y=(gy+k.r)*cs;
+        if(hint && kind!=='no'){ ctx.fillStyle = kind==='ok'?'rgba(46,158,91,.14)':'rgba(214,69,69,.12)'; ctx.fillRect(x+2,y+2,cs-4,cs-4); }
+        ctx.strokeRect(x+3,y+3,cs-6,cs-6); });
+      ctx.setLineDash([]);
+      if (hint && kind!=='no'){ ctx.font=`900 ${cs*0.8}px ${getComputedStyle(document.body).fontFamily}`; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillStyle = col; ctx.fillText(kind==='ok'?'○':'×',(boxes[cur.slot].x+1)*cs,(gy+rowsOf(cur.n)/2)*cs); }
+    }
+    cur.wob = Math.max(0,(cur.wob||0)-dt/500);
+    const wx = Math.sin(performance.now()/40)*cur.wob*cs*0.2;
+    drawPiece(ctx,cur.n,cur.bt,cur.bl,boxes[cur.slot].x*cs+wx,cur.y*cs,cs);
+  }
+  // ぜんぶ からっぽ ボーナス(つかえる はこが きらっと ひかって、おおきな もじ)
+  if (banner){
+    banner.t += dt;
+    if (banner.t > 2200) banner = null;
+    else {
+      const a = banner.t < 1800 ? 1 : 1 - (banner.t-1800)/400, pop = Math.min(1, banner.t/250);
+      boxes.forEach(b => { if (b.locked) return;
+        ctx.fillStyle = `rgba(255,215,64,${(0.45 + 0.25*Math.sin(banner.t/90)) * a})`;
+        ctx.fillRect(b.x*cs, b.top*cs, 2*cs, b.h*cs); });
+      ctx.save(); ctx.globalAlpha = a; ctx.translate(W/2, H*0.48); ctx.scale(0.6 + 0.4*pop, 0.6 + 0.4*pop);
+      ctx.font = `900 ${cs*1.15}px ${getComputedStyle(document.body).fontFamily}`;
+      const tw = Math.max(ctx.measureText(banner.text).width, cs*7) + cs*1.6;
+      ctx.fillStyle = '#FFC93C'; rr(ctx, -tw/2, -cs*1.15, tw, cs*2.6, cs*0.7); ctx.fill();
+      ctx.strokeStyle = '#D69E12'; ctx.lineWidth = cs*0.15; ctx.stroke();
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#27344F';
+      ctx.fillText(banner.text, 0, -cs*0.2);
+      ctx.font = `900 ${cs*0.75}px ${getComputedStyle(document.body).fontFamily}`; ctx.fillStyle = '#C0392B';
+      ctx.fillText(banner.sub, 0, cs*0.85);
+      ctx.restore();
+    }
+  }
+  // message bubble
+  if (msg){
+    msg.t += dt; if (msg.t>1600) msg=null;
+    else {
+      const a = msg.t<1200?1:1-(msg.t-1200)/400;
+      ctx.globalAlpha = a;
+      ctx.font = `900 ${cs*0.7}px ${getComputedStyle(document.body).fontFamily}`;
+      const tw = ctx.measureText(msg.text).width + cs;
+      ctx.fillStyle = '#27344F'; rr(ctx,W/2-tw/2,cs*5.4,tw,cs*1.2,cs*0.6); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(msg.text,W/2,cs*6);
+      ctx.globalAlpha = 1;
+    }
+  }
+  if (state==='pause'){
+    ctx.fillStyle='rgba(251,253,255,.7)'; ctx.fillRect(0,0,W,H);
+    numLabel(ctx,'おやすみちゅう', W/2, H/2, cs*0.9);
+  }
+}
+
+let last = performance.now();
+// タイトル画面の え: ぴったんこボックス(びっくりばこ・おかしばこ…)と ブロックで いっぱいに する
+let titleItems = null, titleKey = '';
+const titleArt = document.getElementById('titleArt'), tctx = titleArt.getContext('2d');
+function makeTitleItems(W, H){
+  const items = [], cw = 96, ch = 86, cols = Math.max(3, Math.round(W/cw)), rows = Math.max(3, Math.round(H/ch));
+  const kinds = Object.keys(TREATS), caps = [4,6,8,10,12];
+  for (let r=0;r<rows;r++) for (let k=0;k<cols;k++){
+    const x = (k+.5)*W/cols + (Math.random()-.5)*30, y = (r+.5)*H/rows + (Math.random()-.5)*24;
+    const isPack = (r + k) % 2 === 0;
+    items.push(isPack
+      ? {type:'pack', x, y, cap: caps[Math.floor(Math.random()*5)], kind: (Math.random() < .25 ? 'bikkuri' : kinds[Math.floor(Math.random()*kinds.length)]), u: 9 + Math.random()*4, rot:(Math.random()-.5)*.5, ph: Math.random()*7}
+      : {type:'block', x, y, n: 2 + Math.floor(Math.random()*8), s: 11 + Math.random()*5, rot:(Math.random()-.5)*.8, ph: Math.random()*7, vy: 10 + Math.random()*14});
+  }
+  return items;
+}
+function drawTitle(dt){
+  const W = titleArt.clientWidth, H = titleArt.clientHeight;
+  if (!W || !H) return;
+  const dpr = window.devicePixelRatio||1, key = W+'x'+H;
+  if (key !== titleKey){ titleKey = key; titleArt.width = Math.round(W*dpr); titleArt.height = Math.round(H*dpr); titleItems = makeTitleItems(W, H); }
+  const c = tctx, now = performance.now()/1000;
+  c.setTransform(dpr,0,0,dpr,0,0); c.clearRect(0,0,W,H);
+  titleItems.forEach(it => {
+    c.save();
+    if (it.type === 'pack'){
+      c.translate(it.x, it.y + Math.sin(now*1.6 + it.ph)*4); c.rotate(it.rot + Math.sin(now + it.ph)*.05);
+      drawPack(c, 0, 0, it.u, it.cap, it.kind);
+    } else {
+      it.y += it.vy*dt/1000; if (it.y > H + 40) it.y = -40;   // ゆっくり おちて くる
+      c.translate(it.x, it.y); c.rotate(it.rot + Math.sin(now*.8 + it.ph)*.15);
+      const rows = rowsOf(it.n); drawPiece(c, it.n, true, true, -it.s, -rows*it.s/2, it.s);
+    }
+    c.restore();
+  });
+}
+
+// あそびかたの れい: ちいさな はこに ブロックを つんで みせる("3a" = でっぱり うえひだり、"3b" = でっぱり したみぎ)
+function drawExamples(){
+  document.querySelectorAll('#howPage canvas.ex').forEach(cv => {
+    const cap = +cv.dataset.cap, h = cap/2, specs = cv.dataset.p.split(' '), bad = cv.dataset.x === '1';
+    // まず つんで みて、はみ出す ぶんだけ うえに よゆうを とる
+    const grid = {}, labels = []; let minR = 0;
+    specs.forEach(sp => {
+      const n = parseInt(sp), b = !sp.endsWith('b'), cells = shape(n, b, b);
+      let y = -10;
+      const ok = yy => cells.every(k => yy+k.r < h && !grid[(yy+k.r)+','+k.c]);
+      while (ok(y+1)) y++;
+      cells.forEach(k => { grid[(y+k.r)+','+k.c] = n; minR = Math.min(minR, y+k.r); });
+      labels.push({n, r: y + rowsOf(n)/2});
+    });
+    const u = 18, over = -minR + 0.4, W = u*5, H = u*(h + over + 1.2), dpr = window.devicePixelRatio||1;
+    cv.style.width = W+'px'; cv.style.height = H+'px'; cv.width = W*dpr; cv.height = H*dpr;
+    const c = cv.getContext('2d'); c.setTransform(dpr,0,0,dpr,0,0); c.clearRect(0,0,W,H);
+    const x0 = u*0.6, top = over*u;
+    c.fillStyle = '#FFF8EF'; c.fillRect(x0, top, 2*u, h*u);
+    for (let r=minR;r<h;r++) for (let k=0;k<2;k++){
+      const v = grid[r+','+k];
+      if (v) cell(c, x0+k*u, top+r*u, u, COLORS[v]);
+      else if (r >= 0){ c.fillStyle='rgba(201,138,78,.35)'; c.beginPath(); c.arc(x0+k*u+u/2, top+r*u+u/2, u*.09, 0, 7); c.fill(); }
+    }
+    labels.forEach(l => numLabel(c, String(l.n), x0+u, top + l.r*u, u*0.8));
+    const t = u*0.22; c.fillStyle = '#C98A4E';
+    rr(c,x0-t,top-t*0.4,t,h*u+t*1.4,t*0.4); c.fill(); rr(c,x0+2*u,top-t*0.4,t,h*u+t*1.4,t*0.4); c.fill(); rr(c,x0-t,top+h*u,2*u+2*t,t,t*0.4); c.fill();
+    c.font = `900 ${u*0.7}px ${getComputedStyle(document.body).fontFamily}`; c.textAlign='center'; c.textBaseline='middle'; c.fillStyle='#27344F';
+    c.fillText(String(cap), x0+u, top+h*u+u*0.75);
+    c.font = `900 ${u*1.5}px ${getComputedStyle(document.body).fontFamily}`; c.fillStyle = bad ? '#D64545' : '#2E9E5B';
+    c.fillText(bad ? '×' : '○', x0 + 3.5*u, top + h*u/2);
+  });
+}
+function openHow(){ $('howPage').hidden = false; $('howPage').scrollTop = 0; drawExamples(); }
+function closeHow(){ $('howPage').hidden = true; }
+
+function loop(now){
+  const dt = Math.min(100, now-last); last = now;
+  if (state==='play' && cur){
+    tickLevel(dt);
+    acc += dt;
+    if (acc >= fallMs){ acc = 0;
+      if (!hits(cur.slot,curCells(),cur.y+1)) cur.y++; else land();
+    }
+  }
+  render(dt);
+  drawShelf(dt);
+  if (!$('startBox').hidden) drawTitle(dt);
+  requestAnimationFrame(loop);
+}
+
+// ---------- input ----------
+const tap = (id,fn) => $(id).addEventListener('pointerdown', e => { e.preventDefault(); fn(); });
+tap('bLeft', () => move(-1));
+tap('bRight', () => move(1));
+tap('bRot', () => turn('rot'));
+tap('bFlip', () => turn('flip'));
+tap('bDrop', drop);
+tap('bSwap', swap);
+$('startBtn').addEventListener('click', start);
+$('againBtn').addEventListener('click', start);
+document.querySelectorAll('.recOpen').forEach(b => b.addEventListener('click', () => openRecords(state==='title' ? 'startBox' : 'overBox')));
+$('recBack').addEventListener('click', closeRecords);
+$('songOpen').addEventListener('click', openSong);
+$('howOpen').addEventListener('click', openHow);
+['howBack','howBack2'].forEach(id => $(id).addEventListener('click', closeHow));
+['howStart','howStart2'].forEach(id => $(id).addEventListener('click', () => { closeHow(); start(); }));
+// タイトルへ もどる(あそんで いる とちゅうなら たしかめて から。とちゅうの ゲームは きろくに のこらない)
+function goTitle(){
+  if ((state==='play' || state==='pause') && !confirm('タイトルに もどりますか？ いまの ゲームは おわりに なります。')) return;
+  clearTimeout(overTimer); bgmStop(); $('confetti').innerHTML = '';
+  reset(); state = 'title'; drawNext();
+  $('overBox').hidden = true; $('recBox').hidden = true; $('startBox').hidden = false;
+  $('pauseBtn').innerHTML = T_STOP; $('homeBtn').hidden = true; showRecLine();
+}
+$('homeBtn').addEventListener('click', e => { goTitle(); e.currentTarget.blur(); });
+$('overHome').addEventListener('click', goTitle);
+$('songPlay').addEventListener('click', playSong);
+$('songBack').addEventListener('click', closeSong);
+$('songBack2').addEventListener('click', closeSong);
+$('recClear').addEventListener('click', () => {
+  if (!confirm('きろくを ぜんぶ けしますか？(さいこうも 0に もどります)')) return;
+  try { localStorage.removeItem(REC_KEY); localStorage.removeItem('pittanko-best-pt'); } catch(e) {}
+  best = 0; $('best').textContent = 0; openRecords(recFrom);
+});
+showRecLine();
+function togglePause(){
+  if (state==='play'){ state='pause'; $('pauseBtn').innerHTML='つづける'; bgmStop(); }
+  else if (state==='pause'){ state='play'; $('pauseBtn').innerHTML=T_STOP; bgmStart(); }
+}
+$('pauseBtn').addEventListener('click', togglePause);
+document.querySelectorAll('.bgmToggle').forEach(b => b.addEventListener('click', () => { bgmToggle(); b.blur(); }));
+bgmLabels();
+field.addEventListener('pointerdown', e => {
+  if (state!=='play') return;
+  const r = field.getBoundingClientRect(), col = (e.clientX-r.left)/cs;
+  const s = boxes.findIndex(b => col >= b.x-GAP/2 && col < b.x+2+GAP/2);
+  if (s>=0) moveTo(s);
+});
+document.addEventListener('keydown', e => {
+  const k = e.key;
+  if (k==='p'||k==='P'){ togglePause(); return; }
+  if (k==='m'||k==='M'){ bgmToggle(); return; }
+  if (k.startsWith('Arrow')) e.preventDefault();   // やじるしで ページが うごかないように
+  if (state!=='play') { if ((k===' '||k==='Enter') && (state==='title'||state==='over') && $('recBox').hidden && $('songPage').hidden && $('howPage').hidden){ e.preventDefault(); start(); } return; }
+  if (k==='ArrowLeft'){ move(-1); e.preventDefault(); }
+  else if (k==='ArrowRight'){ move(1); e.preventDefault(); }
+  else if (k==='ArrowUp'){ turn('rot'); e.preventDefault(); }
+  else if (k==='x'||k==='X'||k==='z'||k==='Z'){ turn('flip'); }
+  else if (k==='c'||k==='C'||k==='Shift'){ swap(); }
+  else if (k==='ArrowDown'){ softDrop(); e.preventDefault(); }
+  else if (k===' '){ drop(); e.preventDefault(); }
+});
+
+reset();
+addEventListener('resize', size);
+size();
+requestAnimationFrame(loop);
+})();
+</script>
+
+</body></html>
