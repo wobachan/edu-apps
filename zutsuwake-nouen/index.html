@@ -1158,13 +1158,13 @@ function showResult(){
 /* ---- 経験値（★＝1回で 正かいした 数） ---- */
 const RANKS = [
   {at:0,   icon:"🌱", name:'<ruby>見習<rt>みなら</rt></ruby>い'},
-  {at:5,   icon:"🌿", name:'<ruby>未来<rt>みらい</rt></ruby>の<ruby>農園長<rt>のうえんちょう</rt></ruby>'},
-  {at:15,  icon:"🌳", name:'たのもしい<ruby>中堅<rt>ちゅうけん</rt></ruby>'},
-  {at:25,  icon:"💼", name:'<ruby>部長<rt>ぶちょう</rt></ruby>', story:'<ruby>部長<rt>ぶちょう</rt></ruby>として <ruby>農園<rt>のうえん</rt></ruby>の ブランド<ruby>化<rt>か</rt></ruby> <ruby>成功<rt>せいこう</rt></ruby>！'},
-  {at:35,  icon:"🥇", name:'ベテラン<ruby>農園<rt>のうえん</rt></ruby>マスター'},
-  {at:55,  icon:"👑", name:'<ruby>正真正銘<rt>しょうしんしょうめい</rt></ruby>の<ruby>農園長<rt>のうえんちょう</rt></ruby>'},
-  {at:80,  icon:"🏆", name:'<ruby>農園名人<rt>のうえんめいじん</rt></ruby>'},
-  {at:120, icon:"🎊", name:'<ruby>引退<rt>いんたい</rt></ruby>'},
+  {at:10,   icon:"🌿", name:'<ruby>未来<rt>みらい</rt></ruby>の<ruby>農園長<rt>のうえんちょう</rt></ruby>'},
+  {at:30,  icon:"🌳", name:'たのもしい<ruby>中堅<rt>ちゅうけん</rt></ruby>'},
+  {at:50,  icon:"💼", name:'<ruby>部長<rt>ぶちょう</rt></ruby>', story:'<ruby>部長<rt>ぶちょう</rt></ruby>として <ruby>農園<rt>のうえん</rt></ruby>の ブランド<ruby>化<rt>か</rt></ruby> <ruby>成功<rt>せいこう</rt></ruby>！'},
+  {at:70,  icon:"🥇", name:'ベテラン<ruby>農園<rt>のうえん</rt></ruby>マスター'},
+  {at:110,  icon:"👑", name:'<ruby>正真正銘<rt>しょうしんしょうめい</rt></ruby>の<ruby>農園長<rt>のうえんちょう</rt></ruby>'},
+  {at:160,  icon:"🏆", name:'<ruby>農園名人<rt>のうえんめいじん</rt></ruby>'},
+  {at:240, icon:"🎊", name:'<ruby>引退<rt>いんたい</rt></ruby>'},
 ];
 const rankOf = n => RANKS.filter(r=>n>=r.at).pop();
 const nextRank = n => RANKS.find(r=>r.at>n);
