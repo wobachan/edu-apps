@@ -53,20 +53,20 @@ main{max-width:960px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-lef
 
 .yard{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:stretch}
 .label{font-family:var(--display);font-size:15px;letter-spacing:.05em;color:var(--wood-dark);margin:0 0 6px}
-.crate{position:relative;background:linear-gradient(var(--wood),#a77945);border:6px solid var(--wood-dark);border-radius:6px;padding:10px;min-height:130px;
+.crate{position:relative;background:linear-gradient(var(--wood),#a77945);border:6px solid var(--wood-dark);border-radius:6px;padding:8px 10px;
   box-shadow:inset 0 0 0 2px rgba(0,0,0,.08)}
 .pile{display:flex;flex-wrap:wrap;gap:2px}
-.item{width:38px;height:38px;border:none;background:none;font-size:26px;cursor:pointer;border-radius:8px;padding:0;line-height:1}
+.item{width:var(--it,38px);height:var(--it,38px);border:none;background:none;font-size:calc(var(--it,38px)*.68);cursor:pointer;border-radius:8px;padding:0;line-height:1}
 .item:hover{background:rgba(255,255,255,.25)}
 .item:active{transform:scale(.85)}
-.pile{touch-action:none;user-select:none;-webkit-user-select:none;position:relative;z-index:1;gap:10px}
+.pile{touch-action:none;user-select:none;-webkit-user-select:none;position:relative;z-index:1;gap:calc(var(--it,38px)*.26)}
 .lasso{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:visible}
 .lasso path{stroke-linejoin:round;stroke-linecap:round}
 .gtags{position:absolute;inset:0;pointer-events:none;z-index:3}
 .gtag{position:absolute;width:22px;height:22px;border-radius:50%;color:var(--white);font-weight:900;font-size:13px;display:grid;place-items:center;border:2px solid var(--white);font-variant-numeric:tabular-nums;animation:pop .25s ease-out}
 .item.grouped{cursor:default}
 .item.grouped:hover{background:none}
-.packarea{background:rgba(255,255,255,.55);border:3px dashed var(--wood);border-radius:10px;min-height:90px;padding:18px 14px 22px;display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end}
+.packarea{background:rgba(255,255,255,.55);border:3px dashed var(--wood);border-radius:10px;padding:14px 12px 18px;display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end}
 .pno{position:absolute;left:50%;bottom:-12px;transform:translateX(-50%);min-width:22px;height:22px;border-radius:11px;color:var(--white);font-weight:900;font-size:13px;display:grid;place-items:center;border:2px solid var(--white);z-index:2}
 .lane{position:relative;height:64px;overflow:hidden}
 .guest{position:absolute;left:50%;bottom:0;display:flex;align-items:flex-end;gap:6px;transform:translateX(-50%);animation:walkin .6s ease-out both}
@@ -131,15 +131,15 @@ main{max-width:960px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-lef
 .stack-n{font-family:var(--display);font-size:14px;margin-top:6px;color:var(--wood-dark)}
 
 .counter-wrap{display:flex;flex-direction:column}
-.counter{background:var(--paper);border-top:14px solid var(--wood);border-bottom:10px solid var(--wood-dark);border-radius:4px;min-height:150px;padding:14px;display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end}
+.counter{background:var(--paper);border-top:14px solid var(--wood);border-bottom:10px solid var(--wood-dark);border-radius:4px;padding:14px 12px 12px;display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end}
 .empty-note{color:#8a7a5c;font-size:15px}
 .made{font-family:var(--display);font-size:16px;margin-left:auto;color:var(--wood-dark)}
 
 /* いれもの */
 .cont{position:relative;padding:8px;border-radius:8px 8px 12px 12px;animation:drop .35s ease-out both}
 @keyframes drop{from{transform:translateY(-30px);opacity:0}}
-.slots{display:grid;grid-template-columns:repeat(var(--cols),30px);gap:3px}
-.slot{width:30px;height:30px;display:grid;place-items:center;font-size:22px;line-height:1;border-radius:50%}
+.slots{display:grid;grid-template-columns:repeat(var(--cols),var(--sl,30px));gap:3px}
+.slot{width:var(--sl,30px);height:var(--sl,30px);display:grid;place-items:center;font-size:calc(var(--sl,30px)*.73);line-height:1;border-radius:50%}
 .slot.in{animation:pop .25s ease-out}
 @keyframes pop{0%{transform:scale(.2)}70%{transform:scale(1.2)}}
 .t-pack{background:rgba(255,255,255,.75);border:2px solid #b9c3cf}
@@ -153,7 +153,7 @@ main{max-width:960px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-lef
 .t-net .slot{background:rgba(255,255,255,.45)}
 .t-band{background:none;border:2px dashed #7da35f}
 .t-band::before{content:"";position:absolute;left:6px;right:6px;top:58%;height:4px;background:#3c6fd1;border-radius:2px;z-index:1}
-.t-band .slot{background:rgba(106,168,79,.14);font-size:26px}
+.t-band .slot{background:rgba(106,168,79,.14);font-size:calc(var(--sl,30px)*.87)}
 .t-sara{background:radial-gradient(ellipse at 50% 50%,#ffffff 0 60%,#dfe4ea 61% 66%,#ffffff 67%);border:2px solid #c9d1da;border-radius:50%;padding:16px 22px}
 .lay-band{background:#cfe3c0;border:2px dashed #7da35f}
 .lay-sara{background:#ffffff;border:2px solid #c9d1da;border-radius:50%}
@@ -186,7 +186,9 @@ main{max-width:960px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-lef
 .cont.eaten{opacity:.6;transition:opacity .4s}
 .cont.eaten .cstamp{border-color:#c98c12;color:#c98c12}
 
-.actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;min-height:52px}
+.actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.actions:empty{display:none}
+.talk .back{align-self:center;flex:none}
 .btn{border:none;border-radius:14px;padding:12px 22px;font-size:18px;font-weight:900;cursor:pointer;background:var(--ai);color:var(--white);box-shadow:0 4px 0 #15224a}
 .btn:active{transform:translateY(3px);box-shadow:0 1px 0 #15224a}
 .btn.sub{background:var(--paper);color:var(--ink);box-shadow:0 4px 0 #b9a679}
@@ -353,7 +355,6 @@ rt{font-family:var(--body);font-size:.45em;font-weight:700;letter-spacing:0}
   .art{font-size:min(var(--art,48px),48px)}
 }
 @media (max-width:520px){
-  .item{width:34px;height:34px;font-size:23px}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
@@ -377,13 +378,13 @@ rt{font-family:var(--body);font-size:.45em;font-weight:700;letter-spacing:0}
   </section>
 
   <section id="shopView" class="shopview" hidden>
-  <div><button type="button" class="back" id="back">← <ruby>農園<rt>のうえん</rt></ruby>に もどる</button></div>
   <div class="talk">
+    <button type="button" class="back" id="back">← <ruby>農園<rt>のうえん</rt></ruby>へ</button>
     <div class="face" aria-hidden="true">🧑‍🌾</div>
     <div class="bubble" id="bubble">いらっしゃい！</div>
   </div>
 
-  <div class="yard">
+  <div class="yard" id="yard">
     <div>
       <p class="label" id="pileLabel">とれたもの</p>
       <div class="crate" id="crate">
@@ -403,7 +404,7 @@ rt{font-family:var(--body);font-size:.45em;font-weight:700;letter-spacing:0}
     <div class="packarea" id="packArea"></div>
   </div>
 
-  <div class="counter-wrap">
+  <div class="counter-wrap" id="counterWrap" hidden>
     <p class="label" style="display:flex"><ruby>店先<rt>みせさき</rt></ruby>の<ruby>台<rt>だい</rt></ruby><span class="made" id="made"></span></p>
     <div class="lane" id="lane" aria-live="polite"></div>
     <div class="counter" id="counter"></div>
@@ -768,12 +769,14 @@ function startStage(i){
   $("pileLabel").innerHTML = `${s.got||"とれた"} ${s.name}` + (s.c==="L" ? "（🥛1つで 1リットル）" : "");
   $("packLabel").innerHTML = `${s.unit}づめ`;
   $("packWrap").hidden = true; $("packArea").innerHTML = ""; $("lane").innerHTML = "";
+  $("yard").hidden = false; $("counterWrap").hidden = true;
   faceEl.textContent = "🧑‍🌾";
   renderPile(); drawLasso();
   counterEl.innerHTML = `<span class="empty-note">${s.unit}づめが おわったら、ここに ならべるよ</span>`;
   updateMade(); renderActions();
   say(`${s.name}が とれたよ！`);
   showIntro();
+  fitShop();
 }
 
 function renderPile(){
@@ -810,7 +813,7 @@ function hull(p){
 function drawLasso(){
   const svg = $("lasso"), tags = $("tags");
   if(!st){ svg.innerHTML = ""; tags.innerHTML = ""; return; }
-  const r = $("crate").getBoundingClientRect();
+  const r = $("crate").getBoundingClientRect(), iw = (pileEl.querySelector(".item")||{}).offsetWidth || 38;
   let h = "", t = "";
   st.groups.forEach((g,k)=>{
     if(g.packed) return;
@@ -818,13 +821,23 @@ function drawLasso(){
     const hp = hull(pts);
     const d = hp.length===1 ? `M${hp[0][0]} ${hp[0][1]}h.1` : "M" + hp.map(p=>p[0].toFixed(1)+" "+p[1].toFixed(1)).join("L") + "Z";
     const col = GCOL[k % GCOL.length];
-    h += `<path d="${d}" fill="${col}" stroke="${col}" stroke-width="48"/><path d="${d}" fill="#dcb98a" stroke="#dcb98a" stroke-width="40"/>`;
+    h += `<path d="${d}" fill="${col}" stroke="${col}" stroke-width="${iw+10}"/><path d="${d}" fill="#dcb98a" stroke="#dcb98a" stroke-width="${iw+2}"/>`;
     const top = pts.reduce((a,b)=> b[1]<a[1]-1 || (Math.abs(b[1]-a[1])<=1 && b[0]<a[0]) ? b : a);
-    t += `<span class="gtag" style="left:${top[0]-26}px;top:${top[1]-28}px;background:${col}">${k+1}</span>`;
+    t += `<span class="gtag" style="left:${top[0]-iw*.68}px;top:${top[1]-iw*.74}px;background:${col}">${k+1}</span>`;
   });
   svg.innerHTML = h; tags.innerHTML = t;
 }
-addEventListener("resize", ()=>{ if(st) drawLasso(); });
+/* スクロールしないで ぜんぶ 見えるように、品物と いれものの 大きさを あわせる */
+function fitShop(){
+  if(!st || $("shopView").hidden) return;
+  const root = document.documentElement;
+  let it = 46;
+  const set = () => { root.style.setProperty("--it", it+"px"); root.style.setProperty("--sl", Math.round(it*.8)+"px"); };
+  set();
+  while(it > 22 && root.scrollHeight > innerHeight + 1){ it -= 2; set(); }
+  drawLasso();
+}
+addEventListener("resize", ()=>{ if(st) fitShop(); });
 
 function pickItem(el){
   if(!st || st.phase!=="group" || st.busy || !el || el.classList.contains("grouped")) return;
@@ -950,7 +963,7 @@ function begin(){
   tone(330,.12,"sine",.12);
   say(`${s.unit}を ${st.n}こ ならべたよ。${s.name}を ${cnt(s.per,s)}ずつ なぞって、<ruby>丸<rt>まる</rt></ruby>で かこもう`);
   if(!tutorialDone){ tut.started = true; setTimeout(()=>tutStep(1), 400); }
-  renderActions();
+  renderActions(); fitShop();
 }
 function allGrouped(){
   const s = S(); st.phase = "packing"; st.busy = true; tutHide(); renderActions();
@@ -968,10 +981,11 @@ function toCounter(){
   const s = S();
   say(`${s.unit}づめ できた！ <ruby>店先<rt>みせさき</rt></ruby>の <ruby>台<rt>だい</rt></ruby>に ならべるよ`);
   counterEl.innerHTML = "";
+  $("yard").hidden = true; $("counterWrap").hidden = false;
   st.packs.forEach((p,k)=>setTimeout(()=>{
     p.el.style.animationDelay = ""; counterEl.appendChild(p.el); p.on = true;
     tone(330 + k*30, .1, "sine", .1); updateMade();
-    if(k===st.n-1){ $("packWrap").hidden = true; setTimeout(openStore, 800); }
+    if(k===st.n-1){ $("packWrap").hidden = true; fitShop(); setTimeout(openStore, 800); }
   }, k*300));
 }
 const GUESTS = ["👵","👴","👩","🧒","👨","👧","🧑‍🦳","👩‍🍳"];
@@ -1018,6 +1032,9 @@ function renderActions(){
     const b = document.createElement("button"); b.className = "btn sub"; b.type = "button";
     b.innerHTML = `のこりも ${cnt(s.per,s)}ずつ まとめて かこむ`; b.disabled = st.busy; b.onclick = bulk; actionsEl.appendChild(b);
   }
+  const had = !!actionsEl.dataset.n, has = !!actionsEl.children.length;
+  actionsEl.dataset.n = has ? "1" : "";
+  if(had !== has) fitShop();
 }
 
 /* ---- カード ---- */
