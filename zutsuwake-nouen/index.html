@@ -77,6 +77,11 @@ main{max-width:960px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-lef
 .gsay{background:var(--white);border:2px solid var(--ai);border-radius:12px;padding:2px 10px;font-weight:700;font-size:15px;margin-bottom:22px;white-space:nowrap}
 #box{display:inline-block}
 .per-n{color:#2f7d32;font-size:1.5em;font-weight:900;line-height:1.1;font-variant-numeric:tabular-nums}
+.how-list{display:flex;flex-direction:column;gap:8px;text-align:left;margin-top:10px}
+.how{display:grid;grid-template-columns:32px minmax(0,1fr);gap:10px;align-items:start;background:var(--white);border-radius:10px;padding:8px 12px;line-height:1.9}
+.how-n{width:28px;height:28px;border-radius:50%;background:var(--ai);color:var(--white);font-weight:900;display:grid;place-items:center;margin-top:4px}
+.how b{font-size:16px}
+.how p{margin:2px 0 0;font-size:15px}
 .farm-btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .zk-count{font-size:20px;margin:4px 0}
 .zk-count b{color:var(--shu);font-size:1.4em}
@@ -349,6 +354,7 @@ rt{font-family:var(--body);font-size:.45em;font-weight:700;letter-spacing:0}
     <h1>ずつ<ruby>分<rt>わ</rt></ruby>け<ruby>農園<rt>のうえん</rt></ruby>　<ruby>直売店<rt>ちょくばいてん</rt></ruby></h1>
     <button type="button" class="rankbadge" id="rankBtn" aria-label="経験値"></button>
     <div class="purse" id="purse"><span class="coin">¥</span><span id="coins">0</span>まい</div>
+    <button class="mute" id="howBtn" type="button">❓ あそび<ruby>方<rt>かた</rt></ruby></button>
     <button class="mute" id="mute" type="button"><ruby>音<rt>おと</rt></ruby>：あり</button>
   </div>
 </header>
@@ -1092,6 +1098,26 @@ function openRanks(){
   $("rkClose").onclick = closeCard;
 }
 $("rankBtn").onclick = () => { tone(600,.08); openRanks(); };
+
+/* ---- あそび方 ---- */
+function openHow(){
+  const step = (n, icon, title, body) => `<div class="how"><span class="how-n">${n}</span><div><b>${icon} ${title}</b><p>${body}</p></div></div>`;
+  card(`
+    <h2>❓ あそび<ruby>方<rt>かた</rt></ruby></h2>
+    <div class="how-list">
+    ${step(1,"🌱",'<ruby>農園<rt>のうえん</rt></ruby>で <ruby>売<rt>う</rt></ruby>るものを えらぶ', '<ruby>今<rt>いま</rt></ruby>の きせつに とれるものを タップしよう。')}
+    ${step(2,"➗",'わり<ruby>算<rt>ざん</rt></ruby>に <ruby>答<rt>こた</rt></ruby>える', '「12こを 2こずつに <ruby>分<rt>わ</rt></ruby>けると、<ruby>何<rt>なん</rt></ruby>パック？」<br>12 ÷ 2 ＝ □ の □に <ruby>入<rt>はい</rt></ruby>る <ruby>数<rt>かず</rt></ruby>を えらぼう。1<ruby>回<rt>かい</rt></ruby>で <ruby>正<rt>せい</rt></ruby>かいすると ★が もらえるよ。')}
+    ${step(3,"⭕",'<ruby>丸<rt>まる</rt></ruby>で かこむ', 'ゆびで なぞって 2こずつ えらぶと、<ruby>丸<rt>まる</rt></ruby>で かこまれるよ。ぜんぶ かこむと パックに つめられるよ。')}
+    ${step(4,"🧺",'<ruby>店先<rt>みせさき</rt></ruby>の<ruby>台<rt>だい</rt></ruby>で <ruby>売<rt>う</rt></ruby>る', 'おきゃくさんが <ruby>買<rt>か</rt></ruby>いに くるよ。1<ruby>回<rt>かい</rt></ruby>で <ruby>正<rt>せい</rt></ruby>かいすると ぜんぶ <ruby>売<rt>う</rt></ruby>れる。まちがえると 1つ <ruby>売<rt>う</rt></ruby>れのこって、<ruby>自分<rt>じぶん</rt></ruby>で <ruby>食<rt>た</rt></ruby>べるよ。')}
+    ${step(5,"🛒",'<ruby>農園<rt>のうえん</rt></ruby>を <ruby>広<rt>ひろ</rt></ruby>げる', 'コインで なえや たねを <ruby>買<rt>か</rt></ruby>ったり、やぶを たがやしたり しよう。<ruby>売<rt>う</rt></ruby>り<ruby>上<rt>あ</rt></ruby>げが ふえると、となりの <ruby>農園<rt>のうえん</rt></ruby>から どうぶつを もらえたり、<ruby>野山<rt>のやま</rt></ruby>に <ruby>出<rt>で</rt></ruby>かけられたり するよ。')}
+    ${step(6,"🗓",'きせつと <ruby>年<rt>ねん</rt></ruby>', 'その きせつの ものを ぜんぶ <ruby>売<rt>う</rt></ruby>り<ruby>切<rt>き</rt></ruby>ると、つぎの きせつへ すすめるよ。<ruby>冬<rt>ふゆ</rt></ruby>から <ruby>春<rt>はる</rt></ruby>に なると 1<ruby>年<rt>ねん</rt></ruby> たつよ。')}
+    ${step(7,"📖",'★・<ruby>経験値<rt>けいけんち</rt></ruby>・<ruby>図<rt>ず</rt></ruby>かん', '★が たまると <ruby>経験値<rt>けいけんち</rt></ruby>が <ruby>上<rt>あ</rt></ruby>がるよ。<ruby>売<rt>う</rt></ruby>った ものは <ruby>直売店<rt>ちょくばいてん</rt></ruby><ruby>図<rt>ず</rt></ruby>かんに のるよ。ぜんぶ そろえよう！')}
+    </div>
+    <div class="shop-foot"><button type="button" class="btn" id="howClose">とじる</button></div>
+  `);
+  $("howClose").onclick = closeCard;
+}
+$("howBtn").onclick = () => { tone(600,.08); openHow(); };
 
 /* ---- 直売店図かん ---- */
 const zkCount = () => STAGES.filter(s=>zukan[s.key]).length;
