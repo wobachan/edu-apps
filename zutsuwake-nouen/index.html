@@ -646,7 +646,8 @@ function fitFarm(){
   const root = document.documentElement;
   let a = 72;
   root.style.setProperty("--art", a+"px");
-  while(a > 30 && root.scrollHeight > innerHeight + 1){ a -= 4; root.style.setProperty("--art", a+"px"); }
+  const minA = innerWidth < 600 ? 44 : 30;
+  while(a > minA && root.scrollHeight > innerHeight + 1){ a -= 4; root.style.setProperty("--art", a+"px"); }
 }
 addEventListener("resize", ()=>{ if(!$("farmView").hidden) fitFarm(); });
 function renderFarm(){
@@ -725,10 +726,10 @@ function renderFarm(){
   const lb = seasonOf(season).label;
   $("yearLine").innerHTML = `🗓 <b>${year}</b><ruby>年目<rt>ねんめ</rt></ruby>の ${lb}`;
   $("farmHint").innerHTML = sold ? `${lb}の <ruby>売<rt>う</rt></ruby>り<ruby>切<rt>き</rt></ruby>れ ${sold} / ${playable}` : `${lb}に とれる ものを タップしてね`;
-  if(playable && sold===playable){   // ぜんぶ 売り切ったら つぎの きせつへ すすめる
-    const nx = SEASONS[(SEASONS.indexOf(seasonOf(season))+1) % SEASONS.length];
-    $("farmHint").insertAdjacentHTML("beforeend", ` <button type="button" class="btn nextbtn" id="nextSeasonBtn">${nx.mark} ${nx.label}へ すすむ</button>`);
-    $("nextSeasonBtn").onclick = showFinal;
+  {   // つぎの きせつへ（いつでも すすめる。もどれない）
+    const nx = nextSeasonOf();
+    $("farmHint").insertAdjacentHTML("beforeend", ` <button type="button" class="btn nextbtn${playable && sold===playable ? "" : " sub"}" id="nextSeasonBtn">▶ ${nx.label}へ すすむ</button>`);
+    $("nextSeasonBtn").onclick = () => (playable && sold===playable) ? showFinal() : confirmSkip(playable - sold);
   }
   $("shopBtn").classList.toggle("gift", giftReady.size>0);
   $("zukanBtn").innerHTML = `📖 <ruby>図<rt>ず</rt></ruby>かん ${zkCount()}/${STAGES.length}`;
@@ -892,7 +893,8 @@ function fitShop(){
   const fits = () => root.scrollHeight <= innerHeight + 1;
   set();
   // まず いれものを 小さく して、それでも 入らなければ 品物を 小さく する
-  while(!fits() && it > 22){
+  const minIt = innerWidth < 600 ? 36 : 22;   // スマホでは ゆびで さわれる 大きさを のこす（スクロールは しかたない）
+  while(!fits() && it > minIt){
     for(sl = Math.round(it*.8) - 2; sl >= Math.max(16, Math.round(it*.5)); sl -= 2){ set(); if(fits()) break; }
     if(fits()) break;
     sl = 0; it -= 2; set();
@@ -1248,7 +1250,7 @@ function openHow(){
     ${step(3,"⭕",'<ruby>丸<rt>まる</rt></ruby>で かこむ', 'ゆびで なぞって 2こずつ えらぶと、<ruby>丸<rt>まる</rt></ruby>で かこまれるよ。ぜんぶ かこむと パックに つめられるよ。')}
     ${step(4,"🧺",'<ruby>店先<rt>みせさき</rt></ruby>の<ruby>台<rt>だい</rt></ruby>で <ruby>売<rt>う</rt></ruby>る', 'おきゃくさんが <ruby>買<rt>か</rt></ruby>いに くるよ。1<ruby>回<rt>かい</rt></ruby>で <ruby>正<rt>せい</rt></ruby>かいすると ぜんぶ <ruby>売<rt>う</rt></ruby>れる。まちがえると 1つ <ruby>売<rt>う</rt></ruby>れのこって、<ruby>自分<rt>じぶん</rt></ruby>で <ruby>食<rt>た</rt></ruby>べるよ。')}
     ${step(5,"🛒",'<ruby>農園<rt>のうえん</rt></ruby>を <ruby>広<rt>ひろ</rt></ruby>げる', 'コインで なえや たねを <ruby>買<rt>か</rt></ruby>ったり、やぶを たがやしたり しよう。<ruby>売<rt>う</rt></ruby>り<ruby>上<rt>あ</rt></ruby>げが ふえると、となりの <ruby>農園<rt>のうえん</rt></ruby>から どうぶつを もらえたり、<ruby>野山<rt>のやま</rt></ruby>に <ruby>出<rt>で</rt></ruby>かけられたり するよ。')}
-    ${step(6,"🗓",'きせつと <ruby>年月<rt>ねんげつ</rt></ruby>', 'その きせつの ものを ぜんぶ <ruby>売<rt>う</rt></ruby>り<ruby>切<rt>き</rt></ruby>ると、つぎの きせつへ すすめるよ。<ruby>冬<rt>ふゆ</rt></ruby>から <ruby>春<rt>はる</rt></ruby>に なると 1<ruby>年<rt>ねん</rt></ruby> たつよ。')}
+    ${step(6,"🗓",'きせつと <ruby>年月<rt>ねんげつ</rt></ruby>', 'その きせつの ものを ぜんぶ <ruby>売<rt>う</rt></ruby>り<ruby>切<rt>き</rt></ruby>るか、「▶ すすむ」を おすと、つぎの きせつへ すすむよ（もどれないよ）。<ruby>冬<rt>ふゆ</rt></ruby>から <ruby>春<rt>はる</rt></ruby>に なると 1<ruby>年<rt>ねん</rt></ruby> たつよ。')}
     ${step(7,"📖",'★・<ruby>経験値<rt>けいけんち</rt></ruby>・<ruby>図<rt>ず</rt></ruby>かん', '★が たまると <ruby>経験値<rt>けいけんち</rt></ruby>が <ruby>上<rt>あ</rt></ruby>がるよ。<ruby>売<rt>う</rt></ruby>った ものは <ruby>直売店<rt>ちょくばいてん</rt></ruby><ruby>図<rt>ず</rt></ruby>かんに のるよ。ぜんぶ そろえよう！')}
     </div>
     <div class="shop-foot"><button type="button" class="btn" id="howClose">とじる</button></div>
@@ -1384,8 +1386,30 @@ function showNewYear(){
   [523,659,784,659,784,1047].forEach((f,i)=>tone(f,.2,"sine",.12,i*.12));
   $("nyOk").onclick = closeCard;
 }
+const nextSeasonOf = () => SEASONS[(SEASONS.indexOf(seasonOf(season))+1) % SEASONS.length];
+function goNextSeason(){
+  const nx = nextSeasonOf();
+  sSeason(nx.id); if(nx.id==="haru"){ year++; yearNew = true; }
+  season = nx.id; [...done].forEach(k=>{ if(k.startsWith(nx.id+":")) done.delete(k); });
+  showFarm();
+}
+function confirmSkip(rest){
+  const cur = seasonOf(season), nx = nextSeasonOf();
+  card(`
+    <div class="big" aria-hidden="true">${cur.mark}➡${nx.mark}</div>
+    <h2>${nx.label}へ すすむ？</h2>
+    <p>まだ <ruby>売<rt>う</rt></ruby>って いない ものが <b>${rest}つ</b> あるよ。</p>
+    <p class="note">${nx.label}へ すすむと、${cur.label}には もどれないよ。</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px">
+      <button type="button" class="btn sub" id="skipNo">${cur.label}で もっと <ruby>売<rt>う</rt></ruby>る</button>
+      <button type="button" class="btn" id="skipYes">${nx.mark} ${nx.label}へ すすむ</button>
+    </div>
+  `);
+  $("skipNo").onclick = closeCard;
+  $("skipYes").onclick = goNextSeason;
+}
 function showFinal(){
-  const cur = seasonOf(season), idx = SEASONS.indexOf(cur), nx = SEASONS[(idx+1) % SEASONS.length];
+  const cur = seasonOf(season), nx = nextSeasonOf();
   card(`
     <div class="big" aria-hidden="true">${cur.mark}🏮</div>
     <h2>${year}<ruby>年目<rt>ねんめ</rt></ruby>の ${cur.label}の ものを<br>ぜんぶ <ruby>売<rt>う</rt></ruby>り<ruby>切<rt>き</rt></ruby>った！</h2>
@@ -1399,7 +1423,7 @@ function showFinal(){
   `);
   [523,659,784,1047].forEach((f,i)=>tone(f,.25,"sine",.12,i*.12));
   $("stay").onclick = closeCard;
-  $("nextSeason").onclick = () => { sSeason(nx.id); if(nx.id==="haru"){ year++; yearNew = true; } season = nx.id; [...done].forEach(k=>{ if(k.startsWith(nx.id+":")) done.delete(k); }); showFarm(); };
+  $("nextSeason").onclick = goNextSeason;
 }
 
 load(); $("coins").textContent = coins; updateRank();
