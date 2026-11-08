@@ -114,6 +114,9 @@ main{max-width:960px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-lef
 .zk.no{background:rgba(255,255,255,.45);border:2px dashed #cdbf9f}
 .zk.no .zi{filter:brightness(0) opacity(.22)}
 .zk.no b{color:#8a7a5c}
+.big-pack{display:flex;justify-content:center;margin:10px 0 4px}
+.big-pack .cont{--sl:36px}
+.big-pack .cont.full::after,.big-pack .cstamp{display:none}
 .zk-name{color:#7b3fb3;font-weight:900;font-size:1.1em}
 .zk-new{background:#fff7d6;border:2px dashed #e0b437;border-radius:10px;padding:6px 10px;font-weight:700}
 .rankbadge{margin-left:auto;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.14);color:var(--white);border:2px solid rgba(255,255,255,.45);border-radius:999px;padding:2px 12px;font-weight:900;font-size:14px;cursor:pointer;line-height:1.9}
@@ -1220,7 +1223,7 @@ function showResult(){
     tut.started = false; tutorialDone = true; save();
   }
   card(`
-    <div class="big" aria-hidden="true">${s.item}</div>
+    <div class="big-pack" aria-hidden="true"><div class="cont full t-${s.type}" style="--cols:${s.cols}"><div class="slots">${Array(s.per).fill(`<span class="slot">${s.item}</span>`).join("")}</div></div></div>
     <h2><span class="n-total">${cnt(s.total,s)}</span>を <span class="n-per">${cnt(s.per,s)}</span>ずつ <ruby>分<rt>わ</rt></ruby>けたら<br><span class="n-ans">${n}${s.unit}</span> できた！</h2>
     <div class="eq"><span class="n-total">${s.total}</span> <span class="op">÷</span> <span class="n-per">${s.per}</span> <span class="op">=</span> <span class="n-ans">${n}</span></div>
     <p><span class="n-total">${cnt(s.total,s)}</span>の <ruby>中<rt>なか</rt></ruby>に <span class="n-per">${cnt(s.per,s)}</span>が <span class="n-ans">${n}<ruby>回<rt>かい</rt></ruby></span> <ruby>入<rt>はい</rt></ruby>っていたね。</p>
