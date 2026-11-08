@@ -805,12 +805,12 @@ function showGift(s){
 }
 $("back").onclick = () => { if(st && (st.busy || st.phase==="packing" || st.phase==="sell")) return; showFarm(); };
 
-function startStage(i){
+function startStage(i, practice){
   si = i;
   const s = S();
   if(s.totals){ const ok = s.totals.filter(t=>t/s.per>=2); s.total = ok[Math.floor(Math.random()*ok.length)]; }
   else s.total = s.per * (2 + Math.floor(Math.random() * (Math.min(10, Math.floor(60/s.per)) - 1)));   // こたえ 2〜10、ならぶ かずは 60こまで
-  st = {n:s.total/s.per, groups:[], cur:[], phase:"intro", firstTry:null, tries:0, answered:false, afterWrong:false, busy:false, packs:[], sold:0};
+  st = {n:s.total/s.per, groups:[], cur:[], phase:"intro", firstTry:null, tries:0, answered:false, afterWrong:false, busy:false, packs:[], sold:0, practice:!!practice};   // practice＝れんしゅう（コイン・★なし）
   $("farmView").hidden = true; $("shopView").hidden = false; window.scrollTo(0,0);
   $("pileLabel").innerHTML = `${s.got||"とれた"} ${s.name}` + (s.c==="L" ? "（🥛1つで 1リットル）" : "");
   $("packLabel").innerHTML = `${s.unit}づめ`;
@@ -1102,9 +1102,12 @@ function guest(pis){
   pis.forEach((pi,j)=>setTimeout(()=>{
     const p = st.packs[pi]; st.sold++;
     p.el.classList.add("sold"); p.badge.textContent = st.sold; p.stamp.innerHTML = "<span><ruby>売<rt>う</rt></ruby>れた</span>";
-    addCoins(1); earned++;
-    const pu = $("purse"); pu.classList.remove("bump"); void pu.offsetWidth; pu.classList.add("bump");
-    sCoin(); say(`${st.sold}${s.unit}め <ruby>売<rt>う</rt></ruby>れた！ コイン ${st.sold}まい`);
+    if(st.practice){ tone(880,.08,"sine",.08); say(`${st.sold}${s.unit}め <ruby>売<rt>う</rt></ruby>れた！（れんしゅう なので コインは なし）`); }
+    else {
+      addCoins(1); earned++;
+      const pu = $("purse"); pu.classList.remove("bump"); void pu.offsetWidth; pu.classList.add("bump");
+      sCoin(); say(`${st.sold}${s.unit}め <ruby>売<rt>う</rt></ruby>れた！ コイン ${st.sold}まい`);
+    }
   }, 650 + j*250));
   setTimeout(()=>g.classList.add("bye"), 1000 + (pis.length-1)*250);
 }
@@ -1146,7 +1149,7 @@ function showIntro(){
     <div class="rule">1${s.unit}に <span class="per-n">${cnt(s.per,s)}</span>ずつ <ruby>入<rt>い</rt></ruby>れて <ruby>売<rt>う</rt></ruby>る</div>
     <p class="q"><span class="n-total">${cnt(s.total,s)}</span>を <span class="n-per">${cnt(s.per,s)}</span>ずつに <ruby>分<rt>わ</rt></ruby>けると、<ruby>何<rt>なん</rt></ruby>${s.unit}に なりますか？</p>
     <div class="eq"><span class="n-total">${s.total}</span> <span class="op">÷</span> <span class="n-per">${s.per}</span> <span class="op">=</span> <span class="n-ans" id="box">□</span></div>
-    <p class="note" id="introNote">${tutorialDone ? "□に <ruby>入<rt>はい</rt></ruby>る <ruby>数<rt>かず</rt></ruby>を えらんでね。1<ruby>回<rt>かい</rt></ruby>で <ruby>正<rt>せい</rt></ruby>かいすると ★2こ、ぜんぶ <ruby>売<rt>う</rt></ruby>れるよ！<br>わからない ときは、<ruby>丸<rt>まる</rt></ruby>で かこんでから <ruby>答<rt>こた</rt></ruby>えても ★1こ。" : "はじめは わからなくて だいじょうぶ。<ruby>丸<rt>まる</rt></ruby>で かこんで たしかめよう！"}</p>
+    <p class="note" id="introNote">${st.practice ? "<b>✏️ れんしゅう</b>（コインと ★は なし）<br>" : ""}${tutorialDone ? "□に <ruby>入<rt>はい</rt></ruby>る <ruby>数<rt>かず</rt></ruby>を えらんでね。1<ruby>回<rt>かい</rt></ruby>で <ruby>正<rt>せい</rt></ruby>かいすると ★2こ、ぜんぶ <ruby>売<rt>う</rt></ruby>れるよ！<br>わからない ときは、<ruby>丸<rt>まる</rt></ruby>で かこんでから <ruby>答<rt>こた</rt></ruby>えても ★1こ。" : "はじめは わからなくて だいじょうぶ。<ruby>丸<rt>まる</rt></ruby>で かこんで たしかめよう！"}</p>
     <div class="nums">${nums}</div>
     <div id="introBtns"></div>
   `);
@@ -1178,11 +1181,12 @@ function showIntro(){
 function showResult(){
   const s = S(), n = st.n, hit = st.firstTry===true, sold = st.sold, left = n - sold;
   const r0 = rankOf(stars);
-  const gain = hit ? 2 : (st.firstTry===null && st.answered && !st.afterWrong) ? 1 : 0;   // さきに 1回で 正かい＝★2、かこんでから 正かい＝★1
+  const P = st.practice;
+  const gain = P ? 0 : hit ? 2 : (st.firstTry===null && st.answered && !st.afterWrong) ? 1 : 0;   // さきに 1回で 正かい＝★2、かこんでから 正かい＝★1、れんしゅう＝0
   stars += gain;
   const r1 = rankOf(stars), nx = nextRank(stars); updateRank();
-  done.add(doneKey(s));
-  const zkNew = !zukan[s.key]; zukan[s.key] = (zukan[s.key]||0) + 1;
+  if(!P) done.add(doneKey(s));
+  const zkNew = !P && !zukan[s.key]; if(!P) zukan[s.key] = (zukan[s.key]||0) + 1;
   let tutNote = "";
   if(tut.started){
     tutNote = `<p class="tut-note">${s.unit} 1つ分は <span class="n-per">${cnt(s.per,s)}</span>。<br><span class="n-total">${cnt(s.total,s)}</span>の <ruby>中<rt>なか</rt></ruby>に 1つ分が <span class="n-ans">いくつ</span> あるかを もとめる <ruby>計算<rt>けいさん</rt></ruby>を <b>わり<ruby>算<rt>ざん</rt></ruby></b>と いうよ。</p>`;
@@ -1196,8 +1200,9 @@ function showResult(){
     ${tutNote}
     ${r1!==r0 ? `<div class="rank-up"><span aria-hidden="true">${r1.icon}</span> <ruby>経験値<rt>けいけんち</rt></ruby>アップ！<br><b>${r1.name}</b>${r1.story ? `<br><span class="rk-story">${r1.story}</span>` : ""}${nx ? "" : "<br><small>ながい あいだ おつかれさまでした！ <ruby>引退<rt>いんたい</rt></ruby>しても、つづけて あそべるよ。</small>"}</div>` : ""}
     ${zkNew ? `<p class="zk-new">📖 ${s.name}が <ruby>直売店<rt>ちょくばいてん</rt></ruby><ruby>図<rt>ず</rt></ruby>かんに のったよ！（${zkCount()}/${STAGES.length}）</p>` : ""}
-    <p>${left ? `${sold}${s.unit} <ruby>売<rt>う</rt></ruby>れて、コイン <b class="n-ans">${sold}まい</b>。<br>のこった ${left}${s.unit}は <ruby>自分<rt>じぶん</rt></ruby>で <ruby>食<rt>た</rt></ruby>べた 😋` : `ぜんぶ <ruby>売<rt>う</rt></ruby>れて、コイン <b class="n-ans">${sold}まい</b> もうかった！`}</p>
-    <p class="${gain?"star":"note"}">${hit ? "★★ さきに 1<ruby>回<rt>かい</rt></ruby>で <ruby>正<rt>せい</rt></ruby>かい！ ★が 2こ。ぜんぶ <ruby>売<rt>う</rt></ruby>れたよ" : left ? "1<ruby>回<rt>かい</rt></ruby>で <ruby>正<rt>せい</rt></ruby>かいすると、ぜんぶ <ruby>売<rt>う</rt></ruby>れるよ！" : gain===1 ? "★ <ruby>丸<rt>まる</rt></ruby>で かこんでから <ruby>正<rt>せい</rt></ruby>かい！ ★が 1こ。さきに <ruby>答<rt>こた</rt></ruby>えて 1<ruby>回<rt>かい</rt></ruby>で <ruby>正<rt>せい</rt></ruby>かい すると ★が 2こ だよ" : ""}</p>
+    ${P ? `<p class="note">れんしゅう だったので、コインと ★は なし。コインと ★が もらえるのは 1<ruby>回<rt>かい</rt></ruby>目 だけ だよ。</p>` : ""}
+    <p${P ? ' hidden' : ""}>${left ? `${sold}${s.unit} <ruby>売<rt>う</rt></ruby>れて、コイン <b class="n-ans">${sold}まい</b>。<br>のこった ${left}${s.unit}は <ruby>自分<rt>じぶん</rt></ruby>で <ruby>食<rt>た</rt></ruby>べた 😋` : `ぜんぶ <ruby>売<rt>う</rt></ruby>れて、コイン <b class="n-ans">${sold}まい</b> もうかった！`}</p>
+    <p class="${gain?"star":"note"}"${P ? " hidden" : ""}>${hit ? "★★ さきに 1<ruby>回<rt>かい</rt></ruby>で <ruby>正<rt>せい</rt></ruby>かい！ ★が 2こ。ぜんぶ <ruby>売<rt>う</rt></ruby>れたよ" : left ? "1<ruby>回<rt>かい</rt></ruby>で <ruby>正<rt>せい</rt></ruby>かいすると、ぜんぶ <ruby>売<rt>う</rt></ruby>れるよ！" : gain===1 ? "★ <ruby>丸<rt>まる</rt></ruby>で かこんでから <ruby>正<rt>せい</rt></ruby>かい！ ★が 1こ。さきに <ruby>答<rt>こた</rt></ruby>えて 1<ruby>回<rt>かい</rt></ruby>で <ruby>正<rt>せい</rt></ruby>かい すると ★が 2こ だよ" : ""}</p>
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px">
       <button type="button" class="btn sub" id="again">もう<ruby>一<rt>いち</rt></ruby>ど</button>
       <button type="button" class="btn" id="next"><ruby>農園<rt>のうえん</rt></ruby>に もどる</button>
@@ -1205,7 +1210,11 @@ function showResult(){
   `);
   if(hit) [880,1100,1320].forEach((f,i)=>tone(f,.2,"sine",.12,i*.1));
   if(r1!==r0) [523,659,784,1047,1319,1568].forEach((f,i)=>tone(f,.22,"sine",.12,.4+i*.11));
-  $("again").onclick = () => { addCoins(-sold); earned -= sold; stars -= gain; updateRank(); done.delete(doneKey(s)); if(!--zukan[s.key]) delete zukan[s.key]; closeCard(); startStage(si); };
+  $("again").onclick = () => {
+    // 1回目で 正かいして ぜんぶ 売れた（または れんしゅう中）なら、もう一どは れんしゅう（コイン・★なし）
+    if(P || (gain > 0 && left === 0)){ closeCard(); startStage(si, true); return; }
+    addCoins(-sold); earned -= sold; stars -= gain; updateRank(); done.delete(doneKey(s)); if(!--zukan[s.key]) delete zukan[s.key]; closeCard(); startStage(si);
+  };
   $("next").onclick = showFarm;
 }
 
