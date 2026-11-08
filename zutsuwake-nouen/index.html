@@ -1232,7 +1232,7 @@ function showResult(){
     ${zkNew ? `<p class="zk-new">📖 ${s.name}が <b class="zk-name"><ruby>直売店<rt>ちょくばいてん</rt></ruby><ruby>図<rt>ず</rt></ruby>かん</b>に のったよ！（${zkCount()}/${STAGES.length}）</p>` : ""}
     ${P ? `<p class="note">れんしゅう だったので、コインは <b>1まい</b>${gain ? "、★は <b>1こ</b>" : "。まちがえたので ★は なし"}。<br><ruby>売<rt>う</rt></ruby>れた ぶんの コインと ★が もらえるのは 1<ruby>回<rt>かい</rt></ruby>目 だけ だよ。</p>` : ""}
     <p${P ? ' hidden' : ""}>${left ? `${sold}${s.unit} <ruby>売<rt>う</rt></ruby>れて、コイン <b class="n-ans">${sold}まい</b>。<br>のこった ${left}${s.unit}は <ruby>自分<rt>じぶん</rt></ruby>で <ruby>食<rt>た</rt></ruby>べた 😋` : `ぜんぶ <ruby>売<rt>う</rt></ruby>れて、コイン <b class="n-ans">${sold}まい</b> もうかった！`}</p>
-    <p class="${gain?"star":"note"}"${P ? " hidden" : ""}>${hit ? "★★ さきに 1<ruby>回<rt>かい</rt></ruby>で <ruby>正<rt>せい</rt></ruby>かい！ ★が 2こ。ぜんぶ <ruby>売<rt>う</rt></ruby>れたよ" : left ? "1<ruby>回<rt>かい</rt></ruby>で <ruby>正<rt>せい</rt></ruby>かいすると、ぜんぶ <ruby>売<rt>う</rt></ruby>れるよ！" : ""}</p>
+    <p class="${gain?"star":"note"}"${P ? " hidden" : ""}>${left ? "1<ruby>回<rt>かい</rt></ruby>で <ruby>正<rt>せい</rt></ruby>かいすると、ぜんぶ <ruby>売<rt>う</rt></ruby>れるよ！" : ""}</p>
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px">
       <button type="button" class="btn sub" id="again">もう<ruby>一<rt>いち</rt></ruby>ど</button>
       <button type="button" class="btn" id="next"><ruby>農園<rt>のうえん</rt></ruby>に もどる</button>
