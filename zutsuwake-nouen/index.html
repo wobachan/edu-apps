@@ -171,10 +171,11 @@ main{max-width:960px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-lef
 .t-net{background:repeating-linear-gradient(45deg,transparent 0 7px,rgba(196,67,43,.55) 7px 9px),repeating-linear-gradient(-45deg,transparent 0 7px,rgba(196,67,43,.55) 7px 9px);border:2px solid var(--shu);border-radius:10px 10px 18px 18px}
 .t-net .slot{background:rgba(255,255,255,.45)}
 /* たば：横棒は なくし、少し かさねて 1つの たばに 見せる。下に 小さな むすび目 */
-.t-band{background:rgba(125,163,95,.12);border:2px dashed #9dbb83;border-radius:12px 12px 20px 20px;padding:6px 12px 14px}
-.t-band::before{content:"";position:absolute;left:50%;bottom:3px;width:18px;height:9px;transform:translateX(-50%);background:var(--shu);border-radius:5px;z-index:2;box-shadow:-9px 2px 0 -3px var(--shu),9px 2px 0 -3px var(--shu)}
+.t-band{background:rgba(125,163,95,.12);border:2px dashed #9dbb83;border-radius:12px 12px 20px 20px;padding:6px 12px 10px}
+.t-band::before{content:"";position:absolute;left:50%;top:60%;width:18px;height:9px;transform:translate(-50%,-50%);background:var(--shu);border-radius:5px;z-index:2;box-shadow:-9px 2px 0 -3px var(--shu),9px 2px 0 -3px var(--shu)}
 .t-band .slots{gap:0;grid-template-columns:repeat(var(--cols),calc(var(--sl,30px)*.5));grid-auto-rows:calc(var(--sl,30px)*.62);padding-right:calc(var(--sl,30px)*.5);padding-bottom:calc(var(--sl,30px)*.38)}
 .t-band .slot{background:none;font-size:calc(var(--sl,30px)*.95)}
+.t-band .slot:empty::before{content:"";width:22%;height:85%;border-radius:6px;background:rgba(110,150,80,.28)}   /* 空のときは 茎の かげ */
 .t-band .slot:nth-child(odd){transform:rotate(-8deg)}
 .t-band .slot:nth-child(even){transform:rotate(7deg)}
 .t-sara{background:radial-gradient(ellipse at 50% 50%,#ffffff 0 60%,#dfe4ea 61% 66%,#ffffff 67%);border:2px solid #c9d1da;border-radius:50%;padding:16px 22px}
