@@ -80,6 +80,16 @@ main{max-width:960px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-lef
 #box{display:inline-block}
 .per-n{color:#2f7d32;font-size:1.5em;font-weight:900;line-height:1.1;font-variant-numeric:tabular-nums}
 .card-top{display:flex;justify-content:flex-start;margin:-6px 0 2px}
+.adult{margin-top:14px;text-align:left;background:var(--white);border-radius:10px;padding:8px 12px;font-size:14px}
+.adult summary{cursor:pointer;font-weight:900;color:var(--ai)}
+.rule-tbl{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px;line-height:1.5}
+.rule-tbl th,.rule-tbl td{border:1px solid #d8cfb8;padding:4px 6px;vertical-align:middle}
+.rule-tbl thead th{background:#efe6cf}
+.rule-tbl tr.grp th{background:#f7f1e2;text-align:left}
+.rule-tbl td:nth-child(2),.rule-tbl td:nth-child(3),.rule-tbl thead th{white-space:nowrap}
+.rule-tbl td:nth-child(3){text-align:center}
+.rule-tbl small{font-weight:400;color:#6b5d42}
+.rule-note{font-size:12px;color:#6b5d42;margin:6px 0 0}
 .how-list{display:flex;flex-direction:column;gap:8px;text-align:left;margin-top:10px}
 .how{display:grid;grid-template-columns:32px minmax(0,1fr);gap:10px;align-items:start;background:var(--white);border-radius:10px;padding:8px 12px;line-height:1.9}
 .how-n{width:28px;height:28px;border-radius:50%;background:var(--ai);color:var(--white);font-weight:900;display:grid;place-items:center;margin-top:4px}
@@ -1264,6 +1274,25 @@ function openHow(){
     ${step(6,"🗓",'きせつと <ruby>年月<rt>ねんげつ</rt></ruby>', 'その きせつの ものを ぜんぶ <ruby>売<rt>う</rt></ruby>り<ruby>切<rt>き</rt></ruby>るか、「▶ すすむ」を おすと、つぎの きせつへ すすむよ（もどれないよ）。<ruby>冬<rt>ふゆ</rt></ruby>から <ruby>春<rt>はる</rt></ruby>に なると 1<ruby>年<rt>ねん</rt></ruby> たつよ。')}
     ${step(7,"📖",'★・<ruby>経験値<rt>けいけんち</rt></ruby>・<ruby>図<rt>ず</rt></ruby>かん', '★が たまると <ruby>経験値<rt>けいけんち</rt></ruby>が <ruby>上<rt>あ</rt></ruby>がるよ。<ruby>売<rt>う</rt></ruby>った ものは <ruby>直売店<rt>ちょくばいてん</rt></ruby><ruby>図<rt>ず</rt></ruby>かんに のるよ。ぜんぶ そろえよう！')}
     </div>
+    <details class="adult">
+      <summary>おうちの方・先生へ（コインと★のきまり）</summary>
+      <table class="rule-tbl">
+        <thead><tr><th>答え方</th><th>コイン</th><th>★</th><th>売れ方</th></tr></thead>
+        <tbody>
+          <tr class="grp"><th colspan="4">ふつう（1回目）</th></tr>
+          <tr><td>先に答えて、1回で正解</td><td>売れた数</td><td><b>2</b></td><td>全部売れる</td></tr>
+          <tr><td>わからない → 丸で囲んでから正解</td><td>売れた数</td><td><b>1</b></td><td>全部売れる</td></tr>
+          <tr><td>まちがえた（先でも後でも）</td><td>売れた数</td><td>0</td><td>1つ売れ残る（自分で食べる）</td></tr>
+          <tr class="grp"><th colspan="4">れんしゅう（正解した後の「もう一ど」）</th></tr>
+          <tr><td>先に答えて、1回で正解</td><td>1</td><td><b>1</b></td><td>全部売れる</td></tr>
+          <tr><td>わからない → 丸で囲んでから正解</td><td>1</td><td><b>1</b></td><td>全部売れる</td></tr>
+          <tr><td>まちがえた</td><td>1</td><td>0</td><td>1つ売れ残る</td></tr>
+          <tr class="grp"><th colspan="4">やり直し（まちがえた後の「もう一ど」）</th></tr>
+          <tr><td colspan="4">1回目を取り消して、ふつうと同じ決まりでやり直す</td></tr>
+        </tbody>
+      </table>
+      <p class="rule-note">★がたまると経験値（見習い→…→引退、★240）が上がります。わる数は品物ごとに2〜10、答えは2〜10。季節は売り切るか「▶ すすむ」で進み、もどれません。</p>
+    </details>
     <div class="shop-foot"><button type="button" class="btn" id="howClose">とじる</button></div>
   `);
   $("howClose").onclick = closeCard; $("howBack").onclick = closeCard;
