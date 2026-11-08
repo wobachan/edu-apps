@@ -69,13 +69,14 @@ main{max-width:960px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-lef
 .item.grouped:hover{background:none}
 .packarea{background:rgba(255,255,255,.55);border:3px dashed var(--wood);border-radius:10px;padding:14px 12px 18px;display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end}
 .pno{position:absolute;left:50%;bottom:-12px;transform:translateX(-50%);min-width:22px;height:22px;border-radius:11px;color:var(--white);font-weight:900;font-size:13px;display:grid;place-items:center;border:2px solid var(--white);z-index:2}
-.lane{position:relative;height:64px;overflow:hidden}
-.guest{position:absolute;left:50%;bottom:0;display:flex;align-items:flex-end;gap:6px;transform:translateX(-50%);animation:walkin .6s ease-out both}
+.lane{position:relative;height:96px;overflow:hidden}
+.guest{position:absolute;left:50%;bottom:0;display:flex;align-items:flex-end;gap:14px;transform:translateX(-50%);animation:walkin .6s ease-out both}
 .guest.bye{animation:walkout .5s ease-in forwards}
 @keyframes walkin{from{transform:translateX(60vw)}}
 @keyframes walkout{to{transform:translateX(-80vw)}}
 .gface{font-size:44px;line-height:1}
-.gsay{background:var(--white);border:2px solid var(--ai);border-radius:12px;padding:2px 10px;font-weight:700;font-size:15px;margin-bottom:22px;white-space:nowrap}
+.gone{display:flex;flex-direction:column;align-items:center;gap:2px}
+.gsay{background:var(--white);border:2px solid var(--ai);border-radius:12px;padding:0 8px;font-weight:700;font-size:13px;line-height:1.9;white-space:nowrap;animation:pop .3s ease-out both}
 #box{display:inline-block}
 .per-n{color:#2f7d32;font-size:1.5em;font-weight:900;line-height:1.1;font-variant-numeric:tabular-nums}
 .how-list{display:flex;flex-direction:column;gap:8px;text-align:left;margin-top:10px}
@@ -1087,8 +1088,7 @@ function openStore(){
 function guest(pis){
   const s = S(), lane = $("lane"), g = document.createElement("div");
   g.className = "guest";
-  const faces = pis.map(()=>`<span class="gface">${GUESTS[Math.floor(Math.random()*GUESTS.length)]}</span>`).join("");
-  g.innerHTML = `${faces}<span class="gsay">${pis.length > 1 ? `1${s.unit}ずつ ください！` : `1${s.unit} ください！`}</span>`;
+  g.innerHTML = pis.map((_,j)=>`<span class="gone"><span class="gsay" style="animation-delay:${.35 + j*.25}s">1${s.unit} ください！</span><span class="gface">${GUESTS[Math.floor(Math.random()*GUESTS.length)]}</span></span>`).join("");   // ひとり ひとりが いう
   lane.innerHTML = ""; lane.appendChild(g);
   pis.forEach((pi,j)=>setTimeout(()=>{
     const p = st.packs[pi]; st.sold++;
