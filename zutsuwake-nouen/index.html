@@ -1076,22 +1076,28 @@ function openStore(){
   const left = (tut.started || (st.firstTry!==false && !st.afterWrong)) ? 0 : 1;   // まちがえたら 1つ うれのこる（わからない → かこんでから 正かいなら ぜんぶ うれる）
   const order = [...Array(n).keys()].sort(()=>Math.random()-.5).slice(0, n-left);
   say("いらっしゃい、いらっしゃい！");
-  order.forEach((pi,k)=>setTimeout(()=>guest(pi), 900 + k*1300));
-  setTimeout(endStore, 900 + order.length*1300 + 500);
+  // 5人いじょうなら 2〜3人ずつ まとめて くる
+  const batches = [];
+  for(let k=0; k<order.length; ){ const m = order.length >= 5 ? Math.min(order.length-k, 2 + Math.floor(Math.random()*2)) : 1; batches.push(order.slice(k, k+m)); k += m; }
+  if(batches.length > 1 && batches[batches.length-1].length===1 && order.length >= 5) batches[batches.length-2].push(...batches.pop());   // さいごが 1人だけに ならないように
+  let t = 900;
+  batches.forEach(b=>{ setTimeout(()=>guest(b), t); t += 1300 + (b.length-1)*250; });
+  setTimeout(endStore, t + 500);
 }
-function guest(pi){
+function guest(pis){
   const s = S(), lane = $("lane"), g = document.createElement("div");
   g.className = "guest";
-  g.innerHTML = `<span class="gface">${GUESTS[Math.floor(Math.random()*GUESTS.length)]}</span><span class="gsay">1${s.unit} ください！</span>`;
+  const faces = pis.map(()=>`<span class="gface">${GUESTS[Math.floor(Math.random()*GUESTS.length)]}</span>`).join("");
+  g.innerHTML = `${faces}<span class="gsay">${pis.length > 1 ? `1${s.unit}ずつ ください！` : `1${s.unit} ください！`}</span>`;
   lane.innerHTML = ""; lane.appendChild(g);
-  setTimeout(()=>{
+  pis.forEach((pi,j)=>setTimeout(()=>{
     const p = st.packs[pi]; st.sold++;
     p.el.classList.add("sold"); p.badge.textContent = st.sold; p.stamp.innerHTML = "<span><ruby>売<rt>う</rt></ruby>れた</span>";
     addCoins(1); earned++;
     const pu = $("purse"); pu.classList.remove("bump"); void pu.offsetWidth; pu.classList.add("bump");
     sCoin(); say(`${st.sold}${s.unit}め <ruby>売<rt>う</rt></ruby>れた！ コイン ${st.sold}まい`);
-  }, 650);
-  setTimeout(()=>g.classList.add("bye"), 1000);
+  }, 650 + j*250));
+  setTimeout(()=>g.classList.add("bye"), 1000 + (pis.length-1)*250);
 }
 function endStore(){
   const s = S(); $("lane").innerHTML = "";
