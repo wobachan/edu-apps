@@ -114,6 +114,7 @@ main{max-width:960px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-lef
 .zk.no{background:rgba(255,255,255,.45);border:2px dashed #cdbf9f}
 .zk.no .zi{filter:brightness(0) opacity(.22)}
 .zk.no b{color:#8a7a5c}
+.zk-name{color:#7b3fb3;font-weight:900;font-size:1.1em}
 .zk-new{background:#fff7d6;border:2px dashed #e0b437;border-radius:10px;padding:6px 10px;font-weight:700}
 .rankbadge{margin-left:auto;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.14);color:var(--white);border:2px solid rgba(255,255,255,.45);border-radius:999px;padding:2px 12px;font-weight:900;font-size:14px;cursor:pointer;line-height:1.9}
 .rankbadge rt{font-size:.55em}
@@ -1225,7 +1226,7 @@ function showResult(){
     <p><span class="n-total">${cnt(s.total,s)}</span>の <ruby>中<rt>なか</rt></ruby>に <span class="n-per">${cnt(s.per,s)}</span>が <span class="n-ans">${n}<ruby>回<rt>かい</rt></ruby></span> <ruby>入<rt>はい</rt></ruby>っていたね。</p>
     ${tutNote}
     ${r1!==r0 ? `<div class="rank-up"><span aria-hidden="true">${r1.icon}</span> <ruby>経験値<rt>けいけんち</rt></ruby>アップ！<br><b>${r1.name}</b>${r1.story ? `<br><span class="rk-story">${r1.story}</span>` : ""}${nx ? "" : "<br><small>ながい あいだ おつかれさまでした！ <ruby>引退<rt>いんたい</rt></ruby>しても、つづけて あそべるよ。</small>"}</div>` : ""}
-    ${zkNew ? `<p class="zk-new">📖 ${s.name}が <ruby>直売店<rt>ちょくばいてん</rt></ruby><ruby>図<rt>ず</rt></ruby>かんに のったよ！（${zkCount()}/${STAGES.length}）</p>` : ""}
+    ${zkNew ? `<p class="zk-new">📖 ${s.name}が <b class="zk-name"><ruby>直売店<rt>ちょくばいてん</rt></ruby><ruby>図<rt>ず</rt></ruby>かん</b>に のったよ！（${zkCount()}/${STAGES.length}）</p>` : ""}
     ${P ? `<p class="note">れんしゅう だったので、コインは <b>1まい</b>${gain ? "、★は <b>1こ</b>" : "。まちがえたので ★は なし"}。<br><ruby>売<rt>う</rt></ruby>れた ぶんの コインと ★が もらえるのは 1<ruby>回<rt>かい</rt></ruby>目 だけ だよ。</p>` : ""}
     <p${P ? ' hidden' : ""}>${left ? `${sold}${s.unit} <ruby>売<rt>う</rt></ruby>れて、コイン <b class="n-ans">${sold}まい</b>。<br>のこった ${left}${s.unit}は <ruby>自分<rt>じぶん</rt></ruby>で <ruby>食<rt>た</rt></ruby>べた 😋` : `ぜんぶ <ruby>売<rt>う</rt></ruby>れて、コイン <b class="n-ans">${sold}まい</b> もうかった！`}</p>
     <p class="${gain?"star":"note"}"${P ? " hidden" : ""}>${hit ? "★★ さきに 1<ruby>回<rt>かい</rt></ruby>で <ruby>正<rt>せい</rt></ruby>かい！ ★が 2こ。ぜんぶ <ruby>売<rt>う</rt></ruby>れたよ" : left ? "1<ruby>回<rt>かい</rt></ruby>で <ruby>正<rt>せい</rt></ruby>かいすると、ぜんぶ <ruby>売<rt>う</rt></ruby>れるよ！" : gain===1 ? "★ <ruby>丸<rt>まる</rt></ruby>で かこんでから <ruby>正<rt>せい</rt></ruby>かい！ ★が 1こ。さきに <ruby>答<rt>こた</rt></ruby>えて 1<ruby>回<rt>かい</rt></ruby>で <ruby>正<rt>せい</rt></ruby>かい すると ★が 2こ だよ" : ""}</p>
