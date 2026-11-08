@@ -340,15 +340,22 @@ rt{font-family:var(--body);font-size:.45em;font-weight:700;letter-spacing:0}
 .shop-foot{margin-top:14px}
 .reset{margin-top:14px;font-size:13px;color:#8a7a5c}
 .reset summary{cursor:pointer}
-.yama{border:5px solid #4b5d3a;border-radius:16px;padding:8px 12px;position:relative;overflow:hidden;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+.yama{border:4px solid #4b5d3a;border-radius:14px;padding:4px 10px;position:relative;overflow:hidden;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
   background:linear-gradient(170deg,transparent 0 24%,#5e8a45 24.2%) top left/55% 100% no-repeat,linear-gradient(195deg,transparent 0 30%,#4f7a3a 30.2%) top right/60% 100% no-repeat,linear-gradient(#d4e4d6 0 30%,#6f9a55 30%)}
 .yama[data-season="aki"]{background:linear-gradient(170deg,transparent 0 24%,#b9783a 24.2%) top left/55% 100% no-repeat,linear-gradient(195deg,transparent 0 30%,#9a6a32 30.2%) top right/60% 100% no-repeat,linear-gradient(#efdfc6 0 30%,#a98a4e 30%)}
 .yama[data-season="fuyu"]{background:linear-gradient(170deg,transparent 0 24%,#e9eef2 24.2%) top left/55% 100% no-repeat,linear-gradient(195deg,transparent 0 30%,#dfe6ec 30.2%) top right/60% 100% no-repeat,linear-gradient(#c6d3df 0 30%,#d6dfe6 30%)}
 .yama[data-season="haru"]{background:linear-gradient(170deg,transparent 0 24%,#8fbf6a 24.2%) top left/55% 100% no-repeat,linear-gradient(195deg,transparent 0 30%,#7aae58 30.2%) top right/60% 100% no-repeat,linear-gradient(#e2edf6 0 30%,#86b562 30%)}
-.yama-title{font-family:var(--display);font-size:17px;margin:0;color:var(--ink);background:rgba(255,255,255,.75);display:inline-block;padding:0 12px;border-radius:8px;line-height:1.9}
+@media (max-width:600px){
+  .noren .hd-txt{display:none}
+  .noren h1{font-size:20px}
+  .noren-in{gap:6px 8px}
+}
+.yama-title{font-family:var(--display);font-size:15px;margin:0;color:var(--ink);background:rgba(255,255,255,.75);display:inline-block;padding:0 12px;border-radius:8px;line-height:1.9}
 .yama-grid{flex:1 1 300px;display:grid;grid-template-columns:repeat(var(--cd,4),minmax(0,1fr));gap:4px 8px;padding-top:4px}
 .yama-grid .last-d{grid-column:1/-1}
-.yama.locked .yama-lock{flex:1 1 260px;margin:0;background:rgba(255,255,255,.85);border-radius:10px;padding:10px 14px;font-weight:700}
+.yama.locked .yama-lock{flex:1 1 260px;margin:0;background:rgba(255,255,255,.85);border-radius:10px;padding:2px 12px;font-weight:700;font-size:14px}
+.yama .art{font-size:calc(var(--art,72px)*.7)}
+.yama .spot{padding:2px}
 .yama.locked{filter:saturate(.6)}
 .t-cup{background:#ffffff;border:2px solid #d9c9a8;border-radius:4px 4px 16px 16px}
 .lay-cup{background:#ffffff;border:2px solid #d9c9a8}
@@ -382,7 +389,7 @@ rt{font-family:var(--body);font-size:.45em;font-weight:700;letter-spacing:0}
     <span class="hd-year" id="yearLine"></span>
     <button type="button" class="rankbadge" id="rankBtn" aria-label="経験値"></button>
     <div class="purse" id="purse"><span class="coin">¥</span><span id="coins">0</span>まい</div>
-    <button class="mute" id="howBtn" type="button">❓ あそび<ruby>方<rt>かた</rt></ruby></button>
+    <button class="mute" id="howBtn" type="button" aria-label="あそび方">❓<span class="hd-txt"> あそび<ruby>方<rt>かた</rt></ruby></span></button>
     <button class="mute" id="mute" type="button"><ruby>音<rt>おと</rt></ruby>：あり</button>
   </div>
 </header>
@@ -1250,7 +1257,7 @@ const RANKS = [
 ];
 const rankOf = n => RANKS.filter(r=>n>=r.at).pop();
 const nextRank = n => RANKS.find(r=>r.at>n);
-function updateRank(){ const r = rankOf(stars); $("rankBtn").innerHTML = `${r.icon} ${r.name} <span class="rk-star">★${stars}</span>`; }
+function updateRank(){ const r = rankOf(stars); $("rankBtn").innerHTML = `${r.icon} <span class="hd-txt">${r.name}</span> <span class="rk-star">★${stars}</span>`; }
 function openRanks(){
   const cur = rankOf(stars), nx = nextRank(stars);
   const rows = RANKS.map(r=>`<div class="rk-row${r===cur?" now":""}${stars<r.at?" lock":""}"><span class="rk-i" aria-hidden="true">${r.icon}</span><span class="rk-n">${r.name}</span><span class="rk-at">★${r.at}</span></div>`).join("");
