@@ -1026,11 +1026,11 @@ function allGrouped(){
   st.groups.forEach((g,k)=>setTimeout(()=>{
     const p = st.packs[k];
     g.items.forEach(b=>b.classList.add("taken")); g.packed = true; drawLasso();
-    g.items.forEach((b,j)=>setTimeout(()=>{ const sl = p.slots[j]; sl.innerHTML = s.item; sl.classList.add("in"); sPop(j+1); }, 120 + j*60));
-    setTimeout(()=>p.el.classList.add("full"), 180 + s.per*60);
+    g.items.forEach((b,j)=>setTimeout(()=>{ const sl = p.slots[j]; sl.innerHTML = s.item; sl.classList.add("in"); sPop(j+1); }, 60 + j*35));
+    setTimeout(()=>p.el.classList.add("full"), 90 + s.per*35);
     $("pileLeft").innerHTML = `${s.unit}に つめた：${k+1}`;
-  }, 1600 + k*650));
-  setTimeout(()=> st.answered ? toCounter() : askAfter(), 1600 + st.n*650 + 800);
+  }, 900 + k*300));
+  setTimeout(()=> st.answered ? toCounter() : askAfter(), 900 + st.n*300 + 500);
 }
 function askAfter(){
   const s = S(), n = st.n;
