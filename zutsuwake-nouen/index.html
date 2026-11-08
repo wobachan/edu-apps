@@ -308,8 +308,9 @@ rt{font-family:var(--body);font-size:.45em;font-weight:700;letter-spacing:0}
 .farm-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .shopbtn{font-size:16px;padding:10px 16px;position:relative}
 .shopbtn.gift::after{content:"🎁";position:absolute;top:-12px;right:-8px;font-size:22px;animation:bump 1s infinite}
-.spot.off{cursor:default}
-.spot.off .art{filter:grayscale(.85) opacity(.55)}
+.spot.off{cursor:pointer}
+.notyet{position:absolute;left:50%;top:20%;transform:translateX(-50%);z-index:3;background:var(--white);border:3px solid var(--ai);border-radius:14px;padding:4px 14px;font-weight:900;font-size:18px;box-shadow:0 4px 10px rgba(0,0,0,.2);white-space:nowrap;color:var(--ai);animation:pop .25s ease-out;pointer-events:none}
+.spot.off .art{filter:grayscale(.6) opacity(.65)}
 .spot.off .sign{opacity:.7}
 .when{font-size:12px;font-weight:700;background:rgba(255,255,255,.75);border-radius:6px;padding:0 6px;color:var(--ink)}
 .dirt{display:inline-block;width:1.4em;height:.7em;border-radius:10px;
@@ -669,11 +670,14 @@ function renderFarm(){
   farm.innerHTML = '<span class="sun" aria-hidden="true"></span>';
   const tiles = [];   // {kind, s, i, w}
   const seenPlot = new Set();
-  // 1) いまの きせつに とれるもの
-  STAGES.forEach((s,i)=>{ if(owned.has(s.key) && !s.pond && inSeason(s)){ seenPlot.add(plotOf(s)); tiles.push({kind:"play", s, i, w:s.wide?2:1}); } });
-  // 2) もっているけど おやすみ中（下に 小さく まとめる）
-  const offs = [];
-  STAGES.forEach((s,i)=>{ if(owned.has(s.key) && !s.pond && !seenPlot.has(plotOf(s))){ seenPlot.add(plotOf(s)); offs.push(s); } });
+  // 1) うえた じゅんに 場所を きめる（きせつが かわっても うごかない）。とれない きせつは うすく 出す
+  [...owned].forEach(k=>{
+    const s0 = byKey(k); if(!s0 || s0.wild || s0.pond) return;
+    const pk = plotOf(s0); if(seenPlot.has(pk)) return; seenPlot.add(pk);
+    const members = STAGES.map((s,i)=>[s,i]).filter(([s])=>owned.has(s.key) && plotOf(s)===pk);
+    const cur = members.find(([s])=>inSeason(s)) , m = cur || members[0];
+    tiles.push({kind: cur ? "play" : "off", s:m[0], i:m[1], w:m[0].wide?2:1});
+  });
   // 3) あきち と やぶ
   for(let k=0;k<freeLand();k++) tiles.push({kind:"empty", w:1});
   if(land < LAND_MAX) tiles.push({kind:"yabu", w:1});
@@ -694,9 +698,16 @@ function renderFarm(){
       el.innerHTML = `<span class="art" aria-hidden="true">${t.s.art}</span><span class="sign">${t.s.sign}</span>`;
       el.onclick = () => { sHarvest(); startStage(t.i); };
     } else if(t.kind==="off"){
-      el = document.createElement("div");
+      el = document.createElement("button"); el.type="button";
       el.className = "spot off" + extra;
-      el.innerHTML = `<span class="art" aria-hidden="true">${t.s.art}</span><span class="sign">${t.s.sign}</span><span class="when">${seaText(t.s).replace("1<ruby>年<rt>ねん</rt></ruby>じゅう","いつでも")}に とれる</span>`;
+      el.setAttribute("aria-label", plain(`${t.s.name}は まだ とれない`));
+      el.innerHTML = `<span class="art" aria-hidden="true">${t.s.art}</span><span class="sign">${t.s.sign}</span>`;
+      el.onclick = () => {   // いつ とれるかは 書かない。おしたら「まだ とれないよ」
+        tone(330,.08,"sine",.08); tone(262,.12,"sine",.08,.08);
+        el.querySelector(".notyet")?.remove();
+        const tip = document.createElement("span"); tip.className = "notyet"; tip.textContent = "まだ とれないよ";
+        el.appendChild(tip); setTimeout(()=>tip.remove(), 1600);
+      };
     } else if(t.kind==="empty"){
       el = document.createElement("button"); el.type="button";
       el.className = "spot empty" + extra;
@@ -725,12 +736,6 @@ function renderFarm(){
       el.innerHTML = `<span class="art" aria-hidden="true">${trout.art.replace(/<span style="left[^>]*>🐟<\/span>/g,"")}</span><span class="sign">いけ（まだ <ruby>魚<rt>さかな</rt></ruby>は いないよ）</span>`;
     }
     farm.appendChild(el);
-  }
-  if(offs.length){
-    const MK = {haru:"🌸", natsu:"🌻", aki:"🍁", fuyu:"⛄"};
-    const row = document.createElement("div"); row.className = "offrow";
-    row.innerHTML = `<span class="off-l">おやすみ<ruby>中<rt>ちゅう</rt></ruby><br><small>ほかの きせつに とれる</small></span>` + offs.map(o=>`<span class="off-t" title="${plain(o.name)}"><span class="art off-a" aria-hidden="true">${o.art}</span><span class="off-n">${o.sign}</span><small>${(o.plot==="mame" ? ["natsu","aki"] : o.sea||[]).map(x=>MK[x]).join("")}</small></span>`).join("");
-    farm.appendChild(row);
   }
   const y = renderYama(); playable += y.p; sold += y.s;
   document.querySelectorAll('.spot.done').forEach(el=>{ if(!el.querySelector('.stamp')) el.insertAdjacentHTML('beforeend', '<span class="stamp"><span style="white-space:nowrap"><ruby>売<rt>う</rt></ruby>り<ruby>切<rt>き</rt></ruby>れ</span></span>'); });
