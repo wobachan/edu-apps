@@ -788,7 +788,7 @@ function renderYama(){
   const list = STAGES.map((s,i)=>[s,i]).filter(([s])=>s.wild && inSeason(s));
   const [cd, lastD] = pickCols(list.length, [4,3,2]);
   const [cm, lastM] = pickCols(list.length, [2,3]);
-  wrap.innerHTML = `<div class="yama" data-season="${season}"><p class="yama-title">⛰️ <ruby>野山<rt>のやま</rt></ruby>で とれるもの</p><div class="yama-grid" id="yamaGrid" style="--cd:${cd};--cm:${cm}"></div></div>`;
+  wrap.innerHTML = `<div class="yama" data-season="${season}"><p class="yama-title">⛰️ <ruby>野山<rt>のやま</rt></ruby></p><div class="yama-grid" id="yamaGrid" style="--cd:${cd};--cm:${cm}"></div></div>`;
   let p = 0, sd = 0;
   list.forEach(([s,i],k)=>{
     const last = k===list.length-1, isDone = done.has(doneKey(s));
