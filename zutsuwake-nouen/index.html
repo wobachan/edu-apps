@@ -79,6 +79,7 @@ main{max-width:960px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-lef
 .gsay{background:var(--white);border:2px solid var(--ai);border-radius:12px;padding:0 8px;font-weight:700;font-size:13px;line-height:1.9;white-space:nowrap;animation:pop .3s ease-out both}
 #box{display:inline-block}
 .per-n{color:#2f7d32;font-size:1.5em;font-weight:900;line-height:1.1;font-variant-numeric:tabular-nums}
+.card-top{display:flex;justify-content:flex-start;margin:-6px 0 2px}
 .how-list{display:flex;flex-direction:column;gap:8px;text-align:left;margin-top:10px}
 .how{display:grid;grid-template-columns:32px minmax(0,1fr);gap:10px;align-items:start;background:var(--white);border-radius:10px;padding:8px 12px;line-height:1.9}
 .how-n{width:28px;height:28px;border-radius:50%;background:var(--ai);color:var(--white);font-weight:900;display:grid;place-items:center;margin-top:4px}
@@ -1233,6 +1234,7 @@ $("rankBtn").onclick = () => { tone(600,.08); openRanks(); };
 function openHow(){
   const step = (n, icon, title, body) => `<div class="how"><span class="how-n">${n}</span><div><b>${icon} ${title}</b><p>${body}</p></div></div>`;
   card(`
+    <div class="card-top"><button type="button" class="back" id="howBack">← <ruby>農園<rt>のうえん</rt></ruby>に もどる</button></div>
     <h2>❓ あそび<ruby>方<rt>かた</rt></ruby></h2>
     <div class="how-list">
     ${step(1,"🌱",'<ruby>農園<rt>のうえん</rt></ruby>で <ruby>売<rt>う</rt></ruby>るものを えらぶ', '<ruby>今<rt>いま</rt></ruby>の きせつに とれるものを タップしよう。')}
@@ -1245,7 +1247,7 @@ function openHow(){
     </div>
     <div class="shop-foot"><button type="button" class="btn" id="howClose">とじる</button></div>
   `);
-  $("howClose").onclick = closeCard;
+  $("howClose").onclick = closeCard; $("howBack").onclick = closeCard;
 }
 $("howBtn").onclick = () => { tone(600,.08); openHow(); };
 
@@ -1267,6 +1269,7 @@ function openZukan(){
       : `<div class="zk no"><span class="zi" aria-hidden="true">${s.item}</span><b>？？？</b><small>${zkHint(s)}</small></div>`;
   }).join("");
   card(`
+    <div class="card-top"><button type="button" class="back" id="zkBack">← <ruby>農園<rt>のうえん</rt></ruby>に もどる</button></div>
     <h2>📖 <ruby>直売店<rt>ちょくばいてん</rt></ruby><ruby>図<rt>ず</rt></ruby>かん</h2>
     <p class="zk-count"><b>${got}</b> / ${all}</p>
     <div class="zk-bar" aria-hidden="true"><span style="width:${got/all*100}%"></span></div>
@@ -1274,7 +1277,7 @@ function openZukan(){
     <div class="zk-grid">${tiles}</div>
     <div class="shop-foot"><button type="button" class="btn" id="zkClose"><ruby>農園<rt>のうえん</rt></ruby>に もどる</button></div>
   `);
-  $("zkClose").onclick = closeCard;
+  $("zkClose").onclick = closeCard; $("zkBack").onclick = closeCard;
 }
 function showZukanComplete(){
   card(`
@@ -1332,6 +1335,7 @@ function renderShop(){
       pond ? `<span class="have">ほった</span>` : `<button type="button" class="buy" data-pond="1" ${coins < POND_PRICE ? "disabled" : ""}><span class="coin">¥</span>${POND_PRICE}</button>`);
   }
   $("card").innerHTML = `
+    <div class="card-top"><button type="button" class="back" id="shopBack">← <ruby>農園<rt>のうえん</rt></ruby>に もどる</button></div>
     <h2><ruby>農園<rt>のうえん</rt></ruby>を <ruby>広<rt>ひろ</rt></ruby>げる</h2>
     <p class="wallet"><span class="coin">¥</span> もっている コイン <b>${coins}まい</b></p>
     <div class="tabs" role="tablist">${tabs.map(([id,l])=>`<button type="button" role="tab" class="tab${id===shopTab?" on":""}${id==="tonari"&&giftReady.size?" dot":""}" data-tab="${id}" aria-selected="${id===shopTab}">${l}</button>`).join("")}</div>
@@ -1356,7 +1360,7 @@ function renderShop(){
   cardEl.querySelectorAll("[data-pond]").forEach(b=>b.onclick=()=>{
     if(coins < POND_PRICE) return; addCoins(-POND_PRICE); pond = true; fresh.add("pond"); sWater(); renderShop(); renderFarm();
   });
-  $("shopClose").onclick = closeCard;
+  $("shopClose").onclick = closeCard; $("shopBack").onclick = closeCard;
   $("tutAgain").onclick = () => { tutorialDone = false; save(); closeCard(); };
   $("resetAll").onclick = () => {
     coins=0; earned=0; stars=0; updateRank(); land=LAND_START; pond=false; owned=new Set(["egg", ...STARTER[NOW_SEASON]]); zukan={}; zukanShown=false; year=1; yearNew=false;
