@@ -95,11 +95,13 @@ main{max-width:960px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-lef
 .how-n{width:28px;height:28px;border-radius:50%;background:var(--ai);color:var(--white);font-weight:900;display:grid;place-items:center;margin-top:4px}
 .how b{font-size:16px}
 .how p{margin:2px 0 0;font-size:15px}
-.offrow{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;background:rgba(255,255,255,.55);border-radius:10px;padding:2px 10px;position:relative;z-index:1}
-.off-l{font-size:13px;font-weight:700;color:var(--wood-dark)}
-.off-i{display:inline-flex;align-items:center;gap:2px}
-.off-a{font-size:22px;line-height:1;filter:grayscale(.7) opacity(.7)}
-.off-i small{font-size:11px;line-height:1}
+.offrow{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-around;gap:4px 6px;background:rgba(255,255,255,.5);border-radius:10px;padding:4px 8px;position:relative;z-index:1}
+.off-l{font-size:14px;font-weight:900;color:var(--wood-dark);line-height:1.5;align-self:center}
+.off-l small{font-size:11px;font-weight:700}
+.off-t{display:flex;flex-direction:column;align-items:center;gap:1px}
+.art.off-a{font-size:calc(var(--art,72px)*.6);filter:grayscale(.55) opacity(.8)}
+.off-n{background:var(--wood);color:var(--paper);font-family:var(--display);font-size:clamp(10px,calc(var(--art,72px)*.24),12px);padding:0 4px;border-radius:4px;border:2px solid var(--wood-dark);white-space:nowrap;line-height:1.7;opacity:.85}
+.off-t small{font-size:12px;line-height:1.2}
 .farm-btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .zk-count{font-size:20px;margin:4px 0}
 .zk-count b{color:var(--shu);font-size:1.4em}
@@ -238,7 +240,7 @@ rt{font-family:var(--body);font-size:.45em;font-weight:700;letter-spacing:0}
     radial-gradient(ellipse 60% 30% at 20% 32%,#a9d184 0 99%,transparent 100%),
     radial-gradient(ellipse 70% 34% at 85% 34%,#93c46f 0 99%,transparent 100%),
     linear-gradient(#cfe3f3 0 30%,#86b862 30% 100%);
-  padding:34px 12px 34px;display:grid;grid-template-columns:repeat(var(--cd,4),minmax(0,1fr));grid-auto-flow:row dense;gap:4px 8px}
+  padding:28px 12px 30px;display:grid;grid-template-columns:repeat(var(--cd,4),minmax(0,1fr));grid-auto-flow:row dense;gap:4px 8px}
 .farm::before{content:"☁️";position:absolute;top:8px;left:12%;font-size:34px;opacity:.9}
 .farm::after{content:"";position:absolute;left:0;right:0;bottom:0;height:30px;
   background:linear-gradient(transparent 0 30%,var(--wood) 30% 42%,transparent 42% 70%,var(--wood) 70% 82%,transparent 82%),
@@ -249,7 +251,7 @@ rt{font-family:var(--body);font-size:.45em;font-weight:700;letter-spacing:0}
 .spot:hover .art{transform:translateY(-4px) rotate(-2deg)}
 .art{position:relative;font-size:var(--art,72px);line-height:1;transition:transform .2s}
 .art .mini{position:absolute;font-size:.38em;line-height:1}
-.sign{background:var(--wood);color:var(--paper);font-family:var(--display);font-size:15px;padding:0 8px 2px;border-radius:4px;border:2px solid var(--wood-dark);white-space:nowrap;line-height:1.7}
+.sign{background:var(--wood);color:var(--paper);font-family:var(--display);font-size:clamp(11px,calc(var(--art,72px)*.3),15px);padding:0 8px 2px;border-radius:4px;border:2px solid var(--wood-dark);white-space:nowrap;line-height:1.7}
 .stamp{position:absolute;z-index:2;top:4px;right:4px;width:58px;height:58px;line-height:1.3;pointer-events:none;border-radius:50%;border:3px solid var(--shu);color:var(--shu);
   font-family:var(--display);font-size:12px;display:grid;place-items:center;background:rgba(243,231,204,.9);transform:rotate(-14deg)}
 .stamp rt{font-size:.6em}
@@ -281,15 +283,15 @@ rt{font-family:var(--body);font-size:.45em;font-weight:700;letter-spacing:0}
 .t-tray{background:#fbfbf8;border:2px solid #d8d6cf;border-radius:6px;box-shadow:inset 0 0 0 4px #efede6}
 .lay-tray{background:#fbfbf8;border:2px solid #d8d6cf}
 @media (min-width:601px){ .farm .last-d{grid-column:1/-1} }
-.farm-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between}
+.farm-top{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;justify-content:space-between}
 .ft-left{display:flex;flex-direction:column;align-items:flex-start}
-.nextbtn{font-size:14px;padding:4px 12px;margin-left:6px;box-shadow:0 3px 0 #15224a}
-.farm-top .farm-hint{text-align:left;font-size:14px;line-height:1.8}
-.farm-top .shopbtn{font-size:15px;padding:8px 12px}
+.nextbtn{font-size:13px;padding:2px 10px;margin-left:4px;box-shadow:0 3px 0 #15224a}
+.farm-top .farm-hint{text-align:left;font-size:13px;line-height:1.8}
+.farm-top .shopbtn{font-size:14px;padding:4px 10px;box-shadow:0 3px 0 #15224a}
 .hd-year{font-weight:900;font-size:17px;line-height:1.9;color:var(--paper);white-space:nowrap}
 .hd-year b{font-size:1.4em;color:#ffd54a;font-variant-numeric:tabular-nums}
-.seasons{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
-.season{border:2px solid var(--ai);background:var(--white);color:var(--ai);border-radius:999px;padding:6px 16px;font-size:17px;font-weight:900;cursor:default;opacity:.45;display:inline-flex;align-items:center;gap:6px}
+.seasons{display:flex;justify-content:center;gap:4px;flex-wrap:wrap}
+.season{border:2px solid var(--ai);background:var(--white);color:var(--ai);border-radius:999px;padding:1px 10px;font-size:15px;font-weight:900;cursor:default;opacity:.45;display:inline-flex;align-items:center;gap:4px}
 .season small{font-size:11px;background:var(--shu);color:var(--white);border-radius:6px;padding:0 5px;line-height:1.6}
 .season.on{background:var(--ai);color:var(--white);opacity:1}
 .farm{transition:background .4s}
@@ -676,7 +678,7 @@ function renderFarm(){
   for(let k=0;k<freeLand();k++) tiles.push({kind:"empty", w:1});
   if(land < LAND_MAX) tiles.push({kind:"yabu", w:1});
   const cells = tiles.reduce((n,t)=>n+t.w,0) + (pond ? 2 : 0);
-  const [cd, lastD] = pickCols(cells, cells >= 12 ? [7,6,5,4] : [5,4,6,3]);
+  const [cd, lastD] = cells <= 7 ? [Math.max(cells,3), false] : pickCols(cells, [7,6,5,4]);   // なるべく 行を へらして 絵を 大きく
   const [cm, lastM] = pickCols(cells, [2,3]);
   farm.style.setProperty("--cd", cd); farm.style.setProperty("--cm", cm);
   let playable = 0, sold = 0;
@@ -727,7 +729,7 @@ function renderFarm(){
   if(offs.length){
     const MK = {haru:"🌸", natsu:"🌻", aki:"🍁", fuyu:"⛄"};
     const row = document.createElement("div"); row.className = "offrow";
-    row.innerHTML = `<span class="off-l">ほかの きせつに とれる</span>` + offs.map(o=>`<span class="off-i" title="${plain(o.name)}"><span class="off-a" aria-hidden="true">${o.item}</span><small>${(o.plot==="mame" ? ["natsu","aki"] : o.sea||[]).map(x=>MK[x]).join("")}</small></span>`).join("");
+    row.innerHTML = `<span class="off-l">おやすみ<ruby>中<rt>ちゅう</rt></ruby><br><small>ほかの きせつに とれる</small></span>` + offs.map(o=>`<span class="off-t" title="${plain(o.name)}"><span class="art off-a" aria-hidden="true">${o.art}</span><span class="off-n">${o.sign}</span><small>${(o.plot==="mame" ? ["natsu","aki"] : o.sea||[]).map(x=>MK[x]).join("")}</small></span>`).join("");
     farm.appendChild(row);
   }
   const y = renderYama(); playable += y.p; sold += y.s;
