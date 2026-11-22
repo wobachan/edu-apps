@@ -1089,9 +1089,17 @@ function demoLines(n){
   const dia=t=>{ const r=sh.size*.72, d={x:Math.cos(t),y:Math.sin(t)}; L.push([{x:C.x-d.x*r,y:C.y-d.y*r},{x:C.x+d.x*r,y:C.y+d.y*r}]); };
   const deg=Math.PI/180;
   if(sh.type==='s'){
-    if(n===4){ dia(90*deg); dia(0); }
-    else if(n===8){ dia(90*deg); dia(0); dia(45*deg); dia(135*deg); }
-    else for(let k=1;k<n;k++){ const x=sh.x+sh.s*k/n; L.push([{x,y:sh.y-24},{x,y:sh.y+sh.s+24}]); }
+    // まず 真ん中で 切って、それから のこりを 切り分ける
+    const V=f=>{ const x=sh.x+sh.s*f; L.push([{x,y:sh.y-24},{x,y:sh.y+sh.s+24}]); };
+    const H=f=>{ const y=sh.y+sh.s*f; L.push([{x:sh.x-24,y},{x:sh.x+sh.s+24,y}]); };
+    if(n===2) V(1/2);
+    else if(n===4){ V(1/2); H(1/2); }
+    else if(n===6){ V(1/2); H(1/3); H(2/3); }
+    else if(n===8){ V(1/2); H(1/2); V(1/4); V(3/4); }
+    else{ // 3・5 など 真ん中で 切れない 数：分母の 小さい 線から
+      const g=(a,b)=>b?g(b,a%b):a;
+      [...Array(n-1)].map((_,i)=>i+1).sort((a,b)=>n/g(a,n)-n/g(b,n)||a-b).forEach(k=>V(k/n));
+    }
   }else{
     if(n%2===0) for(let k=0;k<n/2;k++) dia((-90+k*360/n)*deg);
     else for(let k=0;k<n;k++){ const t=(-90+k*360/n)*deg; L.push([{x:C.x,y:C.y},{x:C.x+Math.cos(t)*sh.size*.72,y:C.y+Math.sin(t)*sh.size*.72}]); }
