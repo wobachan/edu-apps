@@ -1101,7 +1101,11 @@ function demoLines(n){
       [...Array(n-1)].map((_,i)=>i+1).sort((a,b)=>n/g(a,n)-n/g(b,n)||a-b).forEach(k=>V(k/n));
     }
   }else{
-    if(n%2===0) for(let k=0;k<n/2;k++) dia((-90+k*360/n)*deg);
+    // まず 真ん中を 通る 線で 半分に、それから のこりを 切り分ける（8等分なら たて→よこ→ななめ）
+    if(n%2===0){
+      const g=(a,b)=>b?g(b,a%b):a, h=n/2;
+      [...Array(h).keys()].sort((a,b)=>h/g(a,h)-h/g(b,h)||a-b).forEach(k=>dia((-90+k*360/n)*deg));
+    }
     else for(let k=0;k<n;k++){ const t=(-90+k*360/n)*deg; L.push([{x:C.x,y:C.y},{x:C.x+Math.cos(t)*sh.size*.72,y:C.y+Math.sin(t)*sh.size*.72}]); }
   }
   return L;
