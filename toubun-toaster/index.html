@@ -196,6 +196,7 @@ svg#toaster{width:100%;height:100%;max-width:640px;display:block;overflow:visibl
 #demoBar[hidden]{display:none}
 #demoCap{flex:1;min-width:0}
 #demoCap .dn{display:inline-flex;align-items:center;justify-content:center;width:1.8em;height:1.8em;border-radius:50%;background:var(--accent);color:#fff;margin-right:.4rem;font-size:.9em;vertical-align:middle}
+#demoCap .dsub{font-size:.85em;color:var(--accent-d)}
 #demoSkip{font-size:.95rem;padding:.45rem .8rem;flex:none}
 .inMsg{font-size:1.2rem;font-weight:800;margin:.6rem 0;line-height:1.7}
 /* ふりがな */
@@ -515,7 +516,7 @@ function M(k,n){
 /* ---------- ふりがな（2年生が 読めるように、画面に 出る すべての 漢字に ルビを つける） ---------- */
 // 画面の 字が かわる たびに、まだ ルビの ない 漢字を さがして つける。読みは この 表で きめる。
 const RUBY_WORDS=[['何等分','なんとうぶん'],['何分','なんぶん'],['分子','ぶんし'],['分数','ぶんすう'],['分母','ぶんぼ'],
-  ['十字','じゅうじ'],['名人','めいじん'],['等分','とうぶん'],['約分','やくぶん'],['通分','つうぶん'],['見習','みなら'],['角度','かくど']];
+  ['十字','じゅうじ'],['名人','めいじん'],['等分','とうぶん'],['約分','やくぶん'],['通分','つうぶん'],['見習','みなら'],['角度','かくど'],['方向','ほうこう']];
 const RUBY_ONE={中:'なか',何:'なん',作:'つく',切:'き',同:'おな',大:'おお',屋:'や',年:'ねん',引:'ひ',指:'ゆび',方:'かた',
   点:'てん',焼:'や',等:'ひと',線:'せん',考:'かんが',見:'み',近:'ちか',通:'とお',青:'あお',食:'た',人:'にん'};
 const RUBY_HON={1:'いっぽん',2:'にほん',3:'さんぼん',4:'よんほん',5:'ごほん',6:'ろっぽん',7:'ななほん',8:'はっぽん',9:'きゅうほん',10:'じゅっぽん'};
@@ -1154,7 +1155,7 @@ async function demoYomi(){
 async function demoCut(){
   startCut(true); S.running=true; await wait(900);
   const q=S.q, n=q.pair?q.lcm:(q.n||q.b);
-  cap(1,`指で 線を 引いて <b>${n}等分</b>`);
+  cap(1,`指で 線を 引いて <b>${n}等分</b><br><span class="dsub">たて・よこ・ななめ、どの方向にも　切れるよ</span>`);
   for(const [A,B] of demoLines(n)) await dragLine(A,B);
   cap(2,'✂ できた！ を おす');
   await busy(()=>tapBtn('[data-act="cdone"]'),()=>q.a?S.cutPhase==='choosing':!$('#pop').hidden);
