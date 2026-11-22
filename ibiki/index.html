@@ -90,6 +90,43 @@
   #modeTag.hard  { color:#ff9ab0; border-color:#7a3d52; background:#301620; }
 
   /* ---- おとボタン（どの画面でも いちばん手前） ---- */
+
+  /* ---- あそびかた（チュートリアル）---- */
+  #tutBar{
+    position:absolute; left:0; right:0; bottom:0; z-index:48;
+    background:linear-gradient(180deg, rgba(14,10,24,0), rgba(14,10,24,.94) 24%);
+    padding:30px 96px 14px 18px; text-align:center; pointer-events:none;
+  }
+  #tutBar[hidden]{ display:none; }
+  #tutMsg{
+    display:inline-block; max-width:560px; padding:11px 18px; border-radius:14px;
+    background:#1b1529; border:2px solid #7a68b0; box-shadow:0 6px 20px rgba(0,0,0,.6);
+    font-size:17px; font-weight:700; line-height:1.75; color:#f3eeff; letter-spacing:.5px;
+  }
+  #tutMsg b{ color:#ffd97a; }
+  #tutMsg em{ font-style:normal; color:#8affc8; }
+  /* いちばん大事な きまり。大きさと 色で 目立たせる。 */
+  #tutMsg .kimari{
+    display:block; font-size:25px; line-height:1.75; letter-spacing:1px;
+    margin:2px 0 1px; animation:kimariPop .45s cubic-bezier(.2,1.7,.4,1) both;
+  }
+  #tutMsg .kimari .soroi{ color:#ffd97a; }                      /* たかさを そろえる＝金 */
+  #tutMsg .kimari .kachin{
+    color:#8affc8; font-size:31px;                              /* カチン！＝みどり・いちばん大きく */
+    text-shadow:0 0 16px rgba(138,255,200,.75), 0 2px 0 #0d4e39;
+  }
+  #tutMsg .kimari .kuzure{ color:#7fe3ff; }                     /* くずれにくい＝水色 */
+  @keyframes kimariPop{ from{ transform:scale(.72); opacity:0 } to{ transform:scale(1); opacity:1 } }
+  #tutSkip{
+    position:absolute; right:10px; bottom:14px; z-index:49;
+    font:inherit; font-size:13px; font-weight:700; letter-spacing:1px; cursor:pointer;
+    padding:7px 14px; border-radius:9px; color:#c3b9d8;
+    background:rgba(22,16,36,.9); border:2px solid #6a5a90;
+  }
+  #tutSkip[hidden]{ display:none; }
+  #tutSkip:hover{ color:#fff; border-color:#9d8ad2; }
+  #tutSkip:active{ transform:translateY(2px); }
+
   /* ---- ギブアップ（どうしても のぼれない とき） ---- */
   #giveUpBtn{
     position:absolute; right:10px; top:56px; z-index:44;
@@ -270,15 +307,22 @@
   .how figure{ text-align:center; }
   .how figcaption{ font-size:13px; color:#c3b9d8; margin-top:4px; }
 
-  .ladder{ display:flex; flex-direction:column; gap:3px; align-items:center; }
+  /* 行の 間。石の 絵は 高さが まちまちなので、すきまが せまいと
+     上下の 石が くっついて 見える。ゆとりを とる。 */
+  .ladder{ display:flex; flex-direction:column; gap:6px; align-items:center; }
   .ladder .edge{ font-size:12.5px; color:var(--dim); }
-  .lrow{ display:flex; align-items:flex-end; gap:10px; width:284px; }
+  /* 行の 高さを そろえる。石の 絵は 段数で 高さが ちがうので、
+     下ぞろえの ままだと 行と行の すきまが ばらばらに 見える。 */
+  .lrow{ display:flex; align-items:center; gap:10px; width:318px; min-height:56px; }
   .lrow .nm{ font-size:14px; font-weight:700; width:110px; text-align:left; flex:none;
              align-self:center; line-height:1.35; }
   .lrow .nm em{ display:block; font-style:normal; font-weight:400;
                 font-size:11px; color:var(--dim); }
-  .mini{ display:flex; align-items:flex-end; gap:2px; flex:1; justify-content:flex-end; }
-  .mc{ display:flex; flex-direction:column-reverse; gap:1px; }
+  .mini{ display:flex; align-items:flex-end; gap:3px; flex:1; justify-content:flex-end; }
+  /* 石と石の あいだに すきまを 入れると、段が おおい列ほど
+     そのぶん 高くなり、となりと 高さが ちがって 見える。
+     すきまは 0 にして、ブロックの ふちどりで 区切る。 */
+  .mc{ display:flex; flex-direction:column-reverse; gap:0; }
   .mini b{ width:18px; height:calc(var(--h) * 4px); border-radius:2px;
            display:flex; align-items:center; justify-content:center;
            font-size:10.5px; font-weight:700; border:1px solid rgba(255,255,255,.35); }
@@ -286,6 +330,12 @@
   .k1{ background:linear-gradient(180deg,#e8f0f8,#9db0c6); color:#2a3646; }
   .k2{ background:linear-gradient(180deg,#ffd97a,#e39c1c); color:#5a3600; }
   .k3{ background:linear-gradient(180deg,#b9ffe6,#69b6ff); color:#06303f; }
+  /* かたさの しるし（△○◎はなまる）。名まえと おなじ色。 */
+  .mk{ width:34px; height:34px; flex:none; margin-left:6px; }
+  .mk.m0{ color:#ff8a8a; }        /* △ くずれやすい */
+  .mk.m1{ color:#e8f0f8; }        /* ○ しっかり */
+  .mk.m2{ color:#ffd97a; }        /* ◎ がっちり */
+  .mk.m3{ color:#8affc8; filter:drop-shadow(0 0 5px rgba(138,255,200,.6)); }  /* はなまる */
   .n0{ color:#8fa6d8; } .n1{ color:#e8f0f8; }
   .n2{ color:#ffd97a; } .n3{ color:#b9ffe6; }
 
@@ -405,6 +455,10 @@
   <!-- 「むずかしい」だけ 出る ストップウォッチ -->
   <div id="watch" hidden><span id="watchT">0.0</span><small>びょう</small></div>
 
+  <!-- あそびかた（チュートリアル） -->
+  <div id="tutBar" hidden><span id="tutMsg"></span></div>
+  <button id="tutSkip" hidden>スキップ</button>
+
   <!-- どうしても のぼれなく なったとき -->
   <button id="giveUpBtn" hidden>ギブアップ</button>
 
@@ -442,7 +496,7 @@
 
     <div class="brow keys" id="keyRow">
       <span><b>←</b><b>→</b>ねらう</span>
-      <span><b>↑</b>ゆめを えらぶ</span>
+      <span><b>↑</b>いしを えらぶ</span>
       <span><b>↓</b>おとす</span>
       <span id="modeTag" class="normal">ふつう・ヒントあり</span>
       <button id="helpBtn">ルール</button>
@@ -639,7 +693,7 @@ function applyStage(){
   kr.innerHTML = (playerCount === 2
     ? `<span class="pk p1" id="key1p"><i>1P</i>ひだり <b>A</b><b>D</b>ねらう <b>W</b>えらぶ <b>S</b>おとす</span>
        <span class="pk p2" id="key2p"><i>2P</i>みぎ <b>←</b><b>→</b>ねらう <b>↑</b>えらぶ <b>↓</b>おとす</span>`
-    : `<span><b>←</b><b>→</b>ねらう</span><span><b>↑</b>ゆめを えらぶ</span><span><b>↓</b>おとす</span>`) + keep;
+    : `<span><b>←</b><b>→</b>ねらう</span><span><b>↑</b>いしを えらぶ</span><span><b>↓</b>おとす</span>`) + keep;
   elKey1 = document.getElementById('key1p');
   elKey2 = document.getElementById('key2p');
   document.getElementById('helpBtn').onclick = showHelp;
@@ -925,6 +979,8 @@ function newState(){
              count: 0, mag: 0, shake: 0, shakeMax: 1 },
     demon: { flip: 1, rollU: 0, popT: 0 },   // 寝返りで左右反転 / popT は鼻提灯がはじけた余韻
     snoreT: 1.0,                             // つぎに いびきが鳴るまで
+    tut: null,                               // あそびかた中だけ { step, t }
+    ruleT: 0, ruleCool: 0,                   // きまりの帯（カチン！のたび）
     snoreW: 0,                               // いびきの たびの ゆらぎ（1→0）
     paused: false,
     cam: 0,
@@ -1091,6 +1147,7 @@ function applyLocks(announce = true){
     const seg = hit.sort((p, q) => q.h2 - p.h2)[0];
     const tier = seg ? seg.tier : 1;
     Sfx.lock(tier);
+    ruleBanner();                       // きまりを もう いちど
     if (seg){
       const x = colX(seg.c + 1);
       const y = (seg.h1 + seg.h2) / 2;
@@ -1132,6 +1189,7 @@ function pickable(p){
 function grab(p){
   if (p.held) { Sfx.deny(); return; }
   if (playerCount === 2 && state.turn !== p.id) { Sfx.deny(); return; }
+  if (!tutAllowGrab()) return;
   const b = pickable(p);
   if (!b) { Sfx.deny(); return; }
   state.belt = state.belt.filter(x => x !== b);
@@ -1142,6 +1200,7 @@ function grab(p){
   p.hero.swingT = 0.42;                 // さおを しゃくる
   if (playerCount === 2) state.turn = 1 - state.turn;   // つぎは あいての ばん
   Sfx.step();
+  tutAfterGrab();
 }
 
 /** どのシャフトも 建築禁止（ふたりのときは2本とも守る） */
@@ -1157,6 +1216,7 @@ function canPlace(p, c){
 /** 主人公が棒を上へ投げる。着地した瞬間に固定判定が走る。 */
 function place(p, c){
   if (!p.held) { Sfx.deny(); return; }
+  if (!tutAllowPlace(c)) return;
   if (!canPlace(p, c)) {
     Sfx.deny();
     flashMsg(isShaft(c) ? 'ここは のぼりみち！' : 'もう つめない');
@@ -1178,6 +1238,7 @@ function place(p, c){
                         y0: hookY, t: 0, dur, glow: 1 });
   p.held = null; p.castFrom = null; p.hero.castT = 0;
   state.stats.placed++;
+  tutAfterPlace();
   p.hero.throwT = 0.35;                          // 主人公は 手をかざす
   Sfx.choose();
 }
@@ -2495,7 +2556,7 @@ function drawDreamLane(){
     ctx.fillStyle = pz ? '#cfe9ff' : 'rgba(255,255,255,.3)';
     ctx.font = '700 12px "Segoe UI","Yu Gothic UI",sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    ctx.fillText('ゆめを えらぶ', zx, top + 2);
+    ctx.fillText('いしを えらぶ', zx, top + 2);
   }
 
   /* 夢石は 落ちてくる石と おなじ 大きさ・長さ で見せる。
@@ -2559,6 +2620,8 @@ function render(){
   drawDrops();
   drawFishing();
   ctx.restore();
+
+  tutDraw();                      // あそびかたの わく と やじるし
 
   // 崩壊フラッシュ
   if (state.fx.flash > 0){
@@ -2662,6 +2725,298 @@ function updateHud(){
   }
 }
 
+
+/* ============================ あそびかた（チュートリアル） ============================
+   はじめての子が つまずくのは つぎの3つ。
+     (1) どこを さわれば 石が とれるのか
+     (2) とった石を どこに おくのか
+     (3) なぜ カチン！と かたまるのか（＝となりと たかさを そろえる）
+   そこで (1)(2)(3) だけを 台本どおりに やってもらい、おわったら ふつうの あそびに もどす。
+   いつでも「スキップ」で やめられる。
+
+   台本の あいだは
+     ・ゆれを 止める（せっかくの かべを こわさない）
+     ・ベルトを 止めて、つぎに つかう石だけを 取り口に 置く
+   ので、あせらずに 1つずつ ためせる。
+   ================================================================================ */
+const TUT_KEY = 'ibiki.tutorialDone.v1';
+const tutDone = () => { try { return localStorage.getItem(TUT_KEY) === '1'; } catch (_){ return false; } };
+const tutMarkDone = () => { try { localStorage.setItem(TUT_KEY, '1'); } catch (_){ /* 保存できなくてもよい */ } };
+
+/* つかう柱。ひとりのときの のぼりみちは 5。
+   ひだりの かべ=4（相方 3）／みぎの かべ=6（相方 7）。 */
+const TUT_W1 = 4, TUT_P1 = 3, TUT_W2 = 6, TUT_P2 = 7;
+
+/* 台本。[石, おく柱, そえることば]
+   おなじ 形ばかりに ならないよう、たす数を 変えてある。
+     5 = 3 + 2 ／ 6 = 3 + 3 ／ 9 = 4 + 5 ／ 3 = 1 + 2
+   はじめの 3つは 自動（おてほん）。そのあとは 自分で おく。 */
+const TUT_PLAN = [
+  // ── おてほん（見ているだけ） ──
+  [5, TUT_W1, 'まずは <b>おてほん</b>。みていてね。', true],
+  [3, TUT_P1, null, true],
+  [2, TUT_P1, null, true],
+  // ── ここから 自分で。ひだりの かべを もう ひとだん（6 = 3 + 3） ──
+  [6, TUT_W1, 'こんどは <b>きみの ばん</b>！<br>がめんを さわって <ruby>石<rt>いし</rt></ruby>を つりあげよう。'],
+  [3, TUT_P1, 'となりの はしらに <b>3</b>を おこう。'],
+  [3, TUT_P1, 'もう ひとつ <b>3</b>。3と 3で……？'],
+  // ── みぎの かべ（9 = 4 + 5、つぎに 3 = 1 + 2） ──
+  [9, TUT_W2, 'つぎは <b>みぎの かべ</b>。ながい <b>9</b>の <ruby>石<rt>いし</rt></ruby>だよ。'],
+  [4, TUT_P2, 'となりの はしらに <b>4</b>。'],
+  [5, TUT_P2, 'あと <b>5</b>で 9に なるね。'],
+  [3, TUT_W2, 'さいごの ひとだん！'],
+  [1, TUT_P2, null],
+  [2, TUT_P2, null],
+];
+
+/* いちばん大事な きまり。カチン！の たびに 出す。 */
+const TUT_RULE =
+  '<span class="kimari">' +
+  '<span class="soroi">となりと たかさが そろう</span>と ' +
+  '<span class="kachin">カチン！</span><br>' +
+  '<span class="kuzure">くずれにくい。</span></span>';
+
+/* 台本から 1歩ずつの だんかいを つくる。
+   石1つにつき「つりあげる」→「おとす」の 2だんかい。
+   自動の ぶんは act の あたまに a を つけて、時間が きたら 勝手に うごく。 */
+function tutBuild(){
+  const steps = [];
+  TUT_PLAN.forEach(([n, col, note, auto], k) => {
+    const g = auto ? 'agrab' : 'grab', p = auto ? 'aplace' : 'place';
+    /* ことばは「つりあげる」ときに 出し、「おとす」あいだも のこす。
+       （おとす ときに 出すと、つりあげる 間 ひとつ前の ことばが 残ってしまう） */
+    if (k === 0){
+      steps.push({ act:g, n, t:1.1,
+        msg:'<b>かずの <ruby>石<rt>いし</rt></ruby></b>を つりざおで つりあげて、はしらに おとすよ。' });
+    } else {
+      steps.push({ act:g, n, t:0.9,
+        msg: note || (auto ? null : 'つぎの 石を つりあげよう。') });
+    }
+    steps.push({ act:p, col, t:0.9,
+      msg: (note || auto) ? null : 'ひかっている はしらに おとそう。' });
+
+    if (k === 2) steps.push({ act:'wait', t:4.2, msg: TUT_RULE });
+    if (k === 5) steps.push({ act:'wait', t:3.0,
+      msg:'<em>カチン！</em>　<b>3と 3で 6</b>。ひだりの かべが できた！' });
+    if (k === 8) steps.push({ act:'wait', t:3.0,
+      msg:'<em>カチン！</em>　<b>4と 5で 9</b>。たす数が ちがっても おなじ！' });
+    /* ここで みずいろの「ここまで」の線が 9の たかさに 出る。
+       ひだりの かべは 11 まで あるので、線より 上に 石が ある ばめん。 */
+    if (k === 8) steps.push({ act:'wait', t:4.4,
+      msg:'みずいろの <b>「ここまで」</b>の せんが、いま のぼれる たかさ。<br>' +
+          '<b>せんより 上</b>に <ruby>石<rt>いし</rt></ruby>が あっても だいじょうぶ！' });
+  });
+  steps.push({ act:'climb',
+    msg:'<b>みぎと ひだり</b>、りょうほうの かべが とどいた！<br>' +
+        '<em>「のぼる！」</em>を おすと、いっきに のぼるよ。' });
+  return steps;
+}
+let TUT = [];
+
+
+let tutWant = !tutDone();
+/* 台本は でぐち10（かんたん）で とどく長さ。ふつう・むずかしいの ままだと
+   かべが とどかず「のぼる！」が 出ないので、ならう1かいは かんたんで 行い、
+   トップ画面に もどる ときに 元の えらびへ もどす。 */
+const TUT_STAGE = 0;
+let tutSavedStage = null;        // トップ画面の えらび（はじめては「ならう」）
+const elTutBar  = document.getElementById('tutBar');
+const elTutMsg  = document.getElementById('tutMsg');
+const elTutSkip = document.getElementById('tutSkip');
+elTutSkip.onclick = e => { e.stopPropagation(); tutEnd(true); };
+
+function tutOn(){ return !!(state && state.tut && state.tut.step < TUT.length); }
+/* かべが とどくまで 待っている あいだ。台本は 出したまま、
+   石は ふつうに ながれ、どこにでも おける。 */
+function tutFree(){ return !!(state && state.tut && state.tut.free); }
+function tutNow(){ return tutOn() ? TUT[state.tut.step] : null; }
+
+function tutStart(){
+  TUT = tutBuild();
+  state.tut = { step: 0, t: 0 };
+  state.belt.length = 0;                 // 台本の石だけを 出す
+  tutServe();
+  tutShow();
+}
+
+let tutActing = false;        // 台本じしんが うごかしている あいだは 関所を 通す
+
+/** いまの だんかいで つかう石を、取り口に そっと 置く */
+function tutServe(){
+  const st = tutNow();
+  if (tutFree()) return;
+  if (!st || (st.act !== 'grab' && st.act !== 'agrab')) return;
+  state.belt.length = 0;
+  state.belt.push({ n: st.n, x: zoneX(), id: ++uid, ph: 0 });
+}
+
+function tutShow(){
+  const st = tutNow();
+  elTutBar.hidden = !st;
+  elTutSkip.hidden = !st;
+  if (st && st.msg) elTutMsg.innerHTML = st.msg;   // msg なしは 前の ことばを のこす
+  /* おとす だんかいでは、落ちる場所の しるし（ゴースト）も
+     ひかっている はしらに そろえる。ちがう柱に 出ると まよう。 */
+  if (st && (st.act === 'place' || st.act === 'aplace'))
+    for (const p of state.players) p.cursor = st.col;
+}
+
+function tutNext(){
+  if (!tutOn()) return;
+  state.tut.step++;
+  state.tut.t = 0;
+  if (!tutOn()){ tutEnd(false); return; }
+  tutServe();
+  tutShow();
+}
+
+/** 帯を しまうだけ（ことばは 出さない）。おわりの ばめん用。 */
+function tutClose(){
+  if (state && state.tut){ state.tut = null; tutMarkDone(); }
+  state.ruleT = 0;
+  elTutBar.hidden = true;
+  elTutSkip.hidden = true;
+}
+
+function tutEnd(skipped){
+  if (!state || !state.tut) return;
+  state.tut = null;
+  tutMarkDone();
+  elTutBar.hidden = true;
+  elTutSkip.hidden = true;
+  state.belt.length = 0;
+  state.spawnT = 0.4;
+  state.ruleT = 0; state.ruleCool = 2.5;
+  flashMsg(skipped ? 'じぶんで やってみよう！' : 'さあ、でぐちまで かべを つくろう！', 2.2);
+}
+
+/* その さわりかたを いま ゆるすか。ちがうときは 手がかりを 出して ことわる。 */
+function tutAllowGrab(){
+  const st = tutNow();
+  if (!st || tutActing || tutFree()) return true;
+  if (st.act === 'grab') return true;
+  Sfx.deny();
+  flashMsg(st.act === 'place' ? 'さきに はしらへ おこう！'
+         : st.act === 'climb' ? '「のぼる！」を おそう！'
+         : st.act === 'agrab' || st.act === 'aplace' ? 'みていてね'
+         : 'ちょっと まってね');
+  return false;
+}
+function tutAllowPlace(c){
+  const st = tutNow();
+  if (!st || tutActing || tutFree()) return true;
+  if (st.act !== 'place'){
+    Sfx.deny();
+    flashMsg(st.act === 'aplace' ? 'みていてね' : 'さきに 石を つりあげよう！');
+    return false;
+  }
+  if (c !== st.col){ Sfx.deny(); flashMsg('ひかっている はしらに おこう！'); return false; }
+  return true;
+}
+
+function tutAfterGrab(){ const st = tutNow(); if (st && (st.act === 'grab' || st.act === 'agrab')) tutNext(); }
+function tutAfterPlace(){ const st = tutNow(); if (st && (st.act === 'place' || st.act === 'aplace')) tutNext(); }
+
+/* ============ きまりの帯（チュートリアルの あとも 出す） ============
+   カチン！が おきた ときに、いちばん大事な きまりを もう いちど 見せる。
+   つづけて 何度も 出ると うるさいので、すこし 間を あける。 */
+function ruleBanner(){
+  if (tutOn()) return;                       // 台本の あいだは 台本が 出す
+  if (!state || state.ruleCool > 0) return;
+  state.ruleT = 1.9; state.ruleCool = 5.5;
+  elTutMsg.innerHTML = TUT_RULE;
+  elTutBar.hidden = false;
+}
+function ruleUpdate(dt){
+  if (!state) return;
+  if (state.ruleCool > 0) state.ruleCool -= dt;
+  if (state.ruleT > 0){
+    state.ruleT -= dt;
+    if (state.ruleT <= 0 && !tutOn()) elTutBar.hidden = true;
+  }
+}
+
+function tutUpdate(dt){
+  if (!tutOn()) return;
+  state.tut.t += dt;
+  const st = tutNow();
+  if (st.act === 'wait' && state.tut.t >= st.t) tutNext();
+  /* おてほん。見ているだけで よいように、台本じしんが つりあげて おとす。 */
+  if (st.act === 'agrab' && state.tut.t >= st.t){
+    tutActing = true; grab(state.players[0]); tutActing = false;
+  }
+  if (st.act === 'aplace' && state.tut.t >= st.t){
+    tutActing = true; place(state.players[0], st.col); tutActing = false;
+  }
+  if (st.act === 'climb'){
+    /* おして のぼり始めたら、ひとこと ほめてから おわる。 */
+    if (state.players.some(p => p.running)){
+      if (!state.tut.cheer){
+        state.tut.cheer = 0.1;
+        elTutMsg.innerHTML = '<em>それ！</em> ピョン　ピョン　ピョン！<br>でぐちまで のぼろう！';
+      }
+      state.tut.cheer += dt;
+      if (state.tut.cheer > 1.8) tutEnd(false);
+      return;
+    }
+    /* かべが まだ とどいていない ときは 台本を 終わらせない。
+       ありもしない ボタンを 指すのも やめ、自由に つみ足して もらう。 */
+    const ok = state.players[0].ready;
+    if (!ok && !state.tut.free){
+      state.tut.free = true;
+      state.spawnT = 0.3;
+      elTutMsg.innerHTML = 'もう すこし！ <b>みぎと ひだり</b>の かべを<br>でぐちまで のばそう。';
+    } else if (ok && state.tut.free){
+      state.tut.free = false;
+      state.belt.length = 0;
+      tutShow();                       // また「のぼる！」を 指す
+    }
+  }
+}
+
+/** ねらう場所を わくと やじるしで しめす。 */
+function tutDraw(){
+  if (!tutOn() || tutFree()) return;
+  const st = tutNow();
+  const puls = 0.5 + Math.sin(state.time * 5) * 0.5;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,217,122,' + (0.55 + puls * 0.45) + ')';
+  ctx.lineWidth = 3.5;
+  if (st.act === 'grab' || st.act === 'agrab'){
+    const zx = zoneX(), w = CONFIG.PICK_HALF * 2 + 16;
+    roundRect(zx - w/2, DREAM_Y + 6, w, DREAM_H - 12, 12); ctx.stroke();
+    tutArrow(zx, DREAM_Y + DREAM_H + 18 + puls * 7);
+  } else if (st.act === 'climb'){
+    const p = state.players[0];
+    if (!p.ready){ ctx.restore(); return; }        // ボタンが ない ときは 指さない
+    const x = heroBaseX(p.hero.col, p.hero.side, p.hero.h), y = screenY(p.hero.h);
+    tutArrow(W - 66, 470 + puls * 10);
+    ctx.globalAlpha = 0.5 + puls * 0.5;
+    ctx.beginPath(); ctx.arc(x, y - 18, 22 + puls * 6, 0, 7); ctx.stroke();
+  } else if (st.act === 'place' || st.act === 'aplace'){
+    /* おく場所だけを かこむ。高く かこむと 画面が うるさいので、
+       いま おける ところの すぐ上 だけ。 */
+    const x = colX(st.col), y = screenY(colH(st.col));
+    const top = Math.max(FIELD_TOP + 6, y - 116);
+    ctx.setLineDash([9, 7]);
+    roundRect(x + 2, top, CONFIG.COL_W - 4, y - top, 6); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(255,217,122,' + (0.07 + puls * 0.10) + ')';
+    roundRect(x + 2, top, CONFIG.COL_W - 4, y - top, 6); ctx.fill();
+    tutArrow(x + CONFIG.COL_W/2, top - 16 - puls * 8);
+  }
+  ctx.restore();
+}
+function tutArrow(x, y){
+  ctx.fillStyle = '#ffd97a';
+  ctx.beginPath();
+  ctx.moveTo(x, y + 16);
+  ctx.lineTo(x - 13, y - 6); ctx.lineTo(x - 5, y - 6);
+  ctx.lineTo(x - 5, y - 20); ctx.lineTo(x + 5, y - 20);
+  ctx.lineTo(x + 5, y - 6);  ctx.lineTo(x + 13, y - 6);
+  ctx.closePath(); ctx.fill();
+}
+
 /* ============================ きろく（この端末だけ） ============================
    「むずかしい」で だっしゅつできたときだけ タイムを のこす。
    人数でタイムの意味がちがうので ひとり／ふたりは 別あつかい。 */
@@ -2697,9 +3052,36 @@ const obox = document.getElementById('obox');
 /* ---- 絵で見せるルール（文字は最小限。6才児にも分かるように） ---- */
 const mc = (tier, ...ns) =>
   `<div class="mc">${ns.map(n => `<b class="k${tier}" style="--h:${n}">${n}</b>`).join('')}</div>`;
+/* かたさの しるし。がっこうの まると おなじ。
+   グラグラ=△ ／ しっかり=○ ／ がっちり=◎ ／ むてき=はなまる  */
+const MARK = [
+  // △
+  `<svg class="mk m0" viewBox="0 0 40 40"><path d="M20 5 L36 34 L4 34 Z"
+     fill="none" stroke="currentColor" stroke-width="3.4" stroke-linejoin="round"/></svg>`,
+  // ○
+  `<svg class="mk m1" viewBox="0 0 40 40"><circle cx="20" cy="20" r="15"
+     fill="none" stroke="currentColor" stroke-width="3.4"/></svg>`,
+  // ◎
+  `<svg class="mk m2" viewBox="0 0 40 40"><circle cx="20" cy="20" r="15.5"
+     fill="none" stroke="currentColor" stroke-width="3.2"/><circle cx="20" cy="20" r="8"
+     fill="none" stroke="currentColor" stroke-width="3.2"/></svg>`,
+  // はなまる（花の ふちどりの 中に まる）
+  (() => {
+    let pet = '';
+    for (let i = 0; i < 8; i++){
+      const a = i * Math.PI / 4;
+      pet += `<circle cx="${(20 + Math.cos(a) * 11).toFixed(1)}" cy="${(20 + Math.sin(a) * 11).toFixed(1)}" r="6.4"/>`;
+    }
+    return `<svg class="mk m3" viewBox="0 0 40 40">
+      <g fill="none" stroke="currentColor" stroke-width="2.6">${pet}</g>
+      <circle cx="20" cy="20" r="7.4" fill="none" stroke="currentColor" stroke-width="3"/></svg>`;
+  })(),
+];
+
 const lrow = (tier, name, cols, note = '') =>
   `<div class="lrow"><span class="nm n${tier}">${name}${note ? `<em>${note}</em>` : ''}</span>
-     <span class="mini">${cols.map(c => mc(tier, ...c)).join('')}</span></div>`;
+     <span class="mini">${cols.map(c => mc(tier, ...c)).join('')}</span>
+     ${MARK[tier]}</div>`;
 
 function rulesHTML(){
   const wall = (x, ys) => ys.map(y =>
@@ -2917,6 +3299,7 @@ function showIntro(){
 
 function showTitle(){
   obox.classList.remove('wide');
+  if (tutSavedStage !== null){ stageIdx = tutSavedStage; tutSavedStage = null; applyStage(); }
   const opt = (sel, val, label, note, kind, icon, c, c2, c3) =>
     `<button class="opt${sel ? ' on' : ''}" data-${kind}="${val}"
        style="--c:${c};--c2:${c2};--c3:${c3}">${icon}
@@ -2938,6 +3321,12 @@ function showTitle(){
         ${opt(stageIdx===2, 2, STAGES[2].name, STAGES[2].note, 'g', ICON.h3,
               '#ffc4a3','#ef7a3d','rgba(255,140,90,.35)')}
       </div></div>
+      <div class="prow"><span class="plb">あそびかた</span><div class="prowBtns">
+        ${opt(tutWant,  'yes', 'ならう', 'かんたんで れんしゅう', 't', ICON.eye,
+              '#ffe9a8','#f0ab27','rgba(255,217,122,.35)')}
+        ${opt(!tutWant, 'no',  'すぐ あそぶ', 'せつめいを とばす', 't', ICON.noeye,
+              '#cfd8e8','#8a93a8','rgba(180,190,210,.35)')}
+      </div></div>
       <div class="prow"><span class="plb">ヒント（カチン！）</span><div class="prowBtns">
         ${opt(gameMode==='normal','normal','かんたん','おける ばしょを おしえる','m', ICON.eye,
               '#b9ffe6','#37c79a','rgba(90,230,190,.35)')}
@@ -2955,8 +3344,9 @@ function showTitle(){
   obox.querySelectorAll('.opt').forEach(btn => {
     btn.onclick = e => {
       e.stopPropagation();
-      const g = btn.dataset.g, m = btn.dataset.m, pc = btn.dataset.p;
+      const g = btn.dataset.g, m = btn.dataset.m, pc = btn.dataset.p, tu = btn.dataset.t;
       if (pc !== undefined) { playerCount = +pc; applyStage(); }
+      else if (tu !== undefined) tutWant = (tu === 'yes');
       else if (g !== undefined) stageIdx = +g;
       else gameMode = m;
       btn.parentNode.querySelectorAll('.opt').forEach(b => b.classList.remove('on'));
@@ -2985,6 +3375,9 @@ function closeHelp(){
 function startGame(mode){
   Sfx.init(); Sfx.resume();
   if (mode) gameMode = mode;
+  if (tutWant && playerCount === 1 && stageIdx !== TUT_STAGE){
+    tutSavedStage = stageIdx; stageIdx = TUT_STAGE;     // ならう1かいは かんたんで
+  }
   applyStage();
   const tag = document.getElementById('modeTag');
   tag.textContent = 'たかさ:' + STAGES[stageIdx].name +
@@ -3002,6 +3395,8 @@ function startGame(mode){
     state.belt.push({ n: drawNumber(), x: cloudX0() + i * gap, id: ++uid, ph: Math.random() * 6.28 });
   }
   state.spawnT = CONFIG.SPAWN_INTERVAL;      // 先頭と かさならないよう 1回ぶん おく
+  elTutBar.hidden = true; elTutSkip.hidden = true;
+  if (tutWant && playerCount === 1) tutStart();   // あそびかたは ひとりモードだけ
   overlay.classList.add('hide');
 }
 
@@ -3124,6 +3519,7 @@ function winBox(){
 function startEscape(){
   if (state.phase !== 'play') return;
   state.phase = 'escape';
+  tutClose();                       // あそびかたの 帯は ここで しまう
   // 「むずかしい」だけ タイムを のこす（はやさを きそう ステージ）
   state.clearT = state.playT;
   if (stageIdx === 2){
@@ -3179,6 +3575,7 @@ function doClear(){ startEscape(); }
 function gameOver(reason){
   if (state.phase !== 'play') return;
   state.phase = 'over';
+  tutClose();
   Sfx.rumbleStop(); Sfx.fail();
   endBox('ざんねん・・・', '#ff7a7a', reason);
 }
@@ -3191,11 +3588,15 @@ function update(dt){
   if (state.phase !== 'play'){ updateFx(dt); return; }
   state.playT += dt;                       // タイムは あそんでいる あいだだけ
 
-  // ベルト
-  state.spawnT -= dt;
-  if (state.spawnT <= 0){ state.spawnT = CONFIG.SPAWN_INTERVAL; spawnBeltBlock(); }
-  for (const b of state.belt) b.x += CONFIG.BELT_SPEED * dt;
-  state.belt = state.belt.filter(b => b.x < cloudX1());   // 雲の右はしで 夢は消える
+  /* ベルト。あそびかたの あいだは 止めて、台本の石だけを 取り口に 置いておく。 */
+  tutUpdate(dt);
+  ruleUpdate(dt);
+  if (!tutOn() || tutFree()){
+    state.spawnT -= dt;
+    if (state.spawnT <= 0){ state.spawnT = CONFIG.SPAWN_INTERVAL; spawnBeltBlock(); }
+    for (const b of state.belt) b.x += CONFIG.BELT_SPEED * dt;
+    state.belt = state.belt.filter(b => b.x < cloudX1());   // 雲の右はしで 夢は消える
+  }
 
   // 投げた棒の着地 → このタイミングで固定判定
   let landed = 0;
@@ -3214,7 +3615,7 @@ function update(dt){
   }
   if (state.snoreW > 0) state.snoreW = Math.max(0, state.snoreW - dt / CONFIG.SNORE_WOBBLE_T);
 
-  updateQuake(dt);
+  if (!tutOn()) updateQuake(dt);        // 台本の あいだは ゆれない
   updateHero(dt);
   updateFx(dt);
 
@@ -3328,6 +3729,10 @@ function whosePlace(x){
 }
 function pointerMove(p){
   if (!state || state.phase !== 'play') return;
+  /* あそびかたの 台本の あいだは、しるしを ひかっている はしらに とめておく。
+     （指を うごかすと ちがう柱に しるしが 出て まよう） */
+  const st = tutNow();
+  if (st && !tutFree() && (st.act === 'place' || st.act === 'aplace')) return;
   if (p.y >= FIELD_TOP) whosePlace(p.x).cursor = colAt(p.x);
 }
 function pointerDown(p){
