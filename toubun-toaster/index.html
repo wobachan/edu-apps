@@ -225,11 +225,15 @@ svg#toaster{width:100%;height:100%;max-width:640px;display:block;overflow:visibl
 .bake{font-size:1.35rem;padding:.65rem 1.4rem}
 .fin{display:flex;flex-direction:column;align-items:center;gap:.15rem}
 .sumeq{display:flex;align-items:center;gap:.15rem;font-size:1.9rem;font-weight:900;color:var(--ink)}
-.stp{display:flex;align-items:center;gap:.4rem}
-.stp .lab{font-size:.8rem;color:var(--sub);width:2.2em;text-align:right}
-.stp .pad{width:2.6rem}
-.anum{font-size:1.9rem;font-weight:900;min-width:2.6rem;text-align:center;color:var(--toast);line-height:1.1}
-.fbar{width:9rem;height:.3rem;background:var(--ink);border-radius:.2rem;margin-left:2.6em}
+.stp{display:flex;align-items:center;gap:.5rem}
+.stp .lab{font-size:1rem;font-weight:800;color:var(--sub);width:2.4em;text-align:right}
+.stp .pad{width:max(3.6rem,60px)}
+/* 分子・分母の −／＋：小さい子でも おしやすい 大きさ（へらす＝青・ふやす＝オレンジ） */
+.stp .btn.ico{width:max(3.6rem,60px);height:max(3.6rem,60px);padding:0;font-size:max(2.2rem,34px);font-weight:900;line-height:1;border-radius:1rem;display:flex;align-items:center;justify-content:center}
+.stp .btn.ico[data-a$="-"]{background:#dceaf9;color:#1f5aa8;box-shadow:0 .3rem 0 #9fbfe6}
+.stp .btn.ico[data-a$="+"]{background:#ffe2c9;color:#b4521a;box-shadow:0 .3rem 0 #efb184}
+.anum{font-size:max(2.6rem,36px);font-weight:900;min-width:max(3.2rem,46px);text-align:center;color:var(--toast);line-height:1.1}
+.fbar{width:max(12rem,170px);height:.35rem;background:var(--ink);border-radius:.2rem;margin-left:2.9em}
 
 /* ポップ・メッセージ */
 .msg{position:absolute;top:.4rem;left:50%;transform:translateX(-50%);background:#fff6dc;color:#8a6200;font-weight:800;
@@ -557,7 +561,7 @@ function goTitle(){
   syncSound(); playTitle();
 }
 function goSelect(){
-  S.running=false; S.mode='none'; S.food=SAVE.food;
+  S.running=false; S.mode='none'; S.food=SAVE.food; S.sumAsk=false;
   document.querySelectorAll('#foods .btn').forEach(b=>b.classList.toggle('on',b.dataset.food===S.food));
   // 学年（たて）× モード（よこ）の 表。クリアした ますには 👑
   const modes=['order','yomi','cut'];
@@ -911,7 +915,7 @@ function numberLine(k,n,units){
   return s+'</svg>';
 }
 function startFree(){
-  S.food=SAVE.food; S.mode='free'; S.widths=null; S.widthsPer=null; S.hideN=false; S.lockN=false; S.running=false; S.q=null;
+  S.food=SAVE.food; S.mode='free'; S.sumAsk=false; S.widths=null; S.widthsPer=null; S.hideN=false; S.lockN=false; S.running=false; S.q=null;
   if(S.n>MAXN) S.n=MAXN;
   hidePop(); renderHUD();
   $('#qbox').innerHTML=`<div class="freeq"><div class="fv" id="fv"></div><div class="fx"><div id="fx"></div><div id="nl"></div></div></div>`;
@@ -954,7 +958,7 @@ function openIntro(m,l){
 }
 function startStage(){
   $('#ovIntro').hidden=true;
-  Object.assign(S,{qi:0,score:0,hearts:HEARTS,combo:0,maxCombo:0,correct:0,q:null,over:false,running:false});
+  Object.assign(S,{qi:0,score:0,hearts:HEARTS,combo:0,maxCombo:0,correct:0,q:null,over:false,running:false,sumAsk:false,own:{},ownA:null,ownB:null});
   hidePop(); renderHUD(); show('scPlay');
   S.mode==='order'?startOrder(true):S.mode==='yomi'?startYomi(true):startCut(true);
   countdown(()=>{ if(S.mode==='yomi') S.yomiGo(); else S.running=true; });
@@ -1166,7 +1170,7 @@ function startYomi(first){
   S.hideN=true; S.lockN=true; S.answered=false; S.ready=false; S.running=false;
   S.ans={nu:null,de:q.type==='fr4'?q.b:null};
   S.tLimit=S.tLeft=STAGES.yomi.lv[S.level-1].time;
-  S.st=[...Array(S.breads)].map((_,b)=>Array(pieceCount(b)).fill('raw'));
+  S.st=[...Array(S.breads)].map((_,b)=>Array(pieceCount(b)).fill('raw')); S.own={};
   S.phase='up'; S.cust=pick(CUST);
   const w=yomiWho(q);
   const qt=q.type==='yn'?`食べたのは 1まいの ${F(1,q.n)} と いえる？`
