@@ -429,7 +429,7 @@ rt{font-size:.5em;font-weight:700;letter-spacing:0}
   <p>おきゃくさんが 食べたい 分を タップで えらんで 🔥やく！ ちゅうもんどおりなら 焼いて 食べて もらえる。まちがい・じかんぎれで ♥が へるよ。</p>
   <h3>🔍 よみとり</h3>
   <p>もんだいが 出ると すぐ 焼きはじめる。焼けたら おきゃくさんが 食べるので、食べた 分や のこりを 分数で こたえよう。まちがい・じかんぎれで ♥が へるよ。</p>
-  <h3>✂️ じぶんで 切る</h3>
+  <h3>🔪 じぶんで 切る</h3>
   <p>指や マウスで ドラッグすると 線が 引けて、そこで 切れる。十字・ななめ・まん中から など、どんな 切り方でも OK。だいたい 同じ 大きさなら、ぴったりに なおして くれるよ。</p>
   <h3>⭐ ほし</h3>
   <p>10もん クリアした とき、のこった ♥の 数が ほしの 数。パンと ピザで ぜんぶで 48こ。</p>
@@ -456,7 +456,7 @@ const STAGES={
     {g:'4年',t:'1より 大きい分数',time:30},
     {g:'4年',t:'大きさの 等しい 分数',time:30},
     {g:'5年',t:'約分',time:35}]},
-  cut:{name:'じぶんで 切る',ico:'✂️',desc:'線を 引いて じぶんで 等分しよう',lv:[
+  cut:{name:'じぶんで 切る',ico:'🔪',desc:'線を 引いて じぶんで 等分しよう',lv:[
     {g:'2年',t:'2・3・4等分',time:60},
     {g:'3年',t:'5〜8等分も',time:60},
     {g:'4年',t:'切って □/□ 食べる',time:75},
@@ -479,7 +479,7 @@ const RULES={
   cut:()=>[
     `指や マウスで ドラッグして 線を 引くと ${nm()}が 切れる（十字・ななめ・まん中から など なんでも OK）`,
     '<b>だいたい 同じ 大きさ</b>なら、ぴったりに なおして くれる',
-    '✂ できた！ で きまり。↶で 1本 もどす・🗑で ぜんぶ けす',
+    '🔪 できた！ で きまり。↶で 1本 もどす・🗑で ぜんぶ けす',
   ],
 };
 const EXTRA={
@@ -808,7 +808,7 @@ function paint(){
   const ln=$('#lcdn'), lk=$('#lcdk'), lr=$('#lcdr');
   if(ln){
     const cut=S.mode==='cut', fs=parseFloat(getComputedStyle(lk).fontSize)||25, x0=+lk.getAttribute('x');
-    ln.textContent=cut?'✂':S.hideN?'？':S.n;
+    ln.textContent=cut?'🔪':S.hideN?'？':S.n;
     lk.textContent=cut?'切る':'等分';
     lr.textContent=cut?'き':'とうぶん';
     lr.setAttribute('x',cut?x0+fs/2:x0+fs);   // 読みは 漢字の まん中の 上に
@@ -1157,7 +1157,7 @@ async function demoCut(){
   const q=S.q, n=q.pair?q.lcm:(q.n||q.b);
   cap(1,`指で 線を 引いて <b>${n}等分</b><br><span class="dsub">たて・よこ・ななめ、どの方向にも　切れるよ</span>`);
   for(const [A,B] of demoLines(n)) await dragLine(A,B);
-  cap(2,'✂ できた！ を おす');
+  cap(2,'🔪 できた！ を おす');
   await busy(()=>tapBtn('[data-act="cdone"]'),()=>q.a?S.cutPhase==='choosing':!$('#pop').hidden);
   if(!q.a) return;
   const k=q.a*n/q.b;
@@ -1836,7 +1836,7 @@ function renderDock(){
     const off=S.cutPhase==='cutting'?'':'disabled';
     d.innerHTML=`<button class="btn" data-act="cundo" ${off}>↶ 1本 もどす</button>
       <button class="btn" data-act="cclear" ${off}>🗑 ぜんぶ けす</button>
-      <button class="btn hot bake" data-act="cdone" ${off}>✂ できた！</button>`;
+      <button class="btn hot bake" data-act="cdone" ${off}>🔪 できた！</button>`;
     return;
   }
   if(S.mode==='yomi'){
