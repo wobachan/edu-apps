@@ -184,6 +184,20 @@ svg#toaster{width:100%;height:100%;max-width:640px;display:block;overflow:visibl
 @keyframes buzz{0%,100%{transform:translateX(0)}50%{transform:translateX(1.6px)}}
 .lcd{font-size:25px;fill:#7dffb0;font-weight:800}
 .lcdr{font-size:11px;fill:#7dffb0;font-weight:700;text-anchor:middle;opacity:.9}
+/* おてほん */
+#hand{position:fixed;left:50%;top:60%;z-index:15;font-size:3.4rem;line-height:1;pointer-events:none;
+  transform:translate(-32%,-6%);transition:left .55s ease,top .55s ease,transform .15s;filter:drop-shadow(0 3px 2px rgba(0,0,0,.35))}
+#hand[hidden]{display:none}
+#hand.tap{transform:translate(-32%,-6%) scale(.78)}
+#hand.drag{transition:transform .15s}
+#demoBar{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + .3rem);transform:translateX(-50%);z-index:14;width:min(96vw,40rem);
+  display:flex;align-items:center;gap:.6rem;background:#fff;border:4px solid var(--accent);border-radius:1.2rem;padding:.4rem .5rem .4rem .8rem;
+  box-shadow:0 .3rem 0 rgba(0,0,0,.12);font-size:1.3rem;font-weight:900;line-height:1.5}
+#demoBar[hidden]{display:none}
+#demoCap{flex:1;min-width:0}
+#demoCap .dn{display:inline-flex;align-items:center;justify-content:center;width:1.8em;height:1.8em;border-radius:50%;background:var(--accent);color:#fff;margin-right:.4rem;font-size:.9em;vertical-align:middle}
+#demoSkip{font-size:.95rem;padding:.45rem .8rem;flex:none}
+.inMsg{font-size:1.2rem;font-weight:800;margin:.6rem 0;line-height:1.7}
 /* ふりがな */
 rt{font-size:.5em;font-weight:700;letter-spacing:0}
 /* ピザ（オーブントースター） */
@@ -369,13 +383,17 @@ rt{font-size:.5em;font-weight:700;letter-spacing:0}
   <div class="pop" id="pop" hidden></div>
 </section>
 
+<!-- おてほん（チュートリアル）：指と 一言 -->
+<div id="hand" hidden>👆</div>
+<div id="demoBar" hidden><span id="demoCap"></span><button class="btn" id="demoSkip">スキップ ▶</button></div>
+
 <!-- ステージ説明 -->
 <div class="ov" id="ovIntro" hidden><div class="card">
   <div class="sub" id="inSub"></div>
   <h2 id="inTitle"></h2>
-  <ol id="inRules"></ol>
+  <div class="inMsg" id="inMsg"></div>
   <div class="best" id="inBest"></div>
-  <div class="btns"><button class="btn" id="inBack">もどる</button><button class="btn hot big" id="inStart">スタート！</button></div>
+  <div class="btns"><button class="btn" id="inBack">もどる</button><button class="btn teal" id="inDemo">👀 おてほん</button><button class="btn hot big" id="inStart">スタート！</button></div>
 </div></div>
 
 <!-- けっか -->
@@ -864,7 +882,7 @@ function confetti(){
 /* ---------- HUD ---------- */
 function renderHUD(){
   const free=S.mode==='free';
-  $('#hudLab').textContent=free?`${fico()} れんしゅう`:`${fico()}${STAGES[S.mode].ico} ${STAGES[S.mode].lv[S.level-1].g} ${STAGES[S.mode].lv[S.level-1].t}`;
+  $('#hudLab').textContent=free?`${fico()} れんしゅう`:S.demo?`👀 おてほん`:`${fico()}${STAGES[S.mode].ico} ${STAGES[S.mode].lv[S.level-1].g} ${STAGES[S.mode].lv[S.level-1].t}`;
   $('#hudHearts').innerHTML=free?'':[...Array(HEARTS)].map((_,i)=>`<span class="${i<S.hearts?'':'lost'}">♥</span>`).join('');
   $('#hudQ').style.display=free?'none':'';
   $('#hudQ').textContent=`${Math.min(S.qi+1,ROUND)}/${ROUND}`;
@@ -878,7 +896,7 @@ let lastT=0;
 function loop(t){
   requestAnimationFrame(loop);
   const dt=lastT?Math.min(.1,(t-lastT)/1000):0; lastT=t;
-  if(!S.running||!SAVE.timer||S.phase==='toasting'||S.mode==='free'||S.mode==='none') return;
+  if(!S.running||!SAVE.timer||S.demo||S.phase==='toasting'||S.mode==='free'||S.mode==='none') return;
   S.tLeft=Math.max(0,S.tLeft-dt);
   drawTimer();
   if(S.tLeft<=0) timeUp();
@@ -1019,18 +1037,148 @@ function openIntro(m,l){
   const st=STAGES[m], lv=st.lv[l-1], b=bestOf(m,l);
   $('#inSub').textContent=`${fico()} ${nm()}の ${st.name}　${lv.g}`;
   $('#inTitle').textContent=lv.t;
-  const rules=RULES[m]();
-  if(S.food==='pizza') rules.push('🍕 '+PIZZA_TIP);
-  const ex=EXTRA[m]()[l-1];
-  if(ex) rules.push('⚠️ '+ex);
-  rules.push(`10もん。${SAVE.timer?'まちがい・じかんぎれ':'まちがい'}で ♥が へるよ（♥×${HEARTS}）`);
-  $('#inRules').innerHTML=rules.map(r=>`<li>${r}</li>`).join('');
+  $('#inMsg').textContent='';
+  $('#inDemo').textContent='👀 おてほん';
   $('#inBest').textContent=b.score?`ベスト：${'⭐'.repeat(b.stars)}${'☆'.repeat(3-b.stars)}　${b.score}点`:'';
+  SAVE.seen=SAVE.seen||{};
+  const key=bestKey(m,l);
+  if(!SAVE.seen[key]){ SAVE.seen[key]=1; save(); return startDemo(); }   // はじめては すぐ おてほん
+  $('#ovIntro').hidden=false;
+}
+
+/* ---------- おてほん（チュートリアル）：👆が ほんものの 画面で やって 見せる ---------- */
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+// 焼く・食べるの とちゅう（demoBusy）は とめずに 待つ。おわってから スキップ
+function demoCheck(){ if(S.demoAbort&&!S.demoBusy) throw 'abort'; }
+async function busy(fn,cond){ S.demoBusy=true; try{ await fn(); await waitFor(cond); } finally{ S.demoBusy=false; } }
+async function wait(ms){ await sleep(ms); demoCheck(); }
+async function waitFor(fn,to=20000){ const t0=Date.now(); while(!fn()){ if(Date.now()-t0>to) throw 'timeout'; await wait(80); } }
+function cap(n,html){ $('#demoCap').innerHTML=(n?`<span class="dn">${n}</span>`:'')+html; }
+function handTo(x,y){ const h=$('#hand'); h.style.left=x+'px'; h.style.top=y+'px'; }
+function svgToClient(x,y){ const m=$('#toaster').getScreenCTM(); return {x:m.a*x+m.c*y+m.e,y:m.b*x+m.d*y+m.f}; }
+let lastPoint=null;
+async function pointAt(el){ const r=el.getBoundingClientRect(); handTo(r.left+r.width/2,r.top+r.height/2); await wait(lastPoint===el?120:600); lastPoint=el; }
+async function press(){ const h=$('#hand'); h.classList.add('tap'); await sleep(170); h.classList.remove('tap'); await wait(120); }
+async function tapBtn(sel){ const b=document.querySelector(sel); await pointAt(b); await press(); b.click(); await wait(lastPoint===b?120:250); }
+async function tapPiece(el){
+  await pointAt(el); await press();
+  const r=el.getBoundingClientRect(), o={bubbles:true,clientX:r.left+r.width/2,clientY:r.top+r.height/2};
+  el.dispatchEvent(new PointerEvent('pointerdown',o)); window.dispatchEvent(new PointerEvent('pointerup',o));
+  await wait(150);
+}
+async function tapSvg(x,y,fn){ const c=svgToClient(x,y); handTo(c.x,c.y); await wait(600); await press(); fn(); await wait(150); }
+async function dragLine(A,B){
+  const a=svgToClient(A.x,A.y); handTo(a.x,a.y); await wait(650);
+  const h=$('#hand'), l=$('#cutPrev'); h.classList.add('drag');
+  l.setAttribute('x1',A.x); l.setAttribute('y1',A.y);
+  for(let i=1;i<=22;i++){
+    const P={x:A.x+(B.x-A.x)*i/22,y:A.y+(B.y-A.y)*i/22}, c=svgToClient(P.x,P.y);
+    l.setAttribute('x2',P.x); l.setAttribute('y2',P.y); handTo(c.x,c.y); await wait(28);
+  }
+  h.classList.remove('drag'); ['x1','y1','x2','y2'].forEach(k=>l.setAttribute(k,0));
+  if(addCut(A,B)){ sfx.knife(); S.cutLabels=[]; S.tintURL=null; renderCuts(); }
+  await wait(300);
+}
+async function answerFrac(nu,de){
+  for(let i=0;i<nu;i++) await tapBtn('[data-a="nu+"]');
+  for(let i=0;i<de;i++) await tapBtn('[data-a="de+"]');
+}
+// 等分の 線の 引きかた（まっすぐ・十字・ななめ・まん中から）
+function demoLines(n){
+  const sh=shapeInfo(), C={x:sh.cx,y:sh.cy}, L=[];
+  const dia=t=>{ const r=sh.size*.72, d={x:Math.cos(t),y:Math.sin(t)}; L.push([{x:C.x-d.x*r,y:C.y-d.y*r},{x:C.x+d.x*r,y:C.y+d.y*r}]); };
+  const deg=Math.PI/180;
+  if(sh.type==='s'){
+    if(n===4){ dia(90*deg); dia(0); }
+    else if(n===8){ dia(90*deg); dia(0); dia(45*deg); dia(135*deg); }
+    else for(let k=1;k<n;k++){ const x=sh.x+sh.s*k/n; L.push([{x,y:sh.y-24},{x,y:sh.y+sh.s+24}]); }
+  }else{
+    if(n%2===0) for(let k=0;k<n/2;k++) dia((-90+k*360/n)*deg);
+    else for(let k=0;k<n;k++){ const t=(-90+k*360/n)*deg; L.push([{x:C.x,y:C.y},{x:C.x+Math.cos(t)*sh.size*.72,y:C.y+Math.sin(t)*sh.size*.72}]); }
+  }
+  return L;
+}
+async function demoOrder(){
+  startOrder(true); S.running=true; await wait(900);
+  const q=S.q, need=q.pair?q.lcm:q.lockN||q.b, k=q.a*need/q.b;
+  if(q.lockN){ cap(1,`<b>${need}等分</b>の まま、同じ 大きさを さがすよ`); await wait(1800); }
+  else{
+    cap(1,`＋と −で <b>${need}等分</b>に する`);
+    while(S.n!==need) await tapBtn(`[data-act="${S.n<need?'up':'dn'}"]`);
+    await wait(500);
+  }
+  cap(2,`食べる 分を <b>${k}こ</b> タップ`);
+  for(const pc of [...document.querySelectorAll('.pc')].slice(0,k)) await tapPiece(pc);
+  cap(3,'🔥やく！ を おす');
+  await busy(()=>tapBtn('[data-act="bake"]'),()=>q.pair?S.sumAsk:!$('#pop').hidden);
+  if(q.pair) await demoSum(k,need);
+}
+async function demoSum(t,n){
+  cap(4,`ふたり あわせて <b>${t}こ</b>。分子は ${t}、分母は ${n}`);
+  await wait(900);
+  await answerFrac(t,n);
+  cap(4,`ふたり あわせて <b>${t}こ</b>。分子は ${t}、分母は ${n}`);
+  await busy(()=>tapBtn('[data-a="go"]'),()=>!$('#pop').hidden);
+}
+async function demoYomi(){
+  let n=0; do{ startYomi(true); }while(S.q.type==='yn'&&n++<30);
+  const q=S.q;
+  cap(1,'焼けて、おきゃくさんが 食べるのを 見てね');
+  await busy(()=>S.yomiGo(),()=>S.ready);
+  if(q.type==='eq2'){
+    cap(2,q.eq?`${q.a}/${q.b} と ${q.k}/${q.n} は 同じ 大きさ → ⭕`:`${q.a}/${q.b} と ${q.k}/${q.n} は ちがう 大きさ → ❌`);
+    await wait(1200); await busy(()=>tapBtn(`[data-a="${q.eq?'yes':'no'}"]`),()=>!$('#pop').hidden);
+  }else{
+    const nu=q.type==='red'?q.a:q.k, de=q.type==='red'?q.b:q.n, w=q.kind==='left'?'のこった':'食べた';
+    if(q.type==='red'){ cap(2,`${q.k}/${q.n} を かんたんに すると ${nu}/${de}`); await wait(1800); }
+    cap(q.type==='red'?3:2,q.type==='red'?`分子は <b>${nu}</b>`:`分子は ${w} 数 <b>${nu}</b>`);
+    for(let i=0;i<nu;i++) await tapBtn('[data-a="nu+"]');
+    cap(q.type==='red'?4:3,q.type==='red'?`分母は <b>${de}</b>`:`分母は 1まいを いくつに 分けたか <b>${de}</b>`);
+    for(let i=0;i<de;i++) await tapBtn('[data-a="de+"]');
+    cap(q.type==='red'?5:4,'こたえる を おす');
+    await busy(()=>tapBtn('[data-a="go"]'),()=>!$('#pop').hidden);
+  }
+}
+async function demoCut(){
+  startCut(true); S.running=true; await wait(900);
+  const q=S.q, n=q.pair?q.lcm:(q.n||q.b);
+  cap(1,`指で 線を 引いて <b>${n}等分</b>`);
+  for(const [A,B] of demoLines(n)) await dragLine(A,B);
+  cap(2,'✂ できた！ を おす');
+  await busy(()=>tapBtn('[data-act="cdone"]'),()=>q.a?S.cutPhase==='choosing':!$('#pop').hidden);
+  if(!q.a) return;
+  const k=q.a*n/q.b;
+  cap(3,`食べる 分を <b>${k}こ</b> タップ`);
+  for(const c of S.R.comps.slice(0,k)) await tapSvg(c.cx,c.cy,()=>tapRegion({x:c.cx,y:c.cy}));
+  cap(4,'🔥やく！ を おす');
+  await busy(()=>tapBtn('[data-act="cserve"]'),()=>q.pair?S.sumAsk:!$('#pop').hidden);
+  if(q.pair) await demoSum(k,n);
+}
+async function startDemo(){
+  $('#ovIntro').hidden=true;
+  Object.assign(S,{qi:0,score:0,hearts:HEARTS,combo:0,maxCombo:0,correct:0,q:null,over:false,running:false,sumAsk:false,own:{},ownA:null,ownB:null,
+    demo:true,demoAbort:false,demoBusy:false});
+  hidePop(); renderHUD(); show('scPlay');
+  $('#hand').hidden=false; $('#demoBar').hidden=false; handTo(innerWidth/2,innerHeight*.8);
+  $('#demoSkip').textContent='スキップ ▶'; cap(null,'👀 おてほん を 見てね');
+  try{
+    await wait(700);
+    if(S.mode==='order') await demoOrder(); else if(S.mode==='yomi') await demoYomi(); else await demoCut();
+    await wait(2200);
+  }catch(e){ if(e!=='abort') console.warn('demo',e); }
+  const how=S.demoAbort;
+  S.demo=false; S.demoAbort=false; S.running=false; S.q=null;
+  $('#hand').hidden=true; $('#demoBar').hidden=true; hidePop();
+  if(how==='quit') return goSelect();
+  if(how==='skip') return startStage();
+  // おしまい：やってみよう
+  $('#inMsg').textContent='やりかたは わかったかな？ やってみよう！';
+  $('#inDemo').textContent='🔁 もういちど 見る';
   $('#ovIntro').hidden=false;
 }
 function startStage(){
   $('#ovIntro').hidden=true;
-  Object.assign(S,{qi:0,score:0,hearts:HEARTS,combo:0,maxCombo:0,correct:0,q:null,over:false,running:false,sumAsk:false,own:{},ownA:null,ownB:null});
+  Object.assign(S,{qi:0,score:0,hearts:HEARTS,combo:0,maxCombo:0,correct:0,q:null,over:false,running:false,sumAsk:false,own:{},ownA:null,ownB:null,demo:false});
   hidePop(); renderHUD(); show('scPlay');
   S.mode==='order'?startOrder(true):S.mode==='yomi'?startYomi(true):startCut(true);
   countdown(()=>{ if(S.mode==='yomi') S.yomiGo(); else S.running=true; });
@@ -1756,7 +1904,10 @@ $('#sndBtn').onclick=toggleSound; $('#sndBtn2').onclick=toggleSound;
 $('#scSelect').addEventListener('click',e=>{ const b=e.target.closest('.cell'); if(b){ sfx.tap(); openIntro(b.dataset.m,+b.dataset.l); } });
 $('#inBack').onclick=()=>{ $('#ovIntro').hidden=true; S.mode='none'; };
 $('#inStart').onclick=startStage;
+$('#inDemo').onclick=startDemo;
+$('#demoSkip').onclick=()=>{ if(S.demo&&!S.demoAbort){ S.demoAbort='skip'; $('#demoSkip').textContent='まってね…'; } };
 $('#quitBtn').onclick=()=>{
+  if(S.demo){ if(!S.demoAbort) S.demoAbort='quit'; return; }
   if(S.mode==='free'||S.over) return goSelect();
   S.wasRunning=S.running; S.running=false; $('#ovQuit').hidden=false;
 };
