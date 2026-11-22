@@ -183,6 +183,9 @@ svg#toaster{width:100%;height:100%;max-width:640px;display:block;overflow:visibl
 .toasting #tbody{animation:buzz .12s linear infinite}
 @keyframes buzz{0%,100%{transform:translateX(0)}50%{transform:translateX(1.6px)}}
 .lcd{font-size:25px;fill:#7dffb0;font-weight:800}
+.lcdr{font-size:11px;fill:#7dffb0;font-weight:700;text-anchor:middle;opacity:.9}
+/* ふりがな */
+rt{font-size:.5em;font-weight:700;letter-spacing:0}
 /* ピザ（オーブントースター） */
 .pzs .pc{fill:#fde7a0}
 .pzs .pc.mark{fill:url(#mk)}
@@ -309,7 +312,9 @@ svg#toaster{width:100%;height:100%;max-width:640px;display:block;overflow:visibl
     <rect x="70" y="236" width="36" height="14" rx="6" fill="#555"/><rect x="214" y="236" width="36" height="14" rx="6" fill="#555"/>
     <rect x="30" y="140" width="260" height="102" rx="32" fill="url(#tbg)" stroke="#2c7d70" stroke-width="4"/>
     <rect x="120" y="172" width="80" height="38" rx="9" fill="#22323a"/>
-    <text x="160" y="198" text-anchor="middle" font-size="18" font-weight="800" fill="#7dffb0">4 等分</text>
+    <text x="154" y="201" text-anchor="end" font-size="18" font-weight="800" fill="#7dffb0">4</text>
+    <text x="158" y="201" font-size="18" font-weight="800" fill="#7dffb0">等分</text>
+    <text x="176" y="185" text-anchor="middle" font-size="8" font-weight="700" fill="#7dffb0">とうぶん</text>
     <circle cx="78" cy="190" r="20" fill="#f6f6f6" stroke="#2c7d70" stroke-width="3"/>
     <rect x="236" y="160" width="10" height="66" rx="5" fill="#2c7d70"/><rect x="222" y="160" width="40" height="16" rx="8" fill="#e8603c"/>
   </svg>
@@ -489,6 +494,59 @@ function M(k,n){
   return `<span class="mixed">${w}${F(r,n)}</span>`;
 }
 
+/* ---------- ふりがな（2年生が 読めるように、画面に 出る すべての 漢字に ルビを つける） ---------- */
+// 画面の 字が かわる たびに、まだ ルビの ない 漢字を さがして つける。読みは この 表で きめる。
+const RUBY_WORDS=[['何等分','なんとうぶん'],['何分','なんぶん'],['分子','ぶんし'],['分数','ぶんすう'],['分母','ぶんぼ'],
+  ['十字','じゅうじ'],['名人','めいじん'],['等分','とうぶん'],['約分','やくぶん'],['通分','つうぶん'],['見習','みなら'],['角度','かくど']];
+const RUBY_ONE={中:'なか',何:'なん',作:'つく',切:'き',同:'おな',大:'おお',屋:'や',年:'ねん',引:'ひ',指:'ゆび',方:'かた',
+  点:'てん',焼:'や',等:'ひと',線:'せん',考:'かんが',見:'み',近:'ちか',通:'とお',青:'あお',食:'た',人:'にん'};
+const RUBY_HON={1:'いっぽん',2:'にほん',3:'さんぼん',4:'よんほん',5:'ごほん',6:'ろっぽん',7:'ななほん',8:'はっぽん',9:'きゅうほん',10:'じゅっぽん'};
+const KANJI_RE=/[\u4e00-\u9fff々]/;
+function readOne(ch,next){
+  if(ch==='分') return /^[けか]/.test(next)?'わ':'ぶん';   // 分ける・分かれる／等分・分だよ
+  if(ch==='出') return /^[しす]/.test(next)?'だ':'で';     // 出して・出す／出たら・出る
+  if(ch==='数') return next[0]==='え'?'かぞ':'かず';       // 数える／数が
+  return RUBY_ONE[ch]||null;
+}
+function rubyFrag(text){
+  const f=document.createDocumentFragment();
+  let plain='';
+  const flush=()=>{ if(plain){ f.appendChild(document.createTextNode(plain)); plain=''; } };
+  const ruby=(base,rt)=>{ flush(); const r=document.createElement('ruby'); r.textContent=base; const t=document.createElement('rt'); t.textContent=rt; r.appendChild(t); f.appendChild(r); };
+  for(let i=0;i<text.length;){
+    const m=text.slice(i).match(/^(\d+)([人本])/);
+    if(m){ // 1人・2人・3本 など、数字と いっしょに 読む もの
+      const n=+m[1];
+      if(m[2]==='人'&&(n===1||n===2)){ ruby(m[0],n===1?'ひとり':'ふたり'); i+=m[0].length; continue; }
+      if(m[2]==='本'){ ruby(m[0],RUBY_HON[n]||m[1]+'ほん'); i+=m[0].length; continue; }
+    }
+    const ch=text[i];
+    if(!KANJI_RE.test(ch)){ plain+=ch; i++; continue; }
+    const w=RUBY_WORDS.find(([k])=>text.startsWith(k,i));
+    if(w){ ruby(w[0],w[1]); i+=w[0].length; continue; }
+    const r=readOne(ch,text.slice(i+1,i+3));
+    if(r) ruby(ch,r); else plain+=ch;
+    i++;
+  }
+  flush();
+  return f;
+}
+function rubify(root){
+  const tw=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>{
+    if(!KANJI_RE.test(n.nodeValue)) return NodeFilter.FILTER_REJECT;
+    const p=n.parentElement;
+    if(!p||p.closest('ruby,script,style,svg,title,textarea')) return NodeFilter.FILTER_REJECT;
+    return NodeFilter.FILTER_ACCEPT;
+  }});
+  const list=[]; while(tw.nextNode()) list.push(tw.currentNode);
+  list.forEach(n=>n.replaceWith(rubyFrag(n.nodeValue)));
+}
+let rubyQueued=false;
+new MutationObserver(()=>{
+  if(rubyQueued) return; rubyQueued=true;
+  queueMicrotask(()=>{ rubyQueued=false; rubify(document.body); });
+}).observe(document.body,{childList:true,subtree:true,characterData:true});
+
 /* ---------- おと ---------- */
 const sfx={
   ctx:null,
@@ -662,7 +720,9 @@ function buildPizza(){
   // そうさパネル
   h+=`<rect x="350" y="44" width="76" height="150" rx="12" fill="#c95424" opacity=".5"/>
     <rect x="356" y="52" width="64" height="40" rx="8" fill="#22323a" stroke="#14202a" stroke-width="3"/>
-    <text id="lcd" x="388" y="79" text-anchor="middle" class="lcd" style="font-size:16px"></text>
+    <text id="lcdn" x="386" y="83" text-anchor="end" class="lcd" style="font-size:16px"></text>
+    <text id="lcdk" x="389" y="83" class="lcd" style="font-size:16px"></text>
+    <text id="lcdr" x="405" y="65" class="lcdr" style="font-size:8px"></text>
     <g id="lever" class="lever" transform="translate(388 142)">
       <circle r="30" fill="#f6f6f6" stroke="#7a3412" stroke-width="4"/>
       <g id="tdial"><rect x="-4" y="-27" width="8" height="20" rx="4" fill="#e8603c"/></g>
@@ -707,7 +767,9 @@ function buildBread(){
     <rect x="52" y="238" width="376" height="12" rx="6" fill="#c8f0e8" opacity=".7"/>
     <rect x="34" y="296" width="412" height="9" fill="#e9f6f3" opacity=".55"/>
     <rect x="168" y="318" width="144" height="54" rx="12" fill="#22323a" stroke="#14202a" stroke-width="3"/>
-    <text id="lcd" x="240" y="355" text-anchor="middle" class="lcd"></text>
+    <text id="lcdn" x="232" y="361" text-anchor="end" class="lcd"></text>
+    <text id="lcdk" x="238" y="361" class="lcd"></text>
+    <text id="lcdr" x="263" y="333" class="lcdr"></text>
     <g transform="translate(96 346)">
       <circle r="31" fill="#f6f6f6" stroke="#2c7d70" stroke-width="4"/>
       <circle r="22" fill="#fff" stroke="#d6e7e3" stroke-width="2"/>
@@ -724,7 +786,14 @@ function paint(){
     r.setAttribute('class','pc '+(s==='eaten'?'toast':s)+(own&&s!=='eaten'?' own'+own:''));
   });
   document.querySelectorAll('.eat').forEach(r=>r.setAttribute('class','eat'+(S.st[r.dataset.b][r.dataset.i]==='eaten'?' on':'')));
-  const lcd=$('#lcd'); if(lcd) lcd.textContent=S.mode==='cut'?'✂ 切る':S.hideN?'？ 等分':S.n+' 等分';
+  const ln=$('#lcdn'), lk=$('#lcdk'), lr=$('#lcdr');
+  if(ln){
+    const cut=S.mode==='cut', fs=parseFloat(getComputedStyle(lk).fontSize)||25, x0=+lk.getAttribute('x');
+    ln.textContent=cut?'✂':S.hideN?'？':S.n;
+    lk.textContent=cut?'切る':'等分';
+    lr.textContent=cut?'き':'とうぶん';
+    lr.setAttribute('x',cut?x0+fs/2:x0+fs);   // 読みは 漢字の まん中の 上に
+  }
 }
 const count=s=>S.st.flat().filter(x=>x===s).length;
 function newBread(pop=true){
@@ -1781,6 +1850,7 @@ document.addEventListener('keydown',e=>{
 requestAnimationFrame(loop);
 syncSound();
 goTitle();
+rubify(document.body);
 </script>
 </body>
 </html>
